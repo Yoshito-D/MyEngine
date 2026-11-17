@@ -1,0 +1,42 @@
+{
+  "name": "PostProcessBloom",
+  "reflectionSources": {
+    "pixelShader": "Bloom"
+  },
+  "parameters": [
+    {
+      "type": "CBV",
+      "visibility": "Pixel",
+      "shaderRegister": 0,
+      "semantic": "constantbuffer"
+    },
+    {
+      "type": "DescriptorTable",
+      "visibility": "Pixel",
+      "descriptorCount": 1,
+      "rangeType": "SRV",
+      "shaderRegister": 0,
+      "semantic": "inputtexture"
+    },
+    {
+      "type": "DescriptorTable",
+      "visibility": "Pixel",
+      "descriptorCount": 1,
+      "rangeType": "SRV",
+      "shaderRegister": 1,
+      "semantic": "auxiliarytexture"
+    }
+  ],
+  "samplers": [
+    {
+      "filter": "MinMagMipLinear",
+      "addressU": "Clamp",
+      "addressV": "Clamp",
+      "addressW": "Clamp",
+      "comparisonFunc": "Never",
+      "maxLOD": 3.402823466e+38,
+      "shaderRegister": 0,
+      "visibility": "Pixel"
+    }
+  ]
+}

@@ -97,7 +97,7 @@
       "priority": 20,
       "enabled": true,
       "pipelineName": "PostProcess_Bloom",
-      "rootSignatureName": "PostProcess"
+      "rootSignatureName": "PostProcessBloom"
     },
     {
       "id": "whiteNoise",

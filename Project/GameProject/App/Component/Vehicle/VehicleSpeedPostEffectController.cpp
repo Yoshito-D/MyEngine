@@ -47,6 +47,20 @@ VehicleSpeedPostEffectController::~VehicleSpeedPostEffectController() {
    ApplyNeutralEffect();
 }
 
+void VehicleSpeedPostEffectController::ResetEvents() {
+   const auto* events = HasOwner() ? GetOwner().GetComponent<VehicleEvents>() : nullptr;
+   eventCursor_.Reset(events ? events->GetSnapshot() : VehicleEventSnapshot{});
+   miniTurboRadialBlurTimeRemaining_ = 0.0f;
+}
+
+void VehicleSpeedPostEffectController::OnSceneLoaded(GameEngine::SceneWorld&) {
+   ResetEvents();
+}
+
+void VehicleSpeedPostEffectController::OnEnable() {
+   ResetEvents();
+}
+
 void VehicleSpeedPostEffectController::Update(float deltaTime) {
    if (!HasOwner()) {
       ApplyNeutralEffect();
@@ -67,7 +81,22 @@ void VehicleSpeedPostEffectController::Update(float deltaTime) {
    const float targetAmount = CalculateEffectAmount(currentSpeed, minimumEffectSpeed, maximumEffectSpeed);
    effectAmount_ = SmoothTowards(effectAmount_, targetAmount, responseSpeed, deltaTime);
 
-   // 速度由来の同じ係数を共有し、スピードラインと放射ブラーの立ち上がりを同期させる。
+   miniTurboRadialBlurTimeRemaining_ = std::max(0.0f, miniTurboRadialBlurTimeRemaining_ - std::max(0.0f, deltaTime));
+   const auto* events = GetOwner().GetComponent<VehicleEvents>();
+   const auto changes = eventCursor_.Read(events ? events->GetSnapshot() : VehicleEventSnapshot{});
+
+   // 実際に加速した通知で即座に最大化し、連続発動時も重ねすぎずピークから再開する。
+   if (changes.miniTurbo) {
+      miniTurboRadialBlurTimeRemaining_ = miniTurboRadialBlurDuration;
+   }
+
+   float miniTurboAmount = miniTurboRadialBlurDuration > 0.0f
+                              ? Saturate(miniTurboRadialBlurTimeRemaining_ / miniTurboRadialBlurDuration)
+                              : 0.0f;
+   // 終端ほど緩やかに弱まる二次減衰で、フレームレートに依存せず通常値へ戻す。
+   miniTurboAmount *= miniTurboAmount;
+
+   // 速度由来の基本係数は共有し、ミニターボの追加ブラーだけを独立して減衰させる。
    GameEngine::SpeedLineParams params{};
    params.center = {0.5f, 0.5f};
    params.intensity = maxIntensity * effectAmount_;
@@ -87,14 +116,14 @@ void VehicleSpeedPostEffectController::Update(float deltaTime) {
 
    GameEngine::RadialBlurParams radialParams{};
    radialParams.center = {0.5f, 0.5f};
-   radialParams.strength = radialBlurMaxStrength * effectAmount_;
+   radialParams.strength = radialBlurMaxStrength * effectAmount_ + miniTurboRadialBlurStrength * miniTurboAmount;
    radialParams.sampleCount = radialBlurSampleCount;
 
    GameEngine::EngineContext::SetRadialBlurParams(radialParams);
 
    // 放射ブラーは別しきい値を持たせ、ラインより遅い立ち上がりも調整可能にする。
    GameEngine::EngineContext::SetPostProcessEffectEnabled(
-      "Radial Blur", effectAmount_ >= std::max(radialBlurVisibleThreshold, 0.0f));
+      "Radial Blur", std::max(effectAmount_, miniTurboAmount) >= std::max(radialBlurVisibleThreshold, 0.0f));
 }
 
 void VehicleSpeedPostEffectController::OnDetach() {
@@ -130,6 +159,10 @@ void VehicleSpeedPostEffectController::DrawInspector() {
    ImGui::SliderInt(Tr("放射ブラーサンプル数", "Radial Samples"), &radialBlurSampleCount, 2, 32);
    ImGui::DragFloat(
       Tr("放射ブラー表示しきい値", "Radial Visible Threshold"), &radialBlurVisibleThreshold, 0.001f, 0.0f, 1.0f);
+   ImGui::DragFloat(Tr("ミニターボ追加ブラー強度", "Mini Turbo Radial Blur Strength"), &miniTurboRadialBlurStrength,
+      0.001f, 0.0f, 0.1f, "%.3f");
+   ImGui::DragFloat(Tr("ミニターボブラー減衰時間 (s)", "Mini Turbo Radial Blur Duration (s)"),
+      &miniTurboRadialBlurDuration, 0.01f, 0.0f, 3.0f);
    ImGui::Text("%s: %.3f", Tr("エフェクト量", "Effect Amount"), effectAmount_);
    Configure(DescribeSettings());
 }
@@ -153,6 +186,8 @@ nlohmann::json VehicleSpeedPostEffectController::Serialize() const {
    json["radialBlurMaxStrength"] = radialBlurMaxStrength;
    json["radialBlurSampleCount"] = radialBlurSampleCount;
    json["radialBlurVisibleThreshold"] = radialBlurVisibleThreshold;
+   json["miniTurboRadialBlurStrength"] = miniTurboRadialBlurStrength;
+   json["miniTurboRadialBlurDuration"] = miniTurboRadialBlurDuration;
    return json;
 }
 
@@ -169,7 +204,7 @@ void VehicleSpeedPostEffectController::ApplySharedParameters(const nlohmann::jso
 }
 
 void VehicleSpeedPostEffectController::ReadParameters(
-   const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
+   const nlohmann::json& data, bool initializeRuntime) {
    if (data.contains("minimumEffectSpeed")) {
       minimumEffectSpeed = data["minimumEffectSpeed"];
    }
@@ -234,11 +269,24 @@ void VehicleSpeedPostEffectController::ReadParameters(
       radialBlurVisibleThreshold = data["radialBlurVisibleThreshold"];
    }
 
+   if (data.contains("miniTurboRadialBlurStrength")) {
+      miniTurboRadialBlurStrength = data["miniTurboRadialBlurStrength"];
+   }
+
+   if (data.contains("miniTurboRadialBlurDuration")) {
+      miniTurboRadialBlurDuration = data["miniTurboRadialBlurDuration"];
+   }
+
    Configure(DescribeSettings());
+
+   if (initializeRuntime) {
+      ResetEvents();
+   }
 }
 
 void VehicleSpeedPostEffectController::ApplyNeutralEffect() {
    effectAmount_ = 0.0f;
+   miniTurboRadialBlurTimeRemaining_ = 0.0f;
 
    // コンポーネントの寿命よりエフェクトスタックの方が長いため、無効化時に共有状態を明示的に戻す。
    GameEngine::SpeedLineParams params{};
@@ -286,6 +334,8 @@ VehicleSpeedPostEffectController::Settings VehicleSpeedPostEffectController::Des
    settings.radialBlurMaxStrength = radialBlurMaxStrength;
    settings.radialBlurSampleCount = radialBlurSampleCount;
    settings.radialBlurVisibleThreshold = radialBlurVisibleThreshold;
+   settings.miniTurboRadialBlurStrength = miniTurboRadialBlurStrength;
+   settings.miniTurboRadialBlurDuration = miniTurboRadialBlurDuration;
    return settings;
 }
 
@@ -353,9 +403,19 @@ void VehicleSpeedPostEffectController::Configure(const Settings& requested) {
       settings.radialBlurVisibleThreshold = defaults.radialBlurVisibleThreshold;
    }
 
+   if (!std::isfinite(settings.miniTurboRadialBlurStrength)) {
+      settings.miniTurboRadialBlurStrength = defaults.miniTurboRadialBlurStrength;
+   }
+
+   if (!std::isfinite(settings.miniTurboRadialBlurDuration)) {
+      settings.miniTurboRadialBlurDuration = defaults.miniTurboRadialBlurDuration;
+   }
+
    settings.maximumEffectSpeed = std::max(settings.minimumEffectSpeed + 0.001f, settings.maximumEffectSpeed);
    settings.responseSpeed = std::max(0.0f, settings.responseSpeed);
    settings.radialBlurSampleCount = std::clamp(settings.radialBlurSampleCount, 1, 64);
+   settings.miniTurboRadialBlurStrength = std::max(0.0f, settings.miniTurboRadialBlurStrength);
+   settings.miniTurboRadialBlurDuration = std::max(0.0f, settings.miniTurboRadialBlurDuration);
    minimumEffectSpeed = settings.minimumEffectSpeed;
    maximumEffectSpeed = settings.maximumEffectSpeed;
    responseSpeed = settings.responseSpeed;
@@ -372,6 +432,8 @@ void VehicleSpeedPostEffectController::Configure(const Settings& requested) {
    radialBlurMaxStrength = settings.radialBlurMaxStrength;
    radialBlurSampleCount = settings.radialBlurSampleCount;
    radialBlurVisibleThreshold = settings.radialBlurVisibleThreshold;
+   miniTurboRadialBlurStrength = settings.miniTurboRadialBlurStrength;
+   miniTurboRadialBlurDuration = settings.miniTurboRadialBlurDuration;
 }
 
 } // namespace App

@@ -2002,6 +2002,9 @@
     <None Include="Resources\engine\pipelines\root_signatures\postprocess\fullscreen_triangle_rootsig.json">
       <Filter>Resources\engine\pipelines\root_signatures</Filter>
     </None>
+    <None Include="Resources\engine\pipelines\root_signatures\postprocess\postprocess_bloom_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures</Filter>
+    </None>
     <None Include="Resources\engine\pipelines\root_signatures\postprocess\postprocess_dissolve_rootsig.json">
       <Filter>Resources\engine\pipelines\root_signatures</Filter>
     </None>

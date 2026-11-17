@@ -2,6 +2,7 @@
 
 #include "GameProject/App/Component/Race/RaceManagerComponent.h"
 #include "GameProject/App/Component/Character/CharacterJump.h"
+#include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Object/Component/UI/UITextComponent.h"
 #include "GameEngine/Object/Object.h"
@@ -16,12 +17,18 @@ namespace App {
 namespace {
 
 /// @brief 地上走行中に表示する基本操作ガイド
-constexpr const char* kGroundGuideText = "左スティック：旋回 / ドリフト\n"
-                                         "A：ジャンプ";
+constexpr const char* kGamepadGroundGuideText = "左スティック：旋回 / ドリフト\n"
+                                                "A：ジャンプ";
+
+constexpr const char* kKeyboardGroundGuideText = "A / D：旋回 / ドリフト\n"
+                                                 "Space：ジャンプ";
 
 /// @brief ジャンプ中に表示する空中姿勢制御の操作ガイド
-constexpr const char* kAirGuideText = "左スティック上下：ピッチ\n"
-                                      "LB / RB：ロール";
+constexpr const char* kGamepadAirGuideText = "左スティック上下：ピッチ\n"
+                                             "LB / RB：ロール";
+
+constexpr const char* kKeyboardAirGuideText = "W / S：ピッチ\n"
+                                              "Q / E：ロール";
 
 } // namespace
 
@@ -32,6 +39,7 @@ void GamepadGuideTextComponent::OnReferencesChanged(GameEngine::SceneWorld& scen
    // 新しい参照を検索する前に必ず解決状態を初期化する。
    raceManager_ = nullptr;
    characterJump_ = nullptr;
+   vehicleInput_ = nullptr;
 
    if (auto* managerObject = sceneWorld.FindObjectById(raceManagerId_)) {
       raceManager_ = managerObject->GetComponent<RaceManagerComponent>();
@@ -39,10 +47,11 @@ void GamepadGuideTextComponent::OnReferencesChanged(GameEngine::SceneWorld& scen
 
    if (auto* playerObject = sceneWorld.FindObjectById(playerObjectId_)) {
       characterJump_ = playerObject->GetComponent<CharacterJump>();
+      vehicleInput_ = playerObject->GetComponent<VehicleInputComponent>();
    }
 }
 
-/// @brief レース状態とプレイヤーのジャンプ状態に応じて操作ガイドを更新する
+/// @brief 接続状態・レース状態・プレイヤーのジャンプ状態に応じて操作ガイドを更新する
 /// @param deltaTime 前フレームからの経過時間。本コンポーネントでは状態参照のみのため使用しない
 void GamepadGuideTextComponent::Update(float deltaTime) {
    (void)deltaTime;
@@ -71,7 +80,17 @@ void GamepadGuideTextComponent::Update(float deltaTime) {
 
    // CharacterJumpを解決できない構成でもガイド自体は維持し、
    // 空中状態を確認できた場合に限って空中操作へ切り替える。
-   text->SetText(characterJump_ && characterJump_->IsJumping() ? kAirGuideText : kGroundGuideText);
+   const bool airborne = characterJump_ && characterJump_->IsJumping();
+
+   // 走行入力と同じスロットの接続を毎フレーム確認し、抜き差しだけで表示を切り替える。
+   const auto playerSlot = vehicleInput_ ? vehicleInput_->DescribeSettings().playerSlot : 0u;
+   const bool gamepadConnected = GameEngine::EngineContext::IsGamePadConnected(playerSlot);
+
+   if (gamepadConnected) {
+      text->SetText(airborne ? kGamepadAirGuideText : kGamepadGroundGuideText);
+   } else {
+      text->SetText(airborne ? kKeyboardAirGuideText : kKeyboardGroundGuideText);
+   }
 }
 
 /// @brief 参照先を再解決するためのオブジェクトIDをJSONへ保存する

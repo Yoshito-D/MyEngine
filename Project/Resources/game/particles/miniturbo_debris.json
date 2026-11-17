@@ -1,0 +1,259 @@
+{
+   "blendMode": 1,
+   "textureName": "rock_brown_relief",
+   "modelAssetId": "game/models/rocks/rock_d_01.obj",
+   "usePostProcess": true,
+   "mainModule": {
+      "duration": 0.18,
+      "looping": false,
+      "maxParticles": 128,
+      "playOnAwake": false,
+      "simulationSpace": 0,
+      "motionRelativeToEmitter": true,
+      "timeScale": 1,
+      "startLifetime": {
+         "min": 0.5,
+         "max": 0.75,
+         "randomize": true
+      },
+      "startSpeedMode": 1,
+      "startSpeed": {
+         "min": 0,
+         "max": 0,
+         "randomize": false
+      },
+      "startVelocity": {
+         "min": [
+            -3.0,
+            4.2,
+            -11.0
+         ],
+         "max": [
+            3.0,
+            6.5,
+            -6.0
+         ],
+         "randomize": true
+      },
+      "startSize": {
+         "min": [
+            0.26,
+            0.26,
+            0.26
+         ],
+         "max": [
+            0.26,
+            0.26,
+            0.26
+         ],
+         "randomize": false
+      },
+      "startRotation": {
+         "min": [
+            0,
+            0,
+            0
+         ],
+         "max": [
+            6.283185307,
+            6.283185307,
+            6.283185307
+         ],
+         "randomize": true
+      },
+      "startColor": {
+         "min": 4294967295,
+         "max": 4294967295,
+         "randomize": false
+      },
+      "gravityModifier": {
+         "min": 0,
+         "max": 0,
+         "randomize": false
+      }
+   },
+   "emissionModule": {
+      "enabled": true,
+      "rateOverTime": 0,
+      "rateOverDistance": 0,
+      "bursts": [
+         {
+            "time": 0,
+            "count": 24,
+            "cycles": 1,
+            "interval": 1
+         },
+         {
+            "time": 0.06,
+            "count": 16,
+            "cycles": 1,
+            "interval": 1
+         },
+         {
+            "time": 0.12,
+            "count": 12,
+            "cycles": 1,
+            "interval": 1
+         }
+      ]
+   },
+   "shapeModule": {
+      "enabled": true,
+      "shapeType": 3,
+      "emitFrom": 0,
+      "radius": 0.26,
+      "arc": 6.283185307,
+      "circleOutwardVelocity": 0,
+      "boxSize": [
+         0.14,
+         0.025,
+         0.16
+      ],
+      "position": [
+         0,
+         0,
+         0
+      ],
+      "rotation": [
+         0,
+         0,
+         0
+      ],
+      "scale": [
+         1,
+         1,
+         1
+      ]
+   },
+   "colorOverLifetimeModule": {
+      "enabled": true,
+      "startColor": [
+         1,
+         1,
+         1,
+         1
+      ],
+      "endColor": [
+         0.85,
+         0.85,
+         0.85,
+         0
+      ]
+   },
+   "sizeOverLifetimeModule": {
+      "enabled": true,
+      "startSize": [
+         0.26,
+         0.26,
+         0.26
+      ],
+      "endSize": [
+         0.08,
+         0.08,
+         0.08
+      ],
+      "sizeMultiplier": {
+         "min": 0.6,
+         "max": 1.4,
+         "randomize": true
+      }
+   },
+   "rotationOverLifetimeModule": {
+      "enabled": true,
+      "angularVelocityMin": [
+         -7,
+         -9,
+         -6
+      ],
+      "angularVelocityMax": [
+         7,
+         9,
+         6
+      ],
+      "angularVelocityRandomize": true
+   },
+   "forceOverLifetimeModule": {
+      "enabled": true,
+      "force": {
+         "min": [
+            0,
+            -9.8,
+            0
+         ],
+         "max": [
+            0,
+            -9.8,
+            0
+         ],
+         "randomize": false
+      },
+      "drag": {
+         "min": 0.25,
+         "max": 0.25,
+         "randomize": false
+      },
+      "attractorEnabled": false
+   },
+   "velocityOverLifetimeModule": {
+      "enabled": false
+   },
+   "limitVelocityModule": {
+      "enabled": false
+   },
+   "noiseModule": {
+      "enabled": false,
+      "strength": {
+         "min": 0,
+         "max": 0,
+         "randomize": true
+      },
+      "frequency": {
+         "min": 2.2,
+         "max": 2.2,
+         "randomize": false
+      },
+      "scrollSpeed": {
+         "min": 1.1,
+         "max": 1.1,
+         "randomize": false
+      }
+   },
+   "rendererModule": {
+      "enabled": true,
+      "billboardType": 0,
+      "rotationSpace": 1,
+      "sortMode": 2,
+      "velocityStretchEnabled": false,
+      "cameraFadeEnabled": true,
+      "cameraFadeNear": 0.15,
+      "cameraFadeFar": 0.45
+   },
+   "particleMeshModule": {
+      "particleMeshType": 0,
+      "meshOriginY": 0.5,
+      "enabled": true
+   },
+   "materialSettings": {
+      "brightness": 1,
+      "alphaCutoff": 0.001,
+      "toonSteps": 0,
+      "softParticles": false,
+      "softParticleDistance": 0.18,
+      "edgeSoftness": 0,
+      "distortionStrength": 0,
+      "distortionBlend": 1,
+      "distortionUseTextureFlow": false
+   },
+   "uvTransformModule": {
+      "enabled": false
+   },
+   "textureSheetAnimationModule": {
+      "enabled": false
+   },
+   "trailModule": {
+      "enabled": false
+   },
+   "subEmitters": {
+      "enabled": false
+   }
+}

@@ -404,11 +404,12 @@ public:
 
    /// @brief メッシュパーティクルへ使用するモデルアセットを取得する
    /// @return 設定中のモデル。未設定の場合はnullptr
-   const ModelAsset* GetModelAsset() const { return modelAsset_; }
+   const ModelAsset* GetModelAsset() const { return modelAsset_.get(); }
 
    /// @brief メッシュパーティクルへ使用するモデルアセットを設定する
-   /// @param model 使用するモデル。nullptrで解除
-   void SetModelAsset(const ModelAsset* model) { modelAsset_ = model; }
+   /// @param assetId Resourcesからの相対ID。空なら通常の粒子メッシュに戻す。
+   /// @return 読み込み成功時true。失敗時は現在のモデルを維持する。
+   bool SetModelAssetId(const std::string& assetId);
 
    /// @brief リボン描画用GPU頂点バッファビューを取得する
    const D3D12_VERTEX_BUFFER_VIEW& GetRibbonVertexBufferView() const;
@@ -483,7 +484,7 @@ private:
    SceneWorld* world_ = nullptr;                      ///< 更新と子エフェクト生成を行う所属ワールドへの非所有参照。
 
    // レンダリング設定
-   const ModelAsset* modelAsset_ = nullptr; ///< メッシュパーティクルへ使用するモデルアセット。
+   std::shared_ptr<ModelAsset> modelAsset_; ///< メッシュパーティクルが寿命中に保持するモデルアセット。
    Texture* texture_ = nullptr;             ///< 描画に使用するテクスチャへの非所有参照。
    std::string textureName_;                ///< 設定中のテクスチャ名。
 

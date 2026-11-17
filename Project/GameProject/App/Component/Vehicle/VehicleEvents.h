@@ -15,9 +15,13 @@ struct VehicleEventSnapshot {
    std::uint64_t driftEndCount = 0;                     ///< ドリフト終了の連番。
    bool isAirborne = false;                             ///< 現在ジャンプ中か。
    bool isGrounded = true;                              ///< 接触判定が接地を認め、ジャンプ中ではないか。
+   float groundSpeed = 0.0f;                            ///< 操作更新後の地上前進速度（m/s）。
    bool isDrifting = false;                             ///< 操作更新後のドリフト状態。
    bool miniTurboReady = false;                         ///< 現在ミニターボを発動可能か。
    bool hasLandingContact = false;                      ///< 直近の着地に有効な接触情報があるか。
+   bool hasTakeoffContact = false;                      ///< 踏み切り時に確定した地表の接触情報があるか。
+   GameEngine::Vector3 takeoffPoint{};                  ///< 車両が移動する前の踏み切り位置（ワールド座標、m）。
+   GameEngine::Vector3 takeoffNormal{0.0f, 1.0f, 0.0f}; ///< 踏み切り地点の地表の単位法線。
    GameEngine::Vector3 landingPoint{};                  ///< 接触点のワールド位置（m）。
    GameEngine::Vector3 landingNormal{0.0f, 1.0f, 0.0f}; ///< 接触面の単位法線。
    LandingResult landingResult = LandingResult::Normal; ///< 同じ着地に対する車両側の品質判定。
@@ -62,7 +66,7 @@ public:
    /// @brief 操作更新済みの走行状態を確定する。経過秒数は使用しない。
    void Update(float deltaTime) override;
 
-   /// @brief 成立したジャンプを一度発行する。CharacterJumpだけが呼び出す。
+   /// @brief 成立したジャンプと積分前の地表接触点を記録する。CharacterJumpだけが呼び出す。
    void PublishTakeoff();
 
    /// @brief 物理接触で確定した着地を発行する。位置はm、法線は単位ベクトル。

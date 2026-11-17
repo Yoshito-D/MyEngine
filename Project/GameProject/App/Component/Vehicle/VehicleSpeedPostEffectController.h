@@ -5,10 +5,11 @@
 #include <algorithm>
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
+#include "GameProject/App/Component/Vehicle/VehicleEvents.h"
 
 namespace App {
 
-/// @brief Vehicle の速度を SpeedLine ポストエフェクトへ反映するコンポーネント
+/// @brief 車両速度とミニターボ発動をスピードライン・放射ブラーへ反映するコンポーネント。
 class VehicleSpeedPostEffectController final : public GameEngine::IObjectComponent {
 public:
    /// @brief 依存する状態の更新後に処理するためのフェーズを返す。
@@ -26,7 +27,13 @@ public:
    /// @brief 所有中の共有ポストエフェクト状態を中立値へ戻して破棄する
    ~VehicleSpeedPostEffectController() override;
 
-   /// @brief 現在速度に応じて画面演出を更新する。
+   /// @brief シーン読み込み前の通知を既読にし、ミニターボ演出を初期化する。
+   void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+
+   /// @brief 無効中の通知を既読にし、ミニターボ演出を初期化する。
+   void OnEnable() override;
+
+   /// @brief 現在速度とミニターボ発動に応じて画面演出を更新する。
    void Update(float deltaTime) override;
 
    /// @brief 所有オブジェクトから外れる際に、適用中の速度演出を解除する。
@@ -97,6 +104,12 @@ public:
 
       /// @brief この演出量未満では RadialBlur を無効化する
       float radialBlurVisibleThreshold = 0.02f;
+
+      /// @brief ミニターボ発動直後に上乗せする放射ブラー強度（無次元、0で無効）。
+      float miniTurboRadialBlurStrength = 0.08f;
+
+      /// @brief ミニターボの追加ブラーが通常値へ戻るまでの時間（s、0で無効）。
+      float miniTurboRadialBlurDuration = 0.6f;
    };
 
    /// @brief 表示・編集用の設定値をコピーする。
@@ -124,10 +137,15 @@ private:
    float radialBlurMaxStrength = 0.05f;      ///< 最大演出時の放射ブラー強度。
    std::int32_t radialBlurSampleCount = 16;  ///< 放射ブラーのサンプル数。
    float radialBlurVisibleThreshold = 0.02f; ///< この演出量未満では RadialBlur を無効化する。
+   float miniTurboRadialBlurStrength = Settings{}.miniTurboRadialBlurStrength; ///< 発動時の追加ブラー強度（無次元）。
+   float miniTurboRadialBlurDuration = Settings{}.miniTurboRadialBlurDuration; ///< 追加ブラーの減衰時間（s）。
 
 private:
    void ApplyNeutralEffect();
+   void ResetEvents();
 
+   VehicleEventCursor eventCursor_; ///< 他の演出と独立したミニターボ通知の既読位置。
+   float miniTurboRadialBlurTimeRemaining_ = 0.0f; ///< 追加ブラーが通常値へ戻るまでの残り時間（s）。
    float effectAmount_ = 0.0f; ///< 速度に応じて補間した画面演出の現在の適用量。
    float time_ = 0.0f;         ///< クリップ先頭からの時刻（秒）。
 };

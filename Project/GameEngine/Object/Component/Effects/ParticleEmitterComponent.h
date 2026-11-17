@@ -10,6 +10,7 @@
 
 namespace GameEngine {
 class ParticleSystem;
+class Texture;
 
 /// @brief GameObject に ParticleSystem を接続するコンポーネント
 /// ParticleSystem の生成・再生制御と Object トランスフォームへの追従を担う
@@ -110,6 +111,11 @@ public:
 
    /// @brief 生存粒子を維持したまま、指定スロットの新規放出を切り替える。
    void EnableEmission(std::int32_t slotIndex, bool enabled);
+
+   /// @brief 指定スロットの描画テクスチャを切り替える。粒子や再生状態は維持する。
+   /// @param slotIndex 対象スロット番号。
+   /// @param texture アセット管理側が所有するテクスチャ。nullptrで未設定に戻す。
+   void SetSlotTexture(std::int32_t slotIndex, Texture* texture);
 
    /// @brief 指定スロットが表示中の粒子を持つか調べる。
    bool HasLivingParticles(std::int32_t slotIndex) const;

@@ -14,7 +14,7 @@
                "followScale": true,
                "positionOffset": [
                   0.30000001192092896,
-                  -0.18000000715255737,
+                  -0.12,
                   0.41499999165534973
                ],
                "rotationOffset": [
@@ -42,7 +42,7 @@
                "followScale": true,
                "positionOffset": [
                   -0.30000001192092896,
-                  -0.18000000715255737,
+                  -0.12,
                   0.41499999165534973
                ],
                "rotationOffset": [
@@ -70,7 +70,7 @@
                "followScale": true,
                "positionOffset": [
                   0.30000001192092896,
-                  -0.18000000715255737,
+                  -0.12,
                   -0.41499999165534973
                ],
                "rotationOffset": [
@@ -98,7 +98,7 @@
                "followScale": true,
                "positionOffset": [
                   -0.30000001192092896,
-                  -0.18000000715255737,
+                  -0.12,
                   -0.41499999165534973
                ],
                "rotationOffset": [
@@ -263,7 +263,7 @@
                "boneName": "",
                "followPosition": true,
                "followRotation": true,
-               "followScale": true,
+               "followScale": false,
                "positionOffset": [
                   0.0,
                   -0.30000001192092896,
@@ -279,7 +279,7 @@
                   1.0,
                   1.0
                ],
-               "simulationSpace": "Local"
+               "simulationSpace": "World"
             },
             "autoPlay": false,
             "jsonPath": "resources/game/particles/landingRing.json",
@@ -291,11 +291,11 @@
                "boneName": "",
                "followPosition": true,
                "followRotation": true,
-               "followScale": true,
+               "followScale": false,
                "positionOffset": [
                   0.0,
-                  -0.30000001192092896,
-                  0.0
+                  -0.1,
+                  -0.15
                ],
                "rotationOffset": [
                   0.0,
@@ -347,7 +347,7 @@
                "boneName": "",
                "followPosition": true,
                "followRotation": true,
-               "followScale": true,
+               "followScale": false,
                "positionOffset": [
                   0.0,
                   -0.30000001192092896,
@@ -363,7 +363,7 @@
                   1.0,
                   1.0
                ],
-               "simulationSpace": "Local"
+               "simulationSpace": "World"
             },
             "autoPlay": false,
             "jsonPath": "resources/game/particles/landingDust.json",
@@ -375,11 +375,11 @@
                "boneName": "",
                "followPosition": true,
                "followRotation": true,
-               "followScale": true,
+               "followScale": false,
                "positionOffset": [
                   0.0,
-                  0.0,
-                  -0.699999988079071
+                  0.14,
+                  -0.55
                ],
                "rotationOffset": [
                   0.0,
@@ -396,6 +396,314 @@
             "autoPlay": false,
             "jsonPath": "resources/game/particles/landing_failure.json",
             "loop": false,
+            "playOnceAndDestroy": false
+         },
+         {
+            "attachConfig": {
+               "boneName": "",
+               "followPosition": false,
+               "followRotation": false,
+               "followScale": false,
+               "positionOffset": [
+                  0.0,
+                  0.0,
+                  0.0
+               ],
+               "rotationOffset": [
+                  0.0,
+                  0.0,
+                  0.0
+               ],
+               "scaleOffset": [
+                  1.0,
+                  1.0,
+                  1.0
+               ],
+               "simulationSpace": "World"
+            },
+            "autoPlay": false,
+            "jsonPath": "resources/game/particles/landing_debris.json",
+            "loop": false,
+            "playOnceAndDestroy": false
+         },
+         {
+            "attachConfig": {
+               "boneName": "",
+               "followPosition": false,
+               "followRotation": false,
+               "followScale": false,
+               "positionOffset": [
+                  0.0,
+                  0.0,
+                  0.0
+               ],
+               "rotationOffset": [
+                  0.0,
+                  0.0,
+                  0.0
+               ],
+               "scaleOffset": [
+                  1.0,
+                  1.0,
+                  1.0
+               ],
+               "simulationSpace": "World"
+            },
+            "autoPlay": false,
+            "jsonPath": "resources/game/particles/landing_debris_large.json",
+            "loop": false,
+            "playOnceAndDestroy": false
+         },
+         {
+            "attachConfig": {
+               "boneName": "",
+               "followPosition": false,
+               "followRotation": false,
+               "followScale": false,
+               "positionOffset": [
+                  0.0,
+                  0.0,
+                  0.0
+               ],
+               "rotationOffset": [
+                  0.0,
+                  0.0,
+                  0.0
+               ],
+               "scaleOffset": [
+                  1.0,
+                  1.0,
+                  1.0
+               ],
+               "simulationSpace": "World"
+            },
+            "autoPlay": false,
+            "jsonPath": "resources/game/particles/jump_debris.json",
+            "loop": false,
+            "playOnceAndDestroy": false
+         },
+         {
+            "attachConfig": {
+               "boneName": "",
+               "followPosition": true,
+               "followRotation": true,
+               "followScale": false,
+               "positionOffset": [
+                  0.3,
+                  -0.12,
+                  -0.43
+               ],
+               "rotationOffset": [
+                  0.0,
+                  0.0,
+                  0.0
+               ],
+               "scaleOffset": [
+                  1.0,
+                  1.0,
+                  1.0
+               ],
+               "simulationSpace": "World"
+            },
+            "autoPlay": false,
+            "jsonPath": "resources/game/particles/miniturbo_debris.json",
+            "loop": false,
+            "playOnceAndDestroy": false
+         },
+         {
+            "attachConfig": {
+               "boneName": "",
+               "followPosition": true,
+               "followRotation": true,
+               "followScale": false,
+               "positionOffset": [
+                  -0.3,
+                  -0.12,
+                  -0.43
+               ],
+               "rotationOffset": [
+                  0.0,
+                  0.0,
+                  0.0
+               ],
+               "scaleOffset": [
+                  1.0,
+                  1.0,
+                  1.0
+               ],
+               "simulationSpace": "World"
+            },
+            "autoPlay": false,
+            "jsonPath": "resources/game/particles/miniturbo_debris.json",
+            "loop": false,
+            "playOnceAndDestroy": false
+         },
+         {
+            "attachConfig": {
+               "boneName": "",
+               "followPosition": true,
+               "followRotation": true,
+               "followScale": false,
+               "positionOffset": [
+                  0.3,
+                  -0.12,
+                  -0.43
+               ],
+               "rotationOffset": [
+                  0.0,
+                  0.0,
+                  0.0
+               ],
+               "scaleOffset": [
+                  1.0,
+                  1.0,
+                  1.0
+               ],
+               "simulationSpace": "World"
+            },
+            "autoPlay": false,
+            "jsonPath": "resources/game/particles/miniturbo_dust.json",
+            "loop": false,
+            "playOnceAndDestroy": false
+         },
+         {
+            "attachConfig": {
+               "boneName": "",
+               "followPosition": true,
+               "followRotation": true,
+               "followScale": false,
+               "positionOffset": [
+                  -0.3,
+                  -0.12,
+                  -0.43
+               ],
+               "rotationOffset": [
+                  0.0,
+                  0.0,
+                  0.0
+               ],
+               "scaleOffset": [
+                  1.0,
+                  1.0,
+                  1.0
+               ],
+               "simulationSpace": "World"
+            },
+            "autoPlay": false,
+            "jsonPath": "resources/game/particles/miniturbo_dust.json",
+            "loop": false,
+            "playOnceAndDestroy": false
+         },
+         {
+            "attachConfig": {
+               "boneName": "",
+               "followPosition": true,
+               "followRotation": true,
+               "followScale": false,
+               "positionOffset": [
+                  0.3,
+                  -0.12,
+                  -0.43
+               ],
+               "rotationOffset": [
+                  0,
+                  0,
+                  0
+               ],
+               "scaleOffset": [
+                  1,
+                  1,
+                  1
+               ],
+               "simulationSpace": "World"
+            },
+            "autoPlay": false,
+            "jsonPath": "resources/game/particles/drive_dust.json",
+            "loop": true,
+            "playOnceAndDestroy": false
+         },
+         {
+            "attachConfig": {
+               "boneName": "",
+               "followPosition": true,
+               "followRotation": true,
+               "followScale": false,
+               "positionOffset": [
+                  -0.3,
+                  -0.12,
+                  -0.43
+               ],
+               "rotationOffset": [
+                  0,
+                  0,
+                  0
+               ],
+               "scaleOffset": [
+                  1,
+                  1,
+                  1
+               ],
+               "simulationSpace": "World"
+            },
+            "autoPlay": false,
+            "jsonPath": "resources/game/particles/drive_dust.json",
+            "loop": true,
+            "playOnceAndDestroy": false
+         },
+         {
+            "attachConfig": {
+               "boneName": "",
+               "followPosition": true,
+               "followRotation": true,
+               "followScale": false,
+               "positionOffset": [
+                  0.3,
+                  -0.12,
+                  -0.43
+               ],
+               "rotationOffset": [
+                  0,
+                  0,
+                  0
+               ],
+               "scaleOffset": [
+                  1,
+                  1,
+                  1
+               ],
+               "simulationSpace": "World"
+            },
+            "autoPlay": false,
+            "jsonPath": "resources/game/particles/drive_debris.json",
+            "loop": true,
+            "playOnceAndDestroy": false
+         },
+         {
+            "attachConfig": {
+               "boneName": "",
+               "followPosition": true,
+               "followRotation": true,
+               "followScale": false,
+               "positionOffset": [
+                  -0.3,
+                  -0.12,
+                  -0.43
+               ],
+               "rotationOffset": [
+                  0,
+                  0,
+                  0
+               ],
+               "scaleOffset": [
+                  1,
+                  1,
+                  1
+               ],
+               "simulationSpace": "World"
+            },
+            "autoPlay": false,
+            "jsonPath": "resources/game/particles/drive_debris.json",
+            "loop": true,
             "playOnceAndDestroy": false
          }
       ]

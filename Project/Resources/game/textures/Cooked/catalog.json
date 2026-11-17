@@ -133,6 +133,18 @@
          "width": 2048
       },
       {
+         "ddsHash": "7bd1385ba7ec2a8d8d30bb30b23056c2169626cfa1570a337a7912e77f0a7d74",
+         "ddsPath": "game/textures/Cooked/dust_cloud.dds",
+         "format": 87,
+         "height": 1254,
+         "isCubemap": false,
+         "mipLevels": 4,
+         "name": "dust_cloud",
+         "sourceHash": "ffd61f259a40fa8bf9aead396d9ed228813993ee8871ccdae2f0a3c652dc6bc0",
+         "sourcePath": "game/textures/dust_cloud.png",
+         "width": 1254
+      },
+      {
          "ddsHash": "f5a654319c771eda073dc84c33fc6f5e52edb3e951de3369ff95e1a7dddb289e",
          "ddsPath": "game/textures/Cooked/effect1.dds",
          "format": 91,
@@ -263,6 +275,18 @@
          "sourceHash": "9b042fe0618ffbc3650592456d7d8d265ba9a1cb5ce802f5f1d86b7ee79508a1",
          "sourcePath": "game/textures/ground/rocky_terrain_02_diff_2k.jpg",
          "width": 2048
+      },
+      {
+         "ddsHash": "6be9a365a484ac8e998905122a7259f7b3169f8da8466e510184dc611483935b",
+         "ddsPath": "game/textures/Cooked/rock_brown_relief.dds",
+         "format": 28,
+         "height": 1254,
+         "isCubemap": false,
+         "mipLevels": 4,
+         "name": "rock_brown_relief",
+         "sourceHash": "93ab44a9c7f23ae799adc63066279f6aed5cccdd0ab56c476f2103b3fc437932",
+         "sourcePath": "game/textures/rock_brown_relief.png",
+         "width": 1254
       },
       {
          "ddsHash": "53be441b1f234c5c34decdaead4fe10690abc6bdc863dfe5093ccfb79408d0a0",

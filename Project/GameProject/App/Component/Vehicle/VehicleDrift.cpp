@@ -3,6 +3,7 @@
 #include <cstdint>
 #include "GameProject/App/Component/Vehicle/VehicleGroundMover.h"
 #include "GameProject/App/Component/Vehicle/VehicleEvents.h"
+#include "GameProject/App/Component/Character/CharacterJump.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Math/Functions/QuaternionOperations.h"
@@ -56,7 +57,12 @@ void VehicleDrift::Apply(bool driftInput, float steerInput, const Vector3& gravi
       if (ShouldContinueDrift(driftInput, steerInput)) {
          // 継続中: ドリフトタイマーを加算する。
          // ミニターボ発動の最低継続時間 miniTurboMinTime の判定に使われる。
-         driftTimer_ += deltaTime;
+         // 踏み切りフレームの速度処理は保ち、ジャンプ時に破棄した蓄積時間だけを加算しない。
+         const auto* jump = GetOwner().GetComponent<CharacterJump>();
+
+         if (!jump || !jump->IsJumping()) {
+            driftTimer_ += deltaTime;
+         }
       } else {
          // 終了: ミニターボ発動を試みて状態をリセットする。
          // slideLateralSpeed_ はリセットしない。
@@ -250,8 +256,18 @@ bool VehicleDrift::CanFireMiniTurbo() const {
       return false;
    }
 
+   const auto* jump = GetOwner().GetComponent<CharacterJump>();
+
+   if (jump && jump->IsJumping()) {
+      return false;
+   }
+
    const auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
    return groundMover && groundMover->IsEnabled() && !groundMover->IsAccelerationBlocked();
+}
+
+void VehicleDrift::ResetMiniTurboCharge() {
+   driftTimer_ = 0.0f;
 }
 
 void VehicleDrift::TryFireMiniTurbo() {

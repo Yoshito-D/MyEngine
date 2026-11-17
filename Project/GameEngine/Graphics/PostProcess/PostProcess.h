@@ -60,8 +60,10 @@ public:
    /// @param inputTextureSlot 入力カラーSRVのスロット。
    /// @param depthTextureSlot 深度SRVのスロット。未指定なら現在値を保持する。
    /// @param maskTextureSlot マスクSRVのスロット。未指定なら現在値を保持する。
+   /// @param auxiliaryTextureSlot エフェクト内部の中間画像SRVのスロット。未指定なら現在値を保持する。
    void ConfigurePipeline(const PipelineState& pipeline, const RootSignature& rootSignature, UINT constantBufferSlot,
-      UINT inputTextureSlot, std::optional<UINT> depthTextureSlot, std::optional<UINT> maskTextureSlot);
+      UINT inputTextureSlot, std::optional<UINT> depthTextureSlot, std::optional<UINT> maskTextureSlot,
+      std::optional<UINT> auxiliaryTextureSlot);
 
 private:
    GraphicsDevice* device_ = nullptr;              ///< 初期化時に関連付けた非所有デバイス。
@@ -71,10 +73,11 @@ private:
    const PipelineState* pipeline_ = nullptr;      ///< 管理側が設定した読み取り専用パイプライン。
    const RootSignature* rootSignature_ = nullptr; ///< 管理側が設定した読み取り専用ルートシグネチャ。
 
-   UINT constantBufferRootSlot_ = 0; ///< 定数バッファの検証済みバインド番号。
-   UINT inputTextureRootSlot_ = 1;   ///< 入力カラーの検証済みバインド番号。
-   UINT depthTextureRootSlot_ = 2;   ///< 深度テクスチャの検証済みバインド番号。
-   UINT maskTextureRootSlot_ = 2;    ///< マスクテクスチャの検証済みバインド番号。
+   UINT constantBufferRootSlot_ = 0;   ///< 定数バッファの検証済みバインド番号。
+   UINT inputTextureRootSlot_ = 1;     ///< 入力カラーの検証済みバインド番号。
+   UINT depthTextureRootSlot_ = 2;     ///< 深度テクスチャの検証済みバインド番号。
+   UINT maskTextureRootSlot_ = 2;      ///< マスクテクスチャの検証済みバインド番号。
+   UINT auxiliaryTextureRootSlot_ = 2; ///< エフェクト内部の中間画像の検証済みバインド番号。
 
 protected:
    /// @brief 共通のフルスクリーン描画を実行する。追加SRVは深度またはマスクに使用する。
@@ -104,6 +107,9 @@ protected:
 
    /// @brief マスクテクスチャの検証済みバインド番号を取得する。
    UINT GetMaskTextureRootSlot() const { return maskTextureRootSlot_; }
+
+   /// @brief 中間画像SRVの検証済みバインド番号を取得する。
+   UINT GetAuxiliaryTextureRootSlot() const { return auxiliaryTextureRootSlot_; }
 
    // ImGuiの固有ID管理
 #ifdef USE_IMGUI

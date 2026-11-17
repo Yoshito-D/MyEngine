@@ -132,13 +132,14 @@ void ParticleRenderer::DrawParticle(const ParticleDrawData& particleData,
       const ModelAsset* modelAsset = particleSystem->GetModelAsset();
 
       if (modelAsset) {
-         // Modelモードは各頂点をactiveCount回インスタンス化し、粒子データはSRVから引く。
+         // OBJの頂点共有を維持したインデックス描画で、各岩の三角形を正しく再構成する。
          const auto& meshes = modelAsset->GetMeshData();
 
          for (size_t i = 0; i < meshes.size(); ++i) {
             cmdList->IASetVertexBuffers(0, 1, &modelAsset->GetVertexBufferView(i));
+            cmdList->IASetIndexBuffer(&modelAsset->GetIndexBufferView(i));
             cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            cmdList->DrawInstanced(static_cast<UINT>(meshes[i].vertices.size()), activeCount, 0, 0);
+            cmdList->DrawIndexedInstanced(static_cast<UINT>(meshes[i].indices.size()), activeCount, 0, 0, 0);
          }
       } else {
          // Billboardモードは共有Quadのインデックスを使い、頂点数を抑える。

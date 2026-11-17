@@ -329,6 +329,13 @@ void MainModule::DrawInspector() {
       SetSimulationSpace(simulationSpace);
    }
 
+   bool motionRelativeToEmitter = IsMotionRelativeToEmitter();
+
+   if (ImGui::Checkbox(
+          L({"初速・加速度を発生元の向きへ回す", "Motion Relative to Emitter"}), &motionRelativeToEmitter)) {
+      SetMotionRelativeToEmitter(motionRelativeToEmitter);
+   }
+
    ImGui::Separator();
 
    std::int32_t maxParticles = static_cast<std::int32_t>(GetMaxParticles());

@@ -2,7 +2,7 @@
   "name": "PostProcess_Bloom",
   "vertexShader": "FullscreenTriangle",
   "pixelShader": "Bloom",
-  "rootSignature": "PostProcess",
+  "rootSignature": "PostProcessBloom",
   "supportBlendModes": false,
   "defaultBlendMode": "None",
   "cullMode": "None",

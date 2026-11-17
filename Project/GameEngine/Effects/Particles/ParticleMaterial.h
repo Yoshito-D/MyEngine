@@ -26,10 +26,10 @@ public:
    struct MaterialData {
       Vector4 color;            // 基本カラー
       Matrix4x4 uvTransform;    // UV変換行列
-      Vector4 renderingParams;  // x: 輝度、y: アルファ閾値、z: トゥーン階調数
+      Vector4 renderingParams;  // x: 輝度、y: アルファ閾値、z: トゥーン階調数、w: 煙の輪郭フェード幅
       Vector4 effectParams;     // x: ソフト有効、y: 距離、z: 歪みピクセル、w: 歪み混合率
       Vector4 sceneParams;      // x: 幅、y: 高さ、z: near、w: far
-      Vector4 projectionParams; // x: 平行投影フラグ、y: 歪みにRGフローマップを使用
+      Vector4 projectionParams; // x: 平行投影フラグ、y: 歪みにRGフローマップを使用、z: 煙の濃度
    };
 
    ParticleMaterial();
@@ -68,6 +68,19 @@ public:
 
    /// @brief トゥーン階調数を取得する
    uint32_t GetToonSteps() const;
+
+   /// @brief 煙の外周を透過するUV半径の割合を設定する。0で無効、1で中心から減衰する。
+   /// @details 有効時は寿命の先頭でも短くフェードインして生成時の点滅を抑える。
+   void SetEdgeSoftness(float softness);
+
+   /// @brief 煙の外周フェード幅（0から1）を取得する。
+   float GetEdgeSoftness() const { return edgeSoftness_; }
+
+   /// @brief 煙の濃度と寿命中の揺らぎを設定する。0で無効、正の値で光学的な濃度を調整する。
+   void SetSmokeDensity(float density);
+
+   /// @brief 煙の濃度（無次元、0で無効）を取得する。
+   float GetSmokeDensity() const { return smokeDensity_; }
 
    /// @brief ソフトパーティクルを有効化する
    void SetSoftParticlesEnabled(bool enabled);
@@ -138,6 +151,8 @@ private:
    float brightness_ = 1.0f;               ///< 描画色へ掛ける輝度倍率。
    float alphaCutoff_ = 0.001f;            ///< ピクセルを破棄する透明度の下限。
    uint32_t toonSteps_ = 0;                ///< トゥーン陰影の階調数。0は段階化を使わない。
+   float edgeSoftness_ = 0.0f;             ///< 煙の外周をフェードするUV半径の割合。
+   float smokeDensity_ = 0.0f;             ///< 揺らぐ煙の光学的な濃度。0で無効。
    bool softParticlesEnabled_ = false;     ///< ソフトパーティクルが有効かどうかする。
    float softParticleDistance_ = 0.5f;     ///< 交差境界をフェードする距離。
    float distortionStrength_ = 0.0f;       ///< 背景を歪ませる最大ピクセル数。
