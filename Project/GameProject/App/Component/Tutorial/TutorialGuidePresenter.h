@@ -1,4 +1,5 @@
 #pragma once
+#include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
 #include <string>
 #include <cstdint>
 
@@ -26,7 +27,7 @@ enum class TutorialPhase {
 /// @brief 進行側が確定した表示用スナップショット。コンポーネント参照を持たない。
 struct TutorialGuideState {
    TutorialPhase phase = TutorialPhase::DrivingIntro; ///< 現在の課題。
-   bool gamepadConnected = false;                     ///< 操作説明に使う入力方式。
+   VehicleControlLabels controls;                     ///< 接続状態と現在の割り当てを反映した入力名。
    int32_t miniTurboCount = 0;                        ///< 達成回数。
    bool canFireMiniTurbo = false;                     ///< ターボ発動可能か。
    bool isDrifting = false;                           ///< ドリフト中か。

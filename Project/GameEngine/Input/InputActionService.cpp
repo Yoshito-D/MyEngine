@@ -312,6 +312,34 @@ const InputActionState& InputActionService::GetActionState(
    return action->states[playerSlot];
 }
 
+std::string InputActionService::DescribeActionBindings(
+   const std::string& actionMap, const std::string& actionId, bool forGamePad) const {
+   const auto* action = FindAction(actionMap, actionId);
+   std::string description;
+
+   if (!action) {
+      return description;
+   }
+
+   for (const auto& binding : action->bindings) {
+      const bool isGamePadBinding = std::holds_alternative<GamePadButtonInputBinding>(binding.source) ||
+                                    std::holds_alternative<LeftStickInputBinding>(binding.source) ||
+                                    std::holds_alternative<RightStickInputBinding>(binding.source);
+
+      if (isGamePadBinding != forGamePad) {
+         continue;
+      }
+
+      if (!description.empty()) {
+         description += " / ";
+      }
+
+      description += binding.DescribeForPrompt();
+   }
+
+   return description;
+}
+
 bool InputActionService::HasHeldActions() const {
    for (const auto& [key, definition] : actions_) {
       for (const auto& state : definition.states) {

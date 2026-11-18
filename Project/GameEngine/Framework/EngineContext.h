@@ -51,7 +51,7 @@ private:
 
    void Initialize(GraphicsDevice* graphicsDevice, Input* input, InputActionService* inputActionService, Audio* audio,
       Renderer* renderer, AssetManager* assetManager, TimeProfiler* timeProfiler, CameraManager* cameraManager,
-      LightManager* lightManager);
+      LightManager* lightManager, bool gameplayMouseInputEnabled);
 
    void SetGraphicsDevice(GraphicsDevice* graphicsDevice);
    void SetInput(Input* input);
@@ -145,6 +145,9 @@ public:
    /// @param key キーコード
    /// @return キーがリリースされた場合はtrue
    static bool IsKeyReleased(KeyCode key);
+
+   /// @brief ゲーム内でマウスを入力として扱う設定かを返す。編集中のアクセス許可は別に扱う。
+   static bool IsGameplayMouseInputEnabled();
 
    /// @brief マウスのボタンが押されているか
    /// @param button マウスボタン（0:左, 1:右, 2:中ボタン）
@@ -293,6 +296,14 @@ public:
    static const InputActionState& GetInputActionState(
       const std::string& actionMap, const std::string& actionId, uint32_t playerSlot = 0);
 
+   /// @brief キー・指定スロットのゲームパッドと、許可されている場合のマウスに新しい操作があったか返す。
+   static bool HasInputTrigger(uint32_t playerSlot = 0);
+
+   /// @brief ゲームパッド接続中はその割り当てを優先し、利用できる操作を案内用の文字列で返す。
+   /// @param playerSlot ゲームパッドの接続状態を参照するプレイヤー番号。キーボードは0番でのみ使う。
+   static std::string DescribeInputActionBindings(
+      const std::string& actionMap, const std::string& actionId, uint32_t playerSlot = 0);
+
    //================================================================
    // シーン切り換え
    //================================================================
@@ -305,9 +316,13 @@ public:
    /// @param opacity 0で通常表示、1で完全な黒
    static void SetSceneTransitionOpacity(float opacity);
 
-   /// @brief カメラ演出用の暗転率を設定する。シーン遷移用との最大値を最終表示へ適用する。
+   /// @brief カメラ演出用の暗転と黒帯の表示状態を設定する。
    /// @param opacity 0で通常表示、1で完全な黒。非有限値は0として扱う。
-   static void SetCameraTransitionOpacity(float opacity);
+   /// @param letterboxProgress 0で黒帯を非表示、1で全表示。非有限値は0として扱う。
+   /// @param caption 下側の黒帯に表示する案内。空なら表示しない。
+   /// @param captionStyle 案内に使用するフォント、サイズ、色。
+   static void SetCameraTransition(
+      float opacity, float letterboxProgress, std::string_view caption = {}, const TextStyle& captionStyle = {});
 
    /// @brief オーバーレイの背後へ適用するぼかし強度を描画サービスへ渡す。
    /// @param strength 0で無効、1で最大のぼかし。非有限値は0として扱う。

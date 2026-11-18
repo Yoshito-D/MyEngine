@@ -20,8 +20,48 @@ constexpr const char* kJumpAction = "Vehicle.Jump";
 constexpr const char* kDriftAction = "Vehicle.Drift";
 constexpr const char* kCameraLookAction = "Camera.Look";
 constexpr const char* kNextCameraAction = "Camera.Next";
+constexpr const char* kUiActionMap = "UI";
+constexpr const char* kConfirmAction = "UI.Confirm";
+
+std::string JoinPrompts(std::string first, const std::string& second) {
+   if (first.empty()) {
+      return second;
+   }
+
+   if (!second.empty()) {
+      first += '\n';
+      first += second;
+   }
+
+   return first;
+}
 
 } // namespace
+
+std::string VehicleControlLabels::SteeringPrompt() const {
+   return GameEngine::FormatInputPrompt(steer, "ドリフト");
+}
+
+std::string VehicleControlLabels::JumpPrompt() const {
+   return GameEngine::FormatInputPrompt(jump, "ジャンプ");
+}
+
+std::string VehicleControlLabels::GroundPrompts() const {
+   return JoinPrompts(SteeringPrompt(), JumpPrompt());
+}
+
+std::string VehicleControlLabels::AirPrompts() const {
+   return JoinPrompts(GameEngine::FormatInputPrompt(pitch, "ピッチ"), GameEngine::FormatInputPrompt(roll, "ロール"));
+}
+
+VehicleControlLabels VehicleInputComponent::DescribeControlLabels(std::uint32_t playerSlot) {
+   using GameEngine::EngineContext;
+   return {.steer = EngineContext::DescribeInputActionBindings(kGameplayActionMap, kSteerAction, playerSlot),
+      .pitch = EngineContext::DescribeInputActionBindings(kGameplayActionMap, kPitchAction, playerSlot),
+      .roll = EngineContext::DescribeInputActionBindings(kGameplayActionMap, kRollAction, playerSlot),
+      .jump = EngineContext::DescribeInputActionBindings(kGameplayActionMap, kJumpAction, playerSlot),
+      .confirm = EngineContext::DescribeInputActionBindings(kUiActionMap, kConfirmAction, playerSlot)};
+}
 
 const GameEngine::InputActionState& VehicleInputComponent::GetActionState(const char* actionId) const {
    static const GameEngine::InputActionState emptyState{};
@@ -55,7 +95,8 @@ bool VehicleInputComponent::IsJumpTriggered() const {
 }
 
 bool VehicleInputComponent::IsConfirmTriggered() const {
-   return IsEnabled() && GameEngine::EngineContext::GetInputActionState("UI", "UI.Confirm", playerSlot).triggered;
+   return IsEnabled() &&
+          GameEngine::EngineContext::GetInputActionState(kUiActionMap, kConfirmAction, playerSlot).triggered;
 }
 
 void VehicleInputComponent::SetJumpEnabled(bool enabled) {

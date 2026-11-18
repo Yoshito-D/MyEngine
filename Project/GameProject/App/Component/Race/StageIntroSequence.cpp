@@ -6,6 +6,9 @@
 
 namespace App {
 namespace {
+constexpr float kLetterboxFadeInSeconds = 0.45f; ///< 黒帯が完全に表示されるまでの秒数。
+constexpr float kSkipHintFadeInSeconds = 0.25f;  ///< スキップ案内が完全に表示されるまでの秒数。
+
 bool IsValidPose(const GameEngine::CameraState& pose) {
    const auto& position = pose.transform.translation;
    const auto rotation = pose.transform.GetActiveQuaternion();
@@ -126,16 +129,27 @@ bool StageIntroSequence::Begin(const StageIntroSettings& settings) {
    return true;
 }
 
-StageIntroSequence::Frame StageIntroSequence::Advance(float deltaTime, bool skipRequested, bool sceneTransitioning) {
+StageIntroSequence::Frame StageIntroSequence::Advance(
+   float deltaTime, bool inputTriggered, bool skipTriggered, bool sceneTransitioning) {
    frame_.switchToCountdown = false;
    const float seconds = std::isfinite(deltaTime) ? std::max(deltaTime, 0.0f) : 0.0f;
 
-   if (skipRequested && !sceneTransitioning && !returningToCountdown_ && phase_ != Phase::Idle &&
-       phase_ != Phase::Complete) {
-      // カット間の明転中でも現在の暗転率から折り返し、スキップによる明るさの飛びを防ぐ。
-      returningToCountdown_ = true;
-      phase_ = Phase::FadingOut;
-      elapsed_ = frame_.opacity * settings_.fadeOutSeconds;
+   if (!sceneTransitioning && !frame_.completed && !returningToCountdown_) {
+      // 前のフレームまでに案内が表示済みの場合だけ受け付け、表示に使った入力の持ち越しを防ぐ。
+      if (skipTriggered && frame_.skipHintOpacity >= 1.0f && frame_.opacity < 1.0f) {
+         // カット間の明転中でも現在の暗転率から折り返し、スキップによる明るさの飛びを防ぐ。
+         returningToCountdown_ = true;
+         phase_ = Phase::FadingOut;
+         elapsed_ = frame_.opacity * settings_.fadeOutSeconds;
+      } else {
+         frame_.letterboxProgress = std::min(frame_.letterboxProgress + seconds / kLetterboxFadeInSeconds, 1.0f);
+         skipHintRequested_ = skipHintRequested_ || inputTriggered || skipTriggered;
+
+         // 文字を黒帯の内側に収めるため、黒帯の表示を完了してから案内を明転させる。
+         if (skipHintRequested_ && frame_.letterboxProgress >= 1.0f) {
+            frame_.skipHintOpacity = std::min(frame_.skipHintOpacity + seconds / kSkipHintFadeInSeconds, 1.0f);
+         }
+      }
    }
 
    switch (phase_) {
@@ -176,6 +190,9 @@ StageIntroSequence::Frame StageIntroSequence::Advance(float deltaTime, bool skip
 
          if (frame_.opacity >= 1.0f) {
             if (returningToCountdown_) {
+               // 通常構図への明転で黒帯と案内が見えないよう、完全な暗転中に外す。
+               frame_.letterboxProgress = 0.0f;
+               frame_.skipHintOpacity = 0.0f;
                frame_.switchToCountdown = true;
             } else {
                // ゴールの寄りから引きの構図への切り替えは、完全な黒のフレーム内だけで行う。
@@ -219,6 +236,7 @@ void StageIntroSequence::Reset() {
    frame_ = {};
    phase_ = Phase::Idle;
    elapsed_ = 0.0f;
+   skipHintRequested_ = false;
    returningToCountdown_ = false;
 }
 

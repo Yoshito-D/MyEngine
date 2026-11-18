@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <variant>
 #include <vector>
 #include <nlohmann/json.hpp>
@@ -96,6 +97,9 @@ struct InputBinding {
    /// @brief 種類と割り当て内容を表示用文字列へ変換する。
    std::string Describe() const;
 
+   /// @brief キー名・ボタン名・スティック方向をゲーム内の共通表記へ変換する。
+   std::string DescribeForPrompt() const;
+
    /// @brief 倍率と物理入力・軸成分が有効か調べる。
    bool IsValid() const;
 
@@ -121,6 +125,9 @@ struct InputBinding {
    /// @details 倍率は維持する。方向指定にはキーだけを許可し、全体指定ではキーとボタンを許可する。
    std::optional<InputBinding> Rebind(const InputPhysicalControl& control, std::optional<size_t> controlIndex) const;
 };
+
+/// @brief 操作案内を「入力：動作」の形式に整える。入力の割り当てがなければ空文字列を返す。
+std::string FormatInputPrompt(std::string_view binding, std::string_view action);
 
 /// @brief 再割り当てに利用できるキーまたはプレイヤー0のボタンの、新しい押下を一つ捕捉する。
 /// @param allowGamePad falseならキーだけを捕捉する。

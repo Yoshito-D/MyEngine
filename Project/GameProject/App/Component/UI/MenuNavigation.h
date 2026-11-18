@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
 namespace App {
@@ -22,6 +23,12 @@ public:
 
    /// @brief 利用可能な項目へ巡回し、選択が変わった場合trueを返す。
    bool Move(const MenuSelectionAnimationComponent& animation, std::int32_t direction);
+
+   /// @brief 先頭から指定した数までの項目で巡回し、選択が変わった場合trueを返す。
+   /// @param animation 項目の参照と有効状態を持つ演出コンポーネント。
+   /// @param direction 巡回する方向。0では移動しない。
+   /// @param optionLimit 先頭から選択候補に含める最大項目数。
+   bool Move(const MenuSelectionAnimationComponent& animation, std::int32_t direction, std::size_t optionLimit);
 
 private:
    std::int32_t selected_ = -1; ///< 選択中の項目。

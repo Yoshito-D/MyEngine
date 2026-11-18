@@ -43,6 +43,10 @@ public:
    void Run();
 
 protected:
+   /// @brief ランタイムのマウス入力方針を指定してエンジン基盤を初期化する。
+   /// @param gameplayMouseInputEnabled ゲーム内の入力にマウスを含めるか。
+   void InitializeEngine(bool gameplayMouseInputEnabled);
+
    /// @brief 生入力からUIを更新し、ゲーム入力の遮断とUI実時間を確定する。
    void UpdateUIFrame(bool runtimeUpdate, float uiDeltaTime);
 

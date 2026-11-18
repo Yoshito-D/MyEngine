@@ -443,6 +443,7 @@
             },
             {
                "data": {
+                  "settingsOnly": false,
                   "titleScene": "Title"
                },
                "enabled": true,
@@ -3522,7 +3523,7 @@
                            1.0,
                            1.0
                         ],
-                        "fillLightIntensity": 0.5299999713897705,
+                        "fillLightIntensity": 0.5199999809265137,
                         "lightingMode": 1,
                         "name": "GoalMaterial",
                         "ownership": "local",
@@ -3534,8 +3535,8 @@
                            1.0,
                            1.0
                         ],
-                        "rimLightIntensity": 2.9600000381469727,
-                        "rimLightPower": 1.7100000381469727,
+                        "rimLightIntensity": 1.6200000047683716,
+                        "rimLightPower": 1.159999966621399,
                         "shininess": 40.0,
                         "textureName": "colormap",
                         "uvTransform": [

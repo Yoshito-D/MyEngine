@@ -1,10 +1,12 @@
 #include "GameProject/App/Component/Title/TitleStartComponent.h"
 
 #include "GameProject/App/Component/UI/MenuSelectionAnimationComponent.h"
+#include "GameProject/App/Component/UI/PauseMenuComponent.h"
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Object/Component/Audio/AudioSourceComponent.h"
 #include "GameEngine/Object/Component/UI/UITextComponent.h"
 #include "GameEngine/Object/Object.h"
+#include "GameEngine/Scene/SceneWorld.h"
 #include <Windows.h>
 #include <cstddef>
 
@@ -14,6 +16,10 @@
 #endif
 
 namespace App {
+namespace {
+constexpr const char* kMainMenuLabels[] = {"はじめる", "設定", "やめる"};
+constexpr const char* kStartMenuLabels[] = {"チュートリアルから", "ステージから"};
+}
 
 TitleStartComponent::TitleStartComponent() {
    ConfigureStates();
@@ -28,6 +34,20 @@ void TitleStartComponent::ConfigureStates() {
          stateMachine_.RequestState(State::StartSelection);
       }
    }});
+   stateMachine_.AddState(State::OpeningSettings, {.onUpdate = [this](float) {
+      if (GetAnimation()->IsReactionComplete()) {
+         OpenSettings();
+      }
+   }});
+   stateMachine_.AddState(State::Settings, {.onUpdate =
+                                                 [this](float) {
+                                                    const auto* menu = GetOwner().GetComponent<PauseMenuComponent>();
+
+                                                    if (!menu || !menu->IsSettingsVisible()) {
+                                                       stateMachine_.RequestState(State::Main);
+                                                    }
+                                                 },
+                                              .onExit = [this]() { RestoreTitleText(); }});
    stateMachine_.AddState(State::Quitting, {.onUpdate = [this](float) {
       if (GetAnimation()->IsReactionComplete()) {
          stateMachine_.RequestState(State::Exiting);
@@ -39,15 +59,21 @@ void TitleStartComponent::ConfigureStates() {
       GameEngine::EngineContext::ChangeScene(scene);
    }});
    stateMachine_.AddState(State::Exiting, {.onEnter = [this]() { ExitApplication(); }});
-   stateMachine_.SetTransitionRule(State::Main, {State::OpeningStartMenu, State::Quitting});
+   stateMachine_.SetTransitionRule(State::Main, {State::OpeningStartMenu, State::OpeningSettings, State::Quitting});
    stateMachine_.SetTransitionRule(State::StartSelection, {State::Main, State::StartingScene});
    stateMachine_.SetTransitionRule(State::OpeningStartMenu, {State::StartSelection});
+   stateMachine_.SetTransitionRule(State::OpeningSettings, {State::Settings, State::Main});
+   stateMachine_.SetTransitionRule(State::Settings, {State::Main});
    stateMachine_.SetTransitionRule(State::Quitting, {State::Exiting});
    stateMachine_.SetTransitionRule(State::StartingScene, {});
    stateMachine_.SetTransitionRule(State::Exiting, {});
-   stateMachine_.SetTransitionCallback([this](State, State next) {
+   stateMachine_.SetTransitionCallback([this](State previous, State next) {
       // 初期Startでは表示を変更せず、メニュー間の移動時だけ表示演出を開始する。
       if (next == State::Main || next == State::StartSelection) {
+         if (previous != State::Settings && previous != State::OpeningSettings) {
+            navigation_.Select(-1);
+         }
+
          RevealMenu(*GetAnimation());
       }
    });
@@ -58,6 +84,10 @@ void TitleStartComponent::OnSceneLoaded(GameEngine::SceneWorld&) {
    navigation_.Select(-1);
    navigation_.ResetInput();
    stateMachine_.Start(State::Main);
+}
+
+void TitleStartComponent::OnDetach() {
+   RestoreTitleText();
 }
 
 MenuSelectionAnimationComponent* TitleStartComponent::GetAnimation() {
@@ -75,16 +105,18 @@ void TitleStartComponent::Update(float deltaTime) {
 }
 
 void TitleStartComponent::UpdateMainMenu() {
+   constexpr State kActions[] = {State::OpeningStartMenu, State::OpeningSettings, State::Quitting};
+   static_assert(std::size(kActions) == std::size(kMainMenuLabels));
    auto* animation = GetAnimation();
 
-   if (ReadMenuInput(*animation, false) != MenuInput::Confirm || !ConfirmSelection(*animation)) return;
+   if (ReadMenuInput(*animation) != MenuInput::Confirm || !ConfirmSelection(*animation)) return;
 
-   stateMachine_.RequestState(navigation_.GetSelectedIndex() == 0 ? State::OpeningStartMenu : State::Quitting);
+   stateMachine_.RequestState(kActions[navigation_.GetSelectedIndex()]);
 }
 
 void TitleStartComponent::UpdateStartSelection() {
    auto* animation = GetAnimation();
-   const auto input = ReadMenuInput(*animation, true);
+   const auto input = ReadMenuInput(*animation);
 
    if (input == MenuInput::Cancel) {
       if (auto* audioSource = GetOwner().GetComponent<GameEngine::AudioSourceComponent>()) {
@@ -105,25 +137,52 @@ void TitleStartComponent::UpdateStartSelection() {
    stateMachine_.RequestState(State::StartingScene);
 }
 
-TitleStartComponent::MenuInput TitleStartComponent::ReadMenuInput(
-   MenuSelectionAnimationComponent& animation, bool allowCancel) {
+void TitleStartComponent::OpenSettings() {
+   auto* menu = GetOwner().GetComponent<PauseMenuComponent>();
+
+   if (!menu || !menu->OpenSettings()) {
+      stateMachine_.RequestState(State::Main);
+      return;
+   }
+
+   // 画面が重なる間はタイトル名を隠し、閉じたときに元の不透明度を戻す。
+   if (auto* text = GetTitleText()) {
+      titleOpacity_ = text->GetStyle().color.w;
+      text->SetOpacity(0.0f);
+   }
+
+   stateMachine_.RequestState(State::Settings);
+}
+
+GameEngine::UITextComponent* TitleStartComponent::GetTitleText() {
+   auto* world = GetOwner().GetWorld();
+   auto* object = world ? world->FindObjectById(titleTextId_) : nullptr;
+   return object ? object->GetComponent<GameEngine::UITextComponent>() : nullptr;
+}
+
+void TitleStartComponent::RestoreTitleText() {
+   if (!titleOpacity_) return;
+
+   if (auto* text = GetTitleText()) {
+      text->SetOpacity(*titleOpacity_);
+   }
+
+   titleOpacity_.reset();
+}
+
+TitleStartComponent::MenuInput TitleStartComponent::ReadMenuInput(MenuSelectionAnimationComponent& animation) {
    // 表示される前の項目への決定や、押し続けによる次画面への入力持ち越しを防ぐ。
    if (animation.IsRevealing()) {
       return MenuInput::None;
    }
 
+   const auto optionCount = GetMenuLabels().size();
+
    // 初回の選択は全コンポーネントの参照解決後に行い、ロード時の通知順序に依存させない。
    if (navigation_.GetSelectedIndex() < 0 ||
        !animation.IsOptionAvailable(static_cast<std::size_t>(navigation_.GetSelectedIndex()))) {
       navigation_.Select(-1);
-
-      // 上側の項目を優先しつつ、欠けている場合は利用可能な項目へフォールバックする。
-      for (std::int32_t index = 0; index < 2; ++index) {
-         if (animation.IsOptionAvailable(static_cast<std::size_t>(index))) {
-            navigation_.Select(index);
-            break;
-         }
-      }
+      navigation_.Move(animation, 1, optionCount);
 
       // 表示できる項目がないままシーン遷移だけを受け付けない。
       if (navigation_.GetSelectedIndex() < 0) {
@@ -136,13 +195,13 @@ TitleStartComponent::MenuInput TitleStartComponent::ReadMenuInput(
    RefreshSelectionText(animation);
    const auto& cancelAction = GameEngine::EngineContext::GetInputActionState("UI", "UI.Cancel", 0);
 
-   if (allowCancel && cancelAction.triggered) {
+   if (stateMachine_.GetCurrentState() == State::StartSelection && cancelAction.triggered) {
       return MenuInput::Cancel;
    }
 
    const auto& navigationAction = GameEngine::EngineContext::GetInputActionState("UI", "UI.Navigate", 0);
    const auto navigationDirection = navigation_.ReadDirection(navigationAction.value.x);
-   if (navigation_.Move(animation, navigationDirection)) {
+   if (navigation_.Move(animation, navigationDirection, optionCount)) {
       animation.Select(navigation_.GetSelectedIndex());
       RefreshSelectionText(animation);
 
@@ -177,7 +236,7 @@ void TitleStartComponent::ExitApplication() {
 }
 
 nlohmann::json TitleStartComponent::Serialize() const {
-   return nlohmann::json{{"tutorialScene", tutorialScene_}, {"stageScene", stageScene_}};
+   return {{"tutorialScene", tutorialScene_}, {"stageScene", stageScene_}, {"titleTextId", titleTextId_}};
 }
 
 void TitleStartComponent::Deserialize(const nlohmann::json& data) {
@@ -190,24 +249,39 @@ void TitleStartComponent::Deserialize(const nlohmann::json& data) {
    if (data.contains("stageScene") && data.at("stageScene").is_string()) {
       stageScene_ = data.at("stageScene").get<std::string>();
    }
+
+   if (data.contains("titleTextId") && data.at("titleTextId").is_string()) {
+      titleTextId_ = data.at("titleTextId").get<std::string>();
+   }
 }
 
 void TitleStartComponent::RevealMenu(MenuSelectionAnimationComponent& animation) {
-   navigation_.Select(-1);
    animation.Hide();
-   navigation_.Move(animation, 1);
-   animation.Reveal(navigation_.GetSelectedIndex());
+
+   if (!animation.Reveal(navigation_.GetSelectedIndex())) {
+      navigation_.Select(-1);
+      navigation_.Move(animation, 1, GetMenuLabels().size());
+      animation.Reveal(navigation_.GetSelectedIndex());
+   }
+
    RefreshSelectionText(animation);
 }
 
-void TitleStartComponent::RefreshSelectionText(MenuSelectionAnimationComponent& animation) {
-   const bool mainMenu = stateMachine_.GetCurrentState() == State::Main;
-   const char* labels[] = {mainMenu ? "はじめる" : "チュートリアルから", mainMenu ? "やめる" : "ステージから"};
+std::span<const char* const> TitleStartComponent::GetMenuLabels() const {
+   if (stateMachine_.GetCurrentState() == State::StartSelection) {
+      return kStartMenuLabels;
+   }
 
-   for (std::int32_t index = 0; index < 2; ++index) {
-      if (auto* text = animation.GetOptionText(static_cast<std::size_t>(index))) {
+   return kMainMenuLabels;
+}
+
+void TitleStartComponent::RefreshSelectionText(MenuSelectionAnimationComponent& animation) {
+   const auto labels = GetMenuLabels();
+
+   for (std::size_t index = 0; index < labels.size(); ++index) {
+      if (auto* text = animation.GetOptionText(index)) {
          text->SetText(labels[index]);
-         const float brightness = navigation_.GetSelectedIndex() == index ? 1.0f : 0.45f;
+         const float brightness = navigation_.GetSelectedIndex() == static_cast<std::int32_t>(index) ? 1.0f : 0.45f;
          auto color = text->GetStyle().color;
          color.x = brightness;
          color.y = brightness;
@@ -225,10 +299,12 @@ void TitleStartComponent::DrawInspector() {
 
    GameEngine::EditorUI::SceneReference("Tutorial Scene", tutorialScene_);
    GameEngine::EditorUI::SceneReference("Stage Scene", stageScene_);
+   GameEngine::EditorUI::ObjectReference("Title Text", titleTextId_, "UITextComponent");
    const auto state = stateMachine_.GetCurrentState();
    const bool startMenu = state == State::StartSelection || state == State::StartingScene;
    const bool requested = state == State::StartingScene || state == State::Exiting;
-   ImGui::Text("Menu: %s", startMenu ? "Start Selection" : "Main");
+   const bool settings = state == State::OpeningSettings || state == State::Settings;
+   ImGui::Text("Menu: %s", startMenu ? "Start Selection" : (settings ? "Settings" : "Main"));
    ImGui::Text("Selected Option: %d", navigation_.GetSelectedIndex());
    ImGui::Text("Start Requested: %s", requested ? "true" : "false");
 }

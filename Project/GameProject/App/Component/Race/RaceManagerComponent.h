@@ -62,7 +62,7 @@ public:
    /// @param sceneWorld 参照先を検索するシーン。
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
-   /// @brief 一時演出を中止し、生存する対象の操作・カメラ・暗転を解除する。
+   /// @brief 一時演出を中止し、生存する対象の操作・カメラと暗転・黒帯を元に戻す。
    void OnDisable() override;
 
    /// @brief スタートゲート通過を通知する
@@ -185,7 +185,6 @@ private:
    bool restartAfterUpdate_ = false;                    ///< 状態更新中に要求された再開始をコールバック終了後に行うか。
    bool showStartBannerOnEntry_ = true;                 ///< Runningへの入場時にSTART表示を開始するか。
    StageIntroSettings introSettings_;                   ///< ステージ固有の俯瞰構図と再生時間。
-   bool introSkipArmed_ = false;                        ///< 導入開始後に決定入力の解放を確認したか。
    RacePresentation presentation_;                      ///< 操作停止とカメラ演出の所有者。
 };
 

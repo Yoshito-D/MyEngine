@@ -189,8 +189,8 @@ bool RacePresentation::BeginIntro(GameEngine::CinemachineBrain* brain, const Sta
    return true;
 }
 
-StageIntroSequence::Frame RacePresentation::UpdateIntro(
-   GameEngine::CinemachineBrain* brain, float deltaTime, bool skipRequested, bool sceneTransitioning) {
+StageIntroSequence::Frame RacePresentation::UpdateIntro(GameEngine::CinemachineBrain* brain, float deltaTime,
+   bool inputTriggered, bool skipTriggered, bool sceneTransitioning) {
    auto* introCamera = world_ ? world_->FindVirtualCamera(introCameraId_) : nullptr;
    auto* countdownCamera = world_ ? world_->FindVirtualCamera(countdownCameraId_) : nullptr;
 
@@ -200,7 +200,7 @@ StageIntroSequence::Frame RacePresentation::UpdateIntro(
       return {};
    }
 
-   const auto frame = introSequence_.Advance(deltaTime, skipRequested, sceneTransitioning);
+   const auto frame = introSequence_.Advance(deltaTime, inputTriggered, skipTriggered, sceneTransitioning);
    introCamera->SetState(frame.camera);
 
    if (frame.switchToCountdown) {

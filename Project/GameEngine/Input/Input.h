@@ -189,6 +189,9 @@ public:
    /// @brief 入力システムの更新処
    void Update();
 
+   /// @brief キーや指定ゲームパッドの操作開始を検出する。includeMouseがtrueならマウスの押下・ホイールも対象にする。
+   bool HasInputTrigger(uint32_t gamePadIndex, bool includeMouse) const;
+
    /// @brief キーが押されているか
    /// @param key キーコード（DIK_で始まる値）
    /// @return キーが押されている場合はtrue

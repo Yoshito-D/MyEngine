@@ -96,7 +96,6 @@ private:
 
    void ReadParameters(const nlohmann::json& data);
    bool HasRequiredReferences() const;
-   bool IsGamepadConnected() const;
    bool IsOnTargetPlanet() const;
    void ConfigurePhases();
    void RegisterPhase(Phase phase, PhaseSettings settings, GameEngine::StateMachine<Phase>::State state);

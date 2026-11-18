@@ -78,7 +78,8 @@ void SaveLastEditorSceneName(const std::string& sceneName) {
 #endif
 
 void Game::Initialize() {
-   Framework::Initialize();
+   // ランタイムの操作はキーボードとゲームパッドで受け付ける。
+   InitializeEngine(false);
 
    // シーンの音声を開始する前に、前回保存したユーザー音量を復元する。
    if (auto* audio = GameEngine::EngineContext::GetAudio()) {

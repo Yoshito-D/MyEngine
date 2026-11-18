@@ -6,12 +6,34 @@
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/Types/Vector2.h"
 #include <cstdint>
+#include <string>
 
 namespace GameEngine {
 struct InputActionState;
 }
 
 namespace App {
+
+/// @brief 車両操作と決定に現在割り当てられているゲーム内案内用の入力名。
+struct VehicleControlLabels {
+   std::string steer;   ///< 左右の旋回操作。
+   std::string pitch;   ///< 空中での前後姿勢操作。
+   std::string roll;    ///< 空中での左右姿勢操作。
+   std::string jump;    ///< ジャンプ操作。
+   std::string confirm; ///< 説明などを進める決定操作。
+
+   /// @brief 旋回と持続旋回によるドリフトの共通案内を返す。
+   std::string SteeringPrompt() const;
+
+   /// @brief ジャンプ操作の共通案内を返す。
+   std::string JumpPrompt() const;
+
+   /// @brief 地上の操作案内を、割り当てが存在する行だけにまとめる。
+   std::string GroundPrompts() const;
+
+   /// @brief 空中の操作案内を、割り当てが存在する行だけにまとめる。
+   std::string AirPrompts() const;
+};
 
 /// @brief 車両と追従カメラが利用するゲーム固有入力を提供するコンポーネント
 /// @details 物理キーやパッド番号を制御ロジックから隠し、アクションIDだけをこの境界で管理する。
@@ -51,6 +73,9 @@ public:
 
    /// @brief 決定ボタンがこのフレームに押されたかを同じプレイヤースロットで取得する。
    bool IsConfirmTriggered() const;
+
+   /// @brief 指定スロットの割り当てと接続状態から、車両操作と決定の入力名を取得する。
+   static VehicleControlLabels DescribeControlLabels(std::uint32_t playerSlot);
 
    /// @brief ジャンプ入力を許可し、再許可時はボタンを離すまで入力を保留する。
    void SetJumpEnabled(bool enabled);

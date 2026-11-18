@@ -364,6 +364,7 @@
             },
             {
                "data": {
+                  "settingsOnly": false,
                   "titleScene": "Title"
                },
                "enabled": true,
@@ -1382,7 +1383,7 @@
                            1.0,
                            1.0
                         ],
-                        "rimLightIntensity": 0.0,
+                        "rimLightIntensity": 1.0299999713897705,
                         "rimLightPower": 4.0,
                         "shininess": 40.0,
                         "textureName": "colormap",
@@ -2439,7 +2440,7 @@
                   ],
                   "screenAnchor": "TopCenter",
                   "sortingOrder": 200,
-                  "text": "SPACE キー：次へ"
+                  "text": ""
                },
                "enabled": true,
                "typeName": "UITextComponent"

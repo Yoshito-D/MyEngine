@@ -38,6 +38,8 @@ public:
    struct Frame {
       GameEngine::CameraState camera; ///< 導入専用カメラへ適用する構図。
       float opacity = 0.0f;           ///< 0で通常表示、1で完全な黒。
+      float letterboxProgress = 0.0f; ///< 黒帯の表示進捗。0で非表示、1で全表示。
+      float skipHintOpacity = 0.0f;   ///< スキップ案内の不透明度（0～1）。
       bool switchToCountdown = false; ///< このフレームの黒画面内で通常カメラへ切り替える。
       bool completed = true;          ///< 明転が完了し、カウントダウンを開始できるか。
    };
@@ -45,13 +47,14 @@ public:
    /// @brief 有効な設定を複製し、ゴール紹介から再生する。不正設定ならfalseを返す。
    bool Begin(const StageIntroSettings& settings);
 
-   /// @brief 時間とスキップ要求を進める。入場中はゴール紹介の始点を保持し、スキップでは暗転して全カットを省略する。
+   /// @brief 入場中はゴール紹介の始点を保持し、案内表示後のスキップ操作では暗転して残りのカットを省略する。
    /// @param deltaTime ゲーム用の経過秒数。負・非有限の値は0として扱う。
-   /// @param skipRequested 全カットを省略してカウントダウンへ進む要求。
+   /// @param inputTriggered 案内の表示を開始する新しい操作があったか。
+   /// @param skipTriggered スキップに割り当てられた操作が押されたか。
    /// @param sceneTransitioning シーン入場などの遷移中か。trueの間はゴール紹介時間と俯瞰移動を進めない。
-   Frame Advance(float deltaTime, bool skipRequested, bool sceneTransitioning);
+   Frame Advance(float deltaTime, bool inputTriggered, bool skipTriggered, bool sceneTransitioning);
 
-   /// @brief 再生履歴と暗転率を初期化する。
+   /// @brief 再生履歴、暗転率、黒帯とスキップ案内の表示状態を初期化する。
    void Reset();
 
 private:
@@ -69,6 +72,7 @@ private:
    Frame frame_;                       ///< 最後に計算した描画状態。
    Phase phase_ = Phase::Idle;         ///< 導入内部の進行段階。
    float elapsed_ = 0.0f;              ///< 現在の段階で経過した秒数。
+   bool skipHintRequested_ = false;    ///< 導入中にスキップ案内の表示を要求されたか。
    bool returningToCountdown_ = false; ///< 次の暗転で通常カメラへ戻すか。falseなら俯瞰移動へ進む。
 };
 

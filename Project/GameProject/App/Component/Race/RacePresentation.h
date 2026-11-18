@@ -40,7 +40,8 @@ public:
 
    /// @brief 導入を更新し、黒画面内で通常カメラへ戻す。参照消失時は中止して完了を返す。
    StageIntroSequence::Frame UpdateIntro(
-      GameEngine::CinemachineBrain* brain, float deltaTime, bool skipRequested, bool sceneTransitioning);
+      GameEngine::CinemachineBrain* brain, float deltaTime, bool inputTriggered, bool skipTriggered,
+      bool sceneTransitioning);
 
    /// @brief 専用カメラを解除し、生存している対象の操作・演出・惑星色更新を復元する。
    void CancelIntro(GameEngine::CinemachineBrain* brain);
