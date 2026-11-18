@@ -10,7 +10,7 @@ class Audio;
 }
 
 namespace App {
-/// @brief チュートリアルとゲームで共通のポーズ画面を接続し、ユーザー音量設定を読み書きする。
+/// @brief ポーズ画面と、各シーンで共通の音量設定画面を接続する。
 class PauseMenuComponent final : public GameEngine::IObjectComponent {
 public:
    static constexpr const char* kTypeName = "PauseMenuComponent";
@@ -21,6 +21,12 @@ public:
    /// @param audio 読み込んだ0～1の音量を適用する音声サービス。
    /// @return 読み込みに成功した場合、または初回起動でファイルがない場合はtrue。
    static bool LoadAudioSettings(GameEngine::Audio& audio);
+
+   /// @brief 共通の音量設定を開く。表示要求が受理された場合はtrueを返す。
+   bool OpenSettings();
+
+   /// @brief 音量設定が表示中かを返す。閉じる演出中もtrueを返す。
+   bool IsSettingsVisible() const;
 
    /// @brief 保存と検索に使う型名を返す。
    const char* GetTypeName() const override { return kTypeName; }
@@ -37,14 +43,14 @@ public:
    /// @brief 生成した画面の削除を要求し、コールバックの参照先を解除する。
    void OnDetach() override;
 
-   /// @brief タイトルへの遷移先だけを保存する。実行中の画面IDと音量は保存しない。
+   /// @brief ポーズ時の遷移先と、設定画面だけを使うかどうかを保存する。
    nlohmann::json Serialize() const override;
 
-   /// @brief タイトルへの遷移先を復元する。
+   /// @brief ポーズ時の遷移先と、設定画面だけを使うかどうかを復元する。
    void Deserialize(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
-   /// @brief タイトルへの遷移先をシーン参照として編集する。
+   /// @brief ポーズメニューの使用有無とタイトルへの遷移先を編集する。
    void DrawInspector() override;
 #endif
 
@@ -56,7 +62,6 @@ private:
 
    bool IsPresentationActive() const;
    bool CreatePauseScreen();
-   void OpenSettings();
    void CloseTopScreen();
    void RequestSceneChange(bool restart);
    void BindButton(const std::string& rootId, const char* key, std::function<void()> callback);
@@ -74,5 +79,6 @@ private:
    std::string selectionScreenId_;
    std::string selectedElementId_;
    std::string titleScene_ = "Title";
+   bool settingsOnly_ = false; ///< タイトルではポーズ入力を受け付けず、音量設定だけを表示する。
 };
 }

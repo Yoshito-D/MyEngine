@@ -84,7 +84,7 @@ const bool kRegisteredAppComponents[] = {
    RegisterAppComponent<App::TitleStartComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
    RegisterAppComponent<App::MenuSelectionAnimationComponent>(
       GameEngine::ObjectType::Generic | GameEngine::ObjectType::UIText),
-   RegisterAppComponent<App::PauseMenuComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Generic)),
+   RegisterAppComponent<App::PauseMenuComponent>(GameEngine::ObjectType::Generic | GameEngine::ObjectType::UIText),
    RegisterAppComponent<App::TutorialProgressComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
    RegisterAppComponent<App::VehicleAirController>(),
    RegisterAppComponent<App::VehicleAudioController>(),

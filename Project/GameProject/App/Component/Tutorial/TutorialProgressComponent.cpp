@@ -97,7 +97,8 @@ void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld
 void TutorialProgressComponent::UpdatePresentation(float deltaTime) {
    TutorialGuideState state;
    state.phase = GetPhase();
-   state.gamepadConnected = IsGamepadConnected();
+   const auto playerSlot = vehicleInput_ ? vehicleInput_->DescribeSettings().playerSlot : 0u;
+   state.controls = VehicleInputComponent::DescribeControlLabels(playerSlot);
    state.miniTurboCount = miniTurboCount_;
    state.canFireMiniTurbo = vehicleEvents_ && vehicleEvents_->GetSnapshot().miniTurboReady;
    state.isDrifting = vehicleEvents_ && vehicleEvents_->GetSnapshot().isDrifting;
@@ -122,10 +123,6 @@ bool TutorialProgressComponent::HasRequiredReferences() const {
           targetPlanet_->GetComponent<SphericalGravityAttractor>() &&
           goalObject_->GetComponent<GameEngine::TransformComponent>() &&
           goalObject_->GetComponent<GameEngine::TriggerVolumeComponent>();
-}
-
-bool TutorialProgressComponent::IsGamepadConnected() const {
-   return vehicleInput_ && GameEngine::EngineContext::IsGamePadConnected(vehicleInput_->DescribeSettings().playerSlot);
 }
 
 bool TutorialProgressComponent::IsOnTargetPlanet() const {

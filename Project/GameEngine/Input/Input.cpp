@@ -100,6 +100,51 @@ void Input::Update() {
    GamePadUpdate();
 }
 
+bool Input::HasInputTrigger(uint32_t gamePadIndex, bool includeMouse) const {
+   for (size_t key = 0; key < std::size(key_); ++key) {
+      if ((key_[key] & kPressedStateMask) && !(prevKey_[key] & kPressedStateMask)) {
+         return true;
+      }
+   }
+
+   if (includeMouse) {
+      for (size_t button = 0; button < std::size(mouseState_.rgbButtons); ++button) {
+         if ((mouseState_.rgbButtons[button] & kPressedStateMask) &&
+             !(prevMouseState_.rgbButtons[button] & kPressedStateMask)) {
+            return true;
+         }
+      }
+
+      if (GetMouseWheelDelta() != 0) {
+         return true;
+      }
+   }
+
+   if (gamePadIndex >= std::size(gamePadState_)) {
+      return false;
+   }
+
+   const auto& current = gamePadState_[gamePadIndex].Gamepad;
+   const auto& previous = prevGamePadState_[gamePadIndex].Gamepad;
+
+   // デッドゾーンを越えた瞬間を拾い、入力の持ち越しやスティックの微小な揺れを除く。
+   const auto stickTriggered = [](SHORT x, SHORT y, SHORT previousX, SHORT previousY, SHORT deadZone) {
+      const auto radius = static_cast<float>(deadZone);
+      return std::hypot(static_cast<float>(x), static_cast<float>(y)) > radius &&
+             std::hypot(static_cast<float>(previousX), static_cast<float>(previousY)) <= radius;
+   };
+
+   return (current.wButtons & ~previous.wButtons) != 0 ||
+          (current.bLeftTrigger > XINPUT_GAMEPAD_TRIGGER_THRESHOLD &&
+             previous.bLeftTrigger <= XINPUT_GAMEPAD_TRIGGER_THRESHOLD) ||
+          (current.bRightTrigger > XINPUT_GAMEPAD_TRIGGER_THRESHOLD &&
+             previous.bRightTrigger <= XINPUT_GAMEPAD_TRIGGER_THRESHOLD) ||
+          stickTriggered(current.sThumbLX, current.sThumbLY, previous.sThumbLX, previous.sThumbLY,
+             XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE) ||
+          stickTriggered(current.sThumbRX, current.sThumbRY, previous.sThumbRX, previous.sThumbRY,
+             XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
+}
+
 void Input::KeyboardUpdate() {
    // 読み込み前に現在値を前フレームへ退避する。Acquire/GetDeviceStateが失敗した場合は
    // クリア済み状態が残り、フォーカス喪失を「全キー解放」として安全に扱える。

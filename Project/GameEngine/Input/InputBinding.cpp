@@ -149,6 +149,21 @@ auto KeyFields(KeyAxis2DInputBinding& data) {
 }
 
 template <class Payload> struct KeyboardPolicy {
+   static std::string DescribeForPrompt(Payload data) {
+      std::string label;
+
+      for (const auto& field : KeyFields(data)) {
+         if (!label.empty()) {
+            label += " / ";
+         }
+
+         label += ToString(*field.second);
+         label += "キー";
+      }
+
+      return label;
+   }
+
    static json Write(Payload data) {
       json result = json::object();
 
@@ -275,6 +290,29 @@ template <> struct BindingPolicy<GamePadButtonInputBinding> {
       return std::string("GamePad ") + ToString(data.button);
    }
 
+   static std::string DescribeForPrompt(const GamePadButtonInputBinding& data) {
+      switch (data.button) {
+         case GamePadButton::DPadUp:
+            return "方向キー上";
+         case GamePadButton::DPadDown:
+            return "方向キー下";
+         case GamePadButton::DPadLeft:
+            return "方向キー左";
+         case GamePadButton::DPadRight:
+            return "方向キー右";
+         case GamePadButton::LeftThumb:
+            return "左スティック押し込み";
+         case GamePadButton::RightThumb:
+            return "右スティック押し込み";
+         case GamePadButton::LeftShoulder:
+            return "LBボタン";
+         case GamePadButton::RightShoulder:
+            return "RBボタン";
+         default:
+            return std::string(ToString(data.button)) + "ボタン";
+      }
+   }
+
    static std::vector<InputPhysicalControl> Controls(const GamePadButtonInputBinding& data) {
       return {{InputPhysicalControl::Type::GamePadButton, static_cast<std::uint32_t>(data.button)}};
    }
@@ -319,6 +357,18 @@ template <class Payload, bool IsLeft> struct StickPolicy {
 
    static std::string Describe(const Payload& data) {
       return std::string(IsLeft ? "Left Stick " : "Right Stick ") + ToString(data.axis);
+   }
+
+   static std::string DescribeForPrompt(const Payload& data) {
+      std::string label = IsLeft ? "左スティック" : "右スティック";
+
+      if (data.axis == InputBindingAxis::X) {
+         label += "左右";
+      } else if (data.axis == InputBindingAxis::Y) {
+         label += "上下";
+      }
+
+      return label;
    }
 
    static std::vector<InputPhysicalControl> Controls(const Payload&) {
@@ -413,6 +463,22 @@ std::optional<InputBinding> InputBinding::Deserialize(const nlohmann::json& data
 std::string InputBinding::Describe() const {
    return std::visit(
       [](const auto& data) { return BindingPolicy<std::decay_t<decltype(data)>>::Describe(data); }, source);
+}
+
+std::string InputBinding::DescribeForPrompt() const {
+   return std::visit(
+      [](const auto& data) { return BindingPolicy<std::decay_t<decltype(data)>>::DescribeForPrompt(data); }, source);
+}
+
+std::string FormatInputPrompt(std::string_view binding, std::string_view action) {
+   if (binding.empty()) {
+      return {};
+   }
+
+   std::string prompt(binding);
+   prompt += "：";
+   prompt += action;
+   return prompt;
 }
 
 bool InputBinding::IsValid() const {

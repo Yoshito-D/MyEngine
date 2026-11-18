@@ -20,6 +20,9 @@
 
 namespace {
 constexpr std::array<const char*, 4> kCameraBlendEasingNames = {"Linear", "EaseIn", "EaseOut", "EaseInOut"};
+constexpr const char* kIntroInputMap = "UI";
+constexpr const char* kIntroSkipAction = "UI.Confirm";
+constexpr std::uint32_t kIntroInputSlot = 0;
 }
 
 namespace App {
@@ -58,7 +61,7 @@ void RaceManagerComponent::ConfigureStates() {
                }
 
                presentation_.CancelIntro(GameEngine::EngineContext::GetActiveBrain());
-               GameEngine::EngineContext::SetCameraTransitionOpacity(0.0f);
+               GameEngine::EngineContext::SetCameraTransition(0.0f, 0.0f);
             }});
    stateMachine_.AddState(State::Countdown, {.onEnter = [this]() { EnterCountdown(); },
                                                .onUpdate =
@@ -111,17 +114,24 @@ void RaceManagerComponent::UpdateIntro(float deltaTime) {
       return;
    }
 
-   // 車両入力はロック中なので、UIアクションを直接参照する。入場前の決定は持ち越さない。
-   const auto& confirm = GameEngine::EngineContext::GetInputActionState("UI", "UI.Confirm", 0);
+   // 車両入力はロック中なので、通知は物理入力の押下とUIの決定アクションから受け取る。
+   using GameEngine::EngineContext;
+   const auto& confirm = EngineContext::GetInputActionState(kIntroInputMap, kIntroSkipAction, kIntroInputSlot);
+   auto* brain = EngineContext::GetActiveBrain();
+   const auto frame = presentation_.UpdateIntro(brain, deltaTime, EngineContext::HasInputTrigger(kIntroInputSlot),
+      confirm.triggered, EngineContext::IsSceneTransitioning());
 
-   if (!confirm.held) {
-      introSkipArmed_ = true;
-   }
-
-   auto* brain = GameEngine::EngineContext::GetActiveBrain();
-   const auto frame = presentation_.UpdateIntro(
-      brain, deltaTime, introSkipArmed_ && confirm.triggered, GameEngine::EngineContext::IsSceneTransitioning());
-   GameEngine::EngineContext::SetCameraTransitionOpacity(frame.opacity);
+   constexpr std::uint32_t kIntroSkipFontSize = 24; ///< スキップ案内の文字サイズ（基準UIのピクセル）。
+   GameEngine::TextStyle style;
+   style.fontId = "851Gkktt";
+   style.fontSize = kIntroSkipFontSize;
+   style.color.w = frame.skipHintOpacity;
+   const auto bindings =
+      frame.skipHintOpacity > 0.0f
+         ? EngineContext::DescribeInputActionBindings(kIntroInputMap, kIntroSkipAction, kIntroInputSlot)
+         : std::string{};
+   const auto caption = GameEngine::FormatInputPrompt(bindings, "スキップ");
+   EngineContext::SetCameraTransition(frame.opacity, frame.letterboxProgress, caption, style);
 
    if (frame.switchToCountdown && useCountdownCameraPose_) {
       presentation_.ApplyCountdownCameraPose(
@@ -166,7 +176,7 @@ void RaceManagerComponent::OnDisable() {
    presentation_.RestoreEffects();
    presentation_.SetPlayerLocked(false);
    presentation_.SetCameraMotionPaused(brain, false, 0.0f, startCameraBlendEasing_);
-   GameEngine::EngineContext::SetCameraTransitionOpacity(0.0f);
+   GameEngine::EngineContext::SetCameraTransition(0.0f, 0.0f);
    stateMachine_.Stop();
    runtimeInitialized_ = false;
    previewState_ = State::Waiting;
@@ -238,7 +248,6 @@ void RaceManagerComponent::Restart() {
    sceneChangeRequested_ = false;
    restartRequested_ = false;
    restartAfterUpdate_ = false;
-   introSkipArmed_ = false;
    showStartBannerOnEntry_ = startMode_ != StartMode::Immediate;
 
    // 編集時の読み込みは状態の準備だけに留め、カメラやプレイヤーへ実行時の変更を加えない。
@@ -248,7 +257,7 @@ void RaceManagerComponent::Restart() {
 
    StopRaceAudio();
    presentation_.CancelIntro(GameEngine::EngineContext::GetActiveBrain());
-   GameEngine::EngineContext::SetCameraTransitionOpacity(0.0f);
+   GameEngine::EngineContext::SetCameraTransition(0.0f, 0.0f);
    presentation_.RestoreEffects();
    const State initial = startMode_ == StartMode::Immediate ? State::Running
                          : startMode_ == StartMode::Countdown
@@ -401,7 +410,7 @@ void RaceManagerComponent::ReadParameters(const nlohmann::json& data, [[maybe_un
 void RaceManagerComponent::EnterCountdown() {
    auto* brain = GameEngine::EngineContext::GetActiveBrain();
    presentation_.CancelIntro(brain);
-   GameEngine::EngineContext::SetCameraTransitionOpacity(0.0f);
+   GameEngine::EngineContext::SetCameraTransition(0.0f, 0.0f);
    presentation_.RestoreEffects();
    countdownRemaining_ = countdownSeconds_;
 

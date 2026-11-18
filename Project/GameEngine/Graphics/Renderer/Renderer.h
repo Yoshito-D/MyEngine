@@ -75,7 +75,7 @@ public:
    /// @brief 描画先と共通UIの論理ビューポート寸法を返す。
    Vector2 GetUIViewportSize() const { return uiViewportSize_; }
 
-   /// @brief 生入力をGameビューの画像矩形へ変換する。ゲーム用入力フィルターを迂回する。
+   /// @brief ゲーム内のマウス設定を適用してUI入力を作る。モーダル画面によるゲーム入力の遮断は迂回する。
    UIInputFrame ReadUIInput(Input& input, InputActionService& actions);
 
    /// @brief フレームの開始時の処理
@@ -155,9 +155,13 @@ public:
    /// @param opacity 0で通常表示、1で完全な黒
    void SetSceneTransitionOpacity(float opacity);
 
-   /// @brief カメラ演出の暗転率を設定し、シーン遷移用との最大値を最終画像へ適用する。
+   /// @brief カメラ演出の暗転、黒帯、案内を設定する。
    /// @param opacity 0で通常表示、1で完全な黒。非有限値は0として扱う。
-   void SetCameraTransitionOpacity(float opacity);
+   /// @param letterboxProgress 0で黒帯を非表示、1で全表示。非有限値は0として扱う。
+   /// @param caption 下側の黒帯に表示する案内。空なら表示しない。
+   /// @param captionStyle 案内に使用するフォント、サイズ、色。
+   void SetCameraTransition(
+      float opacity, float letterboxProgress, std::string_view caption, const TextStyle& captionStyle);
 
    /// @brief オーバーレイより前の描画結果へ適用するぼかし強度を設定する。
    /// @param strength 0で無効、1で最大のぼかし。非有限値は0として扱う。
@@ -380,6 +384,7 @@ private:
    bool gameUIActive_ = false;
    bool gameUIWasPlaying_ = false; ///< Play開始時にGameタブへフォーカスを移すための前状態。
    void DrawManagedUI();
+   void DrawCameraLetterbox();
    Vector2 uiViewportSize_ = {
       static_cast<float>(Window::kUiReferenceWidth), static_cast<float>(Window::kUiReferenceHeight)};
 
@@ -408,6 +413,9 @@ private:
    SceneTransitionConstants* sceneTransitionConstants_ = nullptr; ///< 縦方向ぼかし・暗転用定数バッファの永続Map先。
    float sceneTransitionOpacity_ = 0.0f;                          ///< シーン遷移の暗転量。0で通常表示、1で完全な暗転。
    float cameraTransitionOpacity_ = 0.0f;                         ///< カメラ演出が所有する暗転量。
+   float letterboxProgress_ = 0.0f;                               ///< 黒帯の表示進捗（0～1）。
+   std::string letterboxCaption_;                                ///< 下側の黒帯に重ねる案内。
+   TextStyle letterboxCaptionStyle_;                              ///< 下側の黒帯に重ねる案内の表示設定。
 
    static constexpr size_t kBlurPassCount = 2; ///< 水平・垂直方向のぼかしを別々に実行するパス数。
    /// @brief シーン遷移の暗転定数とは独立した、オーバーレイの背景ぼかし専用の定数バッファ。

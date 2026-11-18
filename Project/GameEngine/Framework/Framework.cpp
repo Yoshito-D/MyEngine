@@ -22,6 +22,10 @@
 
 namespace GameEngine {
 void Framework::Initialize() {
+   InitializeEngine(true);
+}
+
+void Framework::InitializeEngine(bool gameplayMouseInputEnabled) {
    // 例外発生時にダンプを出力するハンドラを設定
    SetUnhandledExceptionFilter(ExportDump);
 
@@ -97,7 +101,7 @@ void Framework::Initialize() {
    // EngineContextの初期化
    std::unique_ptr<EngineContextInitializer> initializer = std::make_unique<EngineContextInitializer>();
    initializer->Initialize(device_.get(), input_.get(), inputActionService_.get(), audio_.get(), renderer_.get(),
-      assetManager_.get(), timeProfiler_.get(), cameraManager_.get(), lightManager_.get());
+      assetManager_.get(), timeProfiler_.get(), cameraManager_.get(), lightManager_.get(), gameplayMouseInputEnabled);
 }
 
 void Framework::BeginFrame() {
@@ -153,9 +157,13 @@ void Framework::UpdateUIFrame(bool runtimeUpdate, float uiDeltaTime) {
       for (std::uint32_t key = 0; key < kDirectInputKeyCount; ++key) {
          held = held || input_->IsKeyPressed(static_cast<std::uint8_t>(key));
       }
-      for (const auto button : {MouseButton::Left, MouseButton::Right, MouseButton::Middle}) {
-         held = held || input_->IsMousePressed(button);
+
+      if (EngineContext::IsGameplayMouseInputEnabled()) {
+         for (const auto button : {MouseButton::Left, MouseButton::Right, MouseButton::Middle}) {
+            held = held || input_->IsMousePressed(button);
+         }
       }
+
       waitForGameplayInputRelease_ = held;
    }
    EngineContext::SetUIFrameState(

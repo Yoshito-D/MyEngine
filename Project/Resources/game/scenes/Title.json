@@ -56,7 +56,8 @@
       "Skybox:Skybox",
       "UIText:TitleText",
       "UIText:StartPrompt",
-      "UIText:StageStartPrompt"
+      "UIText:SettingsPrompt",
+      "UIText:QuitPrompt"
    ],
    "objects": [
       {
@@ -483,7 +484,8 @@
                "data": {
                   "optionObjectIds": [
                      "UIText:StartPrompt",
-                     "UIText:StageStartPrompt"
+                     "UIText:SettingsPrompt",
+                     "UIText:QuitPrompt"
                   ],
                   "pulseDuration": 1.7999999523162842,
                   "pulseScale": 1.100000023841858,
@@ -500,10 +502,19 @@
             {
                "data": {
                   "stageScene": "GameTest",
+                  "titleTextId": "UIText:TitleText",
                   "tutorialScene": "Tutorial"
                },
                "enabled": true,
                "typeName": "TitleStartComponent"
+            },
+            {
+               "data": {
+                  "settingsOnly": true,
+                  "titleScene": "Title"
+               },
+               "enabled": true,
+               "typeName": "PauseMenuComponent"
             },
             {
                "data": {
@@ -553,7 +564,7 @@
          "components": [
             {
                "data": {
-                  "name": "StageStartPrompt"
+                  "name": "SettingsPrompt"
                },
                "enabled": true,
                "typeName": "ObjectNameComponent"
@@ -606,13 +617,80 @@
                   ],
                   "screenAnchor": "MiddleCenter",
                   "sortingOrder": 110,
+                  "text": "設定"
+               },
+               "enabled": true,
+               "typeName": "UITextComponent"
+            }
+         ],
+         "id": "UIText:SettingsPrompt",
+         "objectType": "UIText",
+         "parentId": ""
+      },
+      {
+         "components": [
+            {
+               "data": {
+                  "name": "QuitPrompt"
+               },
+               "enabled": true,
+               "typeName": "ObjectNameComponent"
+            },
+            {
+               "data": {
+                  "parentEntityId": "",
+                  "rotation": [
+                     0,
+                     0,
+                     0
+                  ],
+                  "rotationQuaternion": [
+                     0,
+                     0,
+                     0,
+                     1
+                  ],
+                  "rotationSource": "quaternion",
+                  "scale": [
+                     1,
+                     1,
+                     1
+                  ],
+                  "translation": [
+                     0,
+                     260,
+                     1
+                  ]
+               },
+               "enabled": true,
+               "typeName": "TransformComponent"
+            },
+            {
+               "data": {
+                  "color": [
+                     0.45,
+                     0.45,
+                     0.45,
+                     1
+                  ],
+                  "fontId": "851Gkktt",
+                  "fontSize": 34,
+                  "horizontalAlignment": "Center",
+                  "lineSpacing": 1.2000000476837158,
+                  "maxWidth": 1100,
+                  "pivot": [
+                     0.5,
+                     0.5
+                  ],
+                  "screenAnchor": "MiddleCenter",
+                  "sortingOrder": 110,
                   "text": "やめる"
                },
                "enabled": true,
                "typeName": "UITextComponent"
             }
          ],
-         "id": "UIText:StageStartPrompt",
+         "id": "UIText:QuitPrompt",
          "objectType": "UIText",
          "parentId": ""
       }

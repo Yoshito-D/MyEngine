@@ -616,6 +616,7 @@ void Renderer::EndFrame() {
    FlushLineRenderer(postProcessLineRenderer_.get(), RenderPass::PostProcess);
 
    DrawManagedUI();
+   DrawCameraLetterbox();
    textRenderer_->UploadBuffers();
 
    // 次のフレームに備えてクリア
@@ -929,8 +930,12 @@ void Renderer::SetSceneTransitionOpacity(float opacity) {
    UpdateTransitionOpacity();
 }
 
-void Renderer::SetCameraTransitionOpacity(float opacity) {
+void Renderer::SetCameraTransition(
+   float opacity, float letterboxProgress, std::string_view caption, const TextStyle& captionStyle) {
    cameraTransitionOpacity_ = std::isfinite(opacity) ? std::clamp(opacity, 0.0f, 1.0f) : 0.0f;
+   letterboxProgress_ = std::isfinite(letterboxProgress) ? std::clamp(letterboxProgress, 0.0f, 1.0f) : 0.0f;
+   letterboxCaption_ = caption;
+   letterboxCaptionStyle_ = captionStyle;
    UpdateTransitionOpacity();
 }
 

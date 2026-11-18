@@ -30,6 +30,7 @@ GameEngine::EditorSceneSession* sEditorSceneSession_ = nullptr;
 #endif
 float sUIFrameDeltaTime_ = 0.0f;
 bool sGameplayInputBlocked_ = false;
+bool sGameplayMouseInputEnabled_ = true;
 bool sEditorInputAccess_ = false;
 float sGameDeltaTime_ = 0.0f;
 bool sHasGameDeltaTimeOverride_ = false;
@@ -37,6 +38,10 @@ uint64_t sGameFrameNumber_ = 0;
 #ifdef USE_IMGUI
 GameEngine::PlayModeController* sPlayModeController_ = nullptr;
 #endif
+
+bool CanReadMouseInput() {
+   return sInput_ && (sEditorInputAccess_ || (sGameplayMouseInputEnabled_ && !sGameplayInputBlocked_));
+}
 }
 
 namespace GameEngine {
@@ -94,7 +99,8 @@ EditorSceneContext* EngineContext::GetEditorSceneContext() {
 
 void EngineContextInitializer::Initialize(GraphicsDevice* graphicsDevice, Input* input,
    InputActionService* inputActionService, Audio* audio, Renderer* renderer, AssetManager* assetManager,
-   TimeProfiler* timeProfiler, CameraManager* cameraManager, LightManager* lightManager) {
+   TimeProfiler* timeProfiler, CameraManager* cameraManager, LightManager* lightManager,
+   bool gameplayMouseInputEnabled) {
    sGraphicsDevice_ = graphicsDevice;
    sInput_ = input;
    sInputActionService_ = inputActionService;
@@ -104,6 +110,7 @@ void EngineContextInitializer::Initialize(GraphicsDevice* graphicsDevice, Input*
    sTimeProfiler_ = timeProfiler;
    sCameraManager_ = cameraManager;
    sLightManager_ = lightManager;
+   sGameplayMouseInputEnabled_ = gameplayMouseInputEnabled;
 }
 
 void EngineContextInitializer::SetGraphicsDevice(GraphicsDevice* graphicsDevice) {
@@ -216,98 +223,52 @@ bool EngineContext::IsKeyReleased(KeyCode key) {
    return sInput_->IsKeyReleased(key);
 }
 
-bool EngineContext::IsMousePressed(uint8_t button) {
-   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
-      return false;
-   }
+bool EngineContext::IsGameplayMouseInputEnabled() {
+   return sGameplayMouseInputEnabled_;
+}
 
-   return sInput_->IsMousePressed(button);
+bool EngineContext::IsMousePressed(uint8_t button) {
+   return CanReadMouseInput() && sInput_->IsMousePressed(button);
 }
 
 bool EngineContext::IsMousePressed(MouseButton button) {
-   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
-      return false;
-   }
-
-   return sInput_->IsMousePressed(button);
+   return IsMousePressed(static_cast<uint8_t>(button));
 }
 
 bool EngineContext::IsMouseNotPressed(uint8_t button) {
-   if (!sInput_) {
-      return false;
-   }
-   if (sGameplayInputBlocked_ && !sEditorInputAccess_) {
-      return true;
-   }
-
-   return sInput_->IsMouseNotPressed(button);
+   return sInput_ && (!CanReadMouseInput() || sInput_->IsMouseNotPressed(button));
 }
 
 bool EngineContext::IsMouseNotPressed(MouseButton button) {
-   if (!sInput_) {
-      return false;
-   }
-   if (sGameplayInputBlocked_ && !sEditorInputAccess_) {
-      return true;
-   }
-
-   return sInput_->IsMouseNotPressed(button);
+   return IsMouseNotPressed(static_cast<uint8_t>(button));
 }
 
 bool EngineContext::IsMouseReleased(uint8_t button) {
-   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
-      return false;
-   }
-
-   return sInput_->IsMouseReleased(button);
+   return CanReadMouseInput() && sInput_->IsMouseReleased(button);
 }
 
 bool EngineContext::IsMouseReleased(MouseButton button) {
-   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
-      return false;
-   }
-
-   return sInput_->IsMouseReleased(button);
+   return IsMouseReleased(static_cast<uint8_t>(button));
 }
 
 bool EngineContext::IsMouseTriggered(uint8_t button) {
-   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
-      return false;
-   }
-
-   return sInput_->IsMouseTriggered(button);
+   return CanReadMouseInput() && sInput_->IsMouseTriggered(button);
 }
 
 bool EngineContext::IsMouseTriggered(MouseButton button) {
-   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
-      return false;
-   }
-
-   return sInput_->IsMouseTriggered(button);
+   return IsMouseTriggered(static_cast<uint8_t>(button));
 }
 
 Vector2 EngineContext::GetMouseScreenPosition() {
-   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
-      return Vector2(0.0f, 0.0f);
-   }
-
-   return sInput_->GetMouseScreenPosition();
+   return CanReadMouseInput() ? sInput_->GetMouseScreenPosition() : Vector2{};
 }
 
 Vector2 EngineContext::GetMouseDelta() {
-   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
-      return Vector2(0.0f, 0.0f);
-   }
-
-   return sInput_->GetMouseDelta();
+   return CanReadMouseInput() ? sInput_->GetMouseDelta() : Vector2{};
 }
 
 int32_t EngineContext::GetMouseWheelDelta() {
-   if (!sInput_ || (sGameplayInputBlocked_ && !sEditorInputAccess_)) {
-      return 0;
-   }
-
-   return sInput_->GetMouseWheelDelta();
+   return CanReadMouseInput() ? sInput_->GetMouseWheelDelta() : 0;
 }
 
 bool EngineContext::IsGamePadConnected(uint32_t index) {
@@ -445,6 +406,28 @@ const InputActionState& EngineContext::GetInputActionState(
    return sInputActionService_->GetActionState(actionMap, actionId, playerSlot);
 }
 
+bool EngineContext::HasInputTrigger(uint32_t playerSlot) {
+   return sInput_ && (!sGameplayInputBlocked_ || sEditorInputAccess_) &&
+          sInput_->HasInputTrigger(playerSlot, CanReadMouseInput());
+}
+
+std::string EngineContext::DescribeInputActionBindings(
+   const std::string& actionMap, const std::string& actionId, uint32_t playerSlot) {
+   if (!sInputActionService_) {
+      return {};
+   }
+
+   if (IsGamePadConnected(playerSlot)) {
+      auto description = sInputActionService_->DescribeActionBindings(actionMap, actionId, true);
+
+      if (!description.empty()) {
+         return description;
+      }
+   }
+
+   return playerSlot == 0 ? sInputActionService_->DescribeActionBindings(actionMap, actionId, false) : std::string{};
+}
+
 void EngineContext::ChangeScene(const std::string& name) {
    if (sSceneManager_) {
       sSceneManager_->RequestSceneChange(name);
@@ -457,9 +440,10 @@ void EngineContext::SetSceneTransitionOpacity(float opacity) {
    }
 }
 
-void EngineContext::SetCameraTransitionOpacity(float opacity) {
+void EngineContext::SetCameraTransition(
+   float opacity, float letterboxProgress, std::string_view caption, const TextStyle& captionStyle) {
    if (sRenderer_) {
-      sRenderer_->SetCameraTransitionOpacity(opacity);
+      sRenderer_->SetCameraTransition(opacity, letterboxProgress, caption, captionStyle);
    }
 }
 

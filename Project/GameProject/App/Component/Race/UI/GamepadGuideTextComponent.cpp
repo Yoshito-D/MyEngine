@@ -3,7 +3,6 @@
 #include "GameProject/App/Component/Race/RaceManagerComponent.h"
 #include "GameProject/App/Component/Character/CharacterJump.h"
 #include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
-#include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Object/Component/UI/UITextComponent.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Scene/SceneWorld.h"
@@ -14,23 +13,6 @@
 #endif
 
 namespace App {
-namespace {
-
-/// @brief 地上走行中に表示する基本操作ガイド
-constexpr const char* kGamepadGroundGuideText = "左スティック：旋回 / ドリフト\n"
-                                                "A：ジャンプ";
-
-constexpr const char* kKeyboardGroundGuideText = "A / D：旋回 / ドリフト\n"
-                                                 "Space：ジャンプ";
-
-/// @brief ジャンプ中に表示する空中姿勢制御の操作ガイド
-constexpr const char* kGamepadAirGuideText = "左スティック上下：ピッチ\n"
-                                             "LB / RB：ロール";
-
-constexpr const char* kKeyboardAirGuideText = "W / S：ピッチ\n"
-                                              "Q / E：ロール";
-
-} // namespace
 
 /// @brief シーン設定のオブジェクトIDから表示条件に必要なコンポーネントを解決する
 /// @param sceneWorld 検索対象のシーンワールド
@@ -62,18 +44,11 @@ void GamepadGuideTextComponent::Update(float deltaTime) {
 
    if (!text) return;
 
-   if (raceManager_ && raceManager_->GetState() == RaceManagerComponent::State::Intro) {
-      // スキップ入力と同じプレイヤー番号を毎フレーム確認し、途中の接続・切断にも表示を追従させる。
-      const bool gamepadConnected = GameEngine::EngineContext::IsGamePadConnected(0);
-      text->SetText(gamepadConnected ? "Aボタン：スキップ" : "Spaceキー：スキップ");
-      return;
-   }
+   using RaceState = RaceManagerComponent::State;
+   const auto raceState = raceManager_ ? raceManager_->GetState() : RaceState::Waiting;
 
-   const bool isShowingResult = raceManager_ && raceManager_->GetState() == RaceManagerComponent::State::Finished;
-
-   // リザルト画面では走行中の入力説明が誤解を招くため、
-   // ジャンプ状態よりもレース終了判定を優先して表示を消す。
-   if (isShowingResult) {
+   // 導入とリザルトはそれぞれ専用の案内を表示するため、走行用の説明を隠す。
+   if (raceState == RaceState::Intro || raceState == RaceState::Finished) {
       text->SetText("");
       return;
    }
@@ -82,15 +57,10 @@ void GamepadGuideTextComponent::Update(float deltaTime) {
    // 空中状態を確認できた場合に限って空中操作へ切り替える。
    const bool airborne = characterJump_ && characterJump_->IsJumping();
 
-   // 走行入力と同じスロットの接続を毎フレーム確認し、抜き差しだけで表示を切り替える。
+   // 走行入力と同じスロットの割り当てを毎フレーム参照し、接続と再割り当てを表示へ反映する。
    const auto playerSlot = vehicleInput_ ? vehicleInput_->DescribeSettings().playerSlot : 0u;
-   const bool gamepadConnected = GameEngine::EngineContext::IsGamePadConnected(playerSlot);
-
-   if (gamepadConnected) {
-      text->SetText(airborne ? kGamepadAirGuideText : kGamepadGroundGuideText);
-   } else {
-      text->SetText(airborne ? kKeyboardAirGuideText : kKeyboardGroundGuideText);
-   }
+   const auto controls = VehicleInputComponent::DescribeControlLabels(playerSlot);
+   text->SetText(airborne ? controls.AirPrompts() : controls.GroundPrompts());
 }
 
 /// @brief 参照先を再解決するためのオブジェクトIDをJSONへ保存する

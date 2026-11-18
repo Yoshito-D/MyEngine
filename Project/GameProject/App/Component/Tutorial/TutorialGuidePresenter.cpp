@@ -147,20 +147,17 @@ void TutorialGuidePresenter::UpdateFeedback(
    // 次の課題の補足文が古い本文の下へ先に現れないよう、文面と配置の切り替えを完全透明時まで待つ。
    if (guideFadeState_ == GuideFadeState::FadingOut) return;
 
-   const bool gamepadConnected = state.gamepadConnected;
    std::string feedback;
 
    if (state.phase == Phase::DriftPractice) {
       if (state.canFireMiniTurbo) {
-         feedback = gamepadConnected ? "ターボ準備OK！　左スティックを中央に戻すと発動！"
-                                     : "ターボ準備OK！　A / D を離すと発動！";
+         feedback = "ターボ準備OK！　旋回入力を戻すと発動！";
       } else if (state.isDrifting) {
          feedback = "ドリフト中…　同じ方向へ曲がり続けてターボをためましょう。";
       } else if (driftFeedbackRemaining_ > 0.0f) {
          feedback = driftFeedback_;
       } else {
-         feedback = gamepadConnected ? "左スティックを左右どちらかに倒し続けると、ドリフトが始まります。"
-                                     : "A / D を押し続けると、ドリフトが始まります。";
+         feedback = "同じ方向へ曲がり続けると、ドリフトが始まります。";
       }
    } else if (state.phase == Phase::JumpPractice) {
       feedback = state.isAirborne ? "ジャンプ中！　この惑星に着地してみましょう。" : "ジャンプ 0 / 1";
@@ -170,8 +167,7 @@ void TutorialGuidePresenter::UpdateFeedback(
       if (state.airRotationPerformed) {
          feedback = "姿勢を整えて、最初の惑星へ着地しましょう。";
       } else if (state.isAirborne) {
-         feedback = gamepadConnected ? "左スティック上下 または LB / RB で、機体を回転させましょう。"
-                                    : "W / S または Q / E で、機体を回転させましょう。";
+         feedback = "ピッチやロールの操作で、機体を回転させましょう。";
       } else {
          feedback = "空中回転 0 / 1　ジャンプして、空中で機体を傾けてみましょう。";
       }
@@ -180,8 +176,12 @@ void TutorialGuidePresenter::UpdateFeedback(
          if (state.aligned) {
             feedback = "姿勢OK！　車体の底と地表を平行に保ちましょう。";
          } else {
-            feedback = gamepadConnected ? "左スティック上下・LB / RB で姿勢を地表に合わせましょう。"
-                                        : "W / S・Q / E で姿勢を地表に合わせましょう。";
+            feedback = "ピッチやロールの操作で、姿勢を地表に合わせましょう。";
+
+            if (const auto prompts = state.controls.AirPrompts(); !prompts.empty()) {
+               feedback += '\n';
+               feedback += prompts;
+            }
          }
       } else {
          feedback = landingFeedback_;
@@ -192,9 +192,16 @@ void TutorialGuidePresenter::UpdateFeedback(
 }
 
 std::string TutorialGuidePresenter::BuildGuideText(const TutorialGuideState& state) {
-   const bool gamepadConnected = state.gamepadConnected;
-   const std::string jumpButton = gamepadConnected ? "A ボタン" : "SPACE キー";
-   const std::string next = "\n\n" + jumpButton + "：次へ";
+   const auto& controls = state.controls;
+   const auto nextPrompt = GameEngine::FormatInputPrompt(controls.confirm, "次へ");
+   const auto next = nextPrompt.empty() ? std::string{} : "\n\n" + nextPrompt;
+   const auto asLine = [](std::string prompt) {
+      if (!prompt.empty()) {
+         prompt += '\n';
+      }
+
+      return prompt;
+   };
 
    switch (state.phase) {
       case Phase::DrivingIntro:
@@ -202,40 +209,29 @@ std::string TutorialGuidePresenter::BuildGuideText(const TutorialGuideState& sta
                 "練習中は、左下の速度メーターを確認しましょう。" +
                 next;
       case Phase::DriftIntro:
-         return std::string(gamepadConnected ? "左スティックを左右どちらかに倒し続けると、ドリフトします。\n"
-                                             : "A / D を押し続けると、ドリフトします。\n") +
-                "ターボがたまったらハンドルを戻すと発動！　最高速度へ早く到達できます。" + next;
+         return "同じ方向へ曲がり続けると、ドリフトします。\n" + asLine(controls.SteeringPrompt()) +
+                "ターボがたまったら旋回入力を戻すと発動！　最高速度へ早く到達できます。" + next;
       case Phase::DriftPractice:
-         return "ドリフトを続けてからハンドルを戻し、ミニターボを3回発動しましょう。\n"
-                "ミニターボ " +
-                std::to_string(state.miniTurboCount) + " / 3";
+         return "ドリフトを続けてから旋回入力を戻し、ミニターボを3回発動しましょう。\n" +
+                asLine(controls.SteeringPrompt()) + "ミニターボ " + std::to_string(state.miniTurboCount) + " / 3";
       case Phase::JumpIntro:
-         return "次は " +
-                jumpButton +
-                "でジャンプします。\n"
-                "速度が速いほど遠くへ飛べます。" +
-                next;
+         return "次はジャンプを練習します。\n" + asLine(controls.JumpPrompt()) +
+                "速度が速いほど遠くへ飛べます。" + next;
       case Phase::JumpPractice:
-         return jumpButton +
-                "でジャンプしましょう。\n"
+         return "ジャンプしましょう。\n" + asLine(controls.JumpPrompt()) +
                 "最初の惑星へ着地すると、次の説明へ進みます。";
       case Phase::AirControlIntro:
-         return "空中では機体を前後・左右に回転できます。\n" +
-                std::string(gamepadConnected ? "左スティック上下：前後の傾き　LB / RB：左右の傾き\n"
-                                             : "W / S：前後の傾き　Q / E：左右の傾き\n") +
+         return "空中では機体を前後・左右に回転できます。\n" + asLine(controls.AirPrompts()) +
                 "車体の底を地表と平行にして着地すると速度を維持でき、大きく傾くと減速します。" + next;
       case Phase::AirControlPractice:
-         return jumpButton + "でジャンプし、空中で機体を回転させてみましょう。\n" +
-                std::string(gamepadConnected ? "左スティック上下 または LB / RB で機体を傾けられます。\n"
-                                             : "W / S または Q / E で機体を傾けられます。\n") +
+         return "ジャンプし、空中で機体を回転させてみましょう。\n" + asLine(controls.JumpPrompt()) +
+                asLine(controls.AirPrompts()) +
                 "機体を傾けてから最初の惑星へ着地すると、次へ進みます。";
       case Phase::GoalGuidanceIntro:
          return "画面右下の矢印はゴールの方向、距離表示はゴールまでの残り距離を示しています。\n"
                 "この表示を頼りに、二つ目の惑星にある赤い旗を目指しましょう。" + next;
       case Phase::PlanetTransfer:
-         return "二つ目の惑星へ向かいましょう。矢印の方向へ " +
-                jumpButton +
-                "でジャンプ！\n"
+         return "二つ目の惑星へ向かいましょう。矢印の方向へジャンプ！\n" + asLine(controls.JumpPrompt()) +
                 "空中で姿勢を調整し、車体の底を地表に合わせて着地しましょう。";
       case Phase::Goal:
          return "二つ目の惑星に到着！　矢印と残り距離を見ながら、赤い旗を目指しましょう。";
@@ -249,7 +245,7 @@ std::string TutorialGuidePresenter::BuildGuideText(const TutorialGuideState& sta
 
 void TutorialGuidePresenter::ShowDriftResult(bool fired) {
    driftFeedback_ = fired ? "ミニターボ発動！　速度メーターの上昇を確認しましょう。"
-                          : "もう少し長くドリフトしてから、ハンドルを戻しましょう。";
+                          : "もう少し長くドリフトしてから、旋回入力を戻しましょう。";
    driftFeedbackRemaining_ = 1.5f;
 }
 

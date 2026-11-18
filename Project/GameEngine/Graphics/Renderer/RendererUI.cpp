@@ -17,8 +17,7 @@ namespace GameEngine {
 UIInputFrame Renderer::ReadUIInput(Input& input, InputActionService& actions) {
    UIInputFrame frame;
    frame.gamepadConnected = input.GetConnectedGamePadCount() != 0;
-   POINT pointer{};
-   GetCursorPos(&pointer);
+   const bool mouseEnabled = EngineContext::IsGameplayMouseInputEnabled();
    bool standalone = true;
 #ifdef USE_IMGUI
    standalone = !imGuiManager_ || !imGuiManager_->IsDockSpaceVisible();
@@ -27,35 +26,48 @@ UIInputFrame Renderer::ReadUIInput(Input& input, InputActionService& actions) {
       RECT rectangle{};
       const auto hwnd = GetActiveWindow();
       GetClientRect(hwnd, &rectangle);
-      POINT origin{};
-      ClientToScreen(hwnd, &origin);
-      gameUIOrigin_ = {static_cast<float>(origin.x), static_cast<float>(origin.y)};
+      if (mouseEnabled) {
+         POINT origin{};
+         ClientToScreen(hwnd, &origin);
+         gameUIOrigin_ = {static_cast<float>(origin.x), static_cast<float>(origin.y)};
+      }
+
       gameUISize_ = {static_cast<float>(rectangle.right), static_cast<float>(rectangle.bottom)};
       gameUIActive_ = hwnd && GetForegroundWindow() == hwnd;
    }
-#ifdef USE_IMGUI
-   // Viewports無効時のImGui座標はクライアント座標であり、デスクトップ座標を直接引かない。
-   if (!standalone && !imGuiManager_->IsMultiViewportEnabled()) {
-      const auto client = input.GetMouseScreenPosition();
-      pointer = {static_cast<LONG>(client.x), static_cast<LONG>(client.y)};
-   }
-#endif
+
    DWORD foregroundProcess = 0;
    GetWindowThreadProcessId(GetForegroundWindow(), &foregroundProcess);
    frame.active =
       foregroundProcess == GetCurrentProcessId() && gameUIActive_ && gameUISize_.x > 0.0f && gameUISize_.y > 0.0f;
-   const Vector2 local{
-      static_cast<float>(pointer.x) - gameUIOrigin_.x, static_cast<float>(pointer.y) - gameUIOrigin_.y};
-   frame.pointerInside =
-      frame.active && local.x >= 0.0f && local.y >= 0.0f && local.x < gameUISize_.x && local.y < gameUISize_.y;
-   if (frame.active) {
-      frame.pointer = {local.x * uiViewportSize_.x / gameUISize_.x, local.y * uiViewportSize_.y / gameUISize_.y};
+
+   // 無効時はポインターの全フィールドを空に保ち、ホバーによるフォーカス移動や方向入力の遮断も防ぐ。
+   if (mouseEnabled) {
+      POINT pointer{};
+      GetCursorPos(&pointer);
+#ifdef USE_IMGUI
+      // Viewports無効時のImGui座標はクライアント座標であり、デスクトップ座標を直接引かない。
+      if (!standalone && !imGuiManager_->IsMultiViewportEnabled()) {
+         const auto client = input.GetMouseScreenPosition();
+         pointer = {static_cast<LONG>(client.x), static_cast<LONG>(client.y)};
+      }
+#endif
+      const Vector2 local{
+         static_cast<float>(pointer.x) - gameUIOrigin_.x, static_cast<float>(pointer.y) - gameUIOrigin_.y};
+      frame.pointerInside =
+         frame.active && local.x >= 0.0f && local.y >= 0.0f && local.x < gameUISize_.x && local.y < gameUISize_.y;
+
+      if (frame.active) {
+         frame.pointer = {local.x * uiViewportSize_.x / gameUISize_.x, local.y * uiViewportSize_.y / gameUISize_.y};
+      }
+
+      frame.pointerMoved = frame.pointer.x != previousUIPointer_.x || frame.pointer.y != previousUIPointer_.y;
+      previousUIPointer_ = frame.pointer;
+      frame.pointerDown = input.IsMousePressed(MouseButton::Left);
+      frame.pointerPressed = input.IsMouseTriggered(MouseButton::Left);
+      frame.pointerReleased = input.IsMouseReleased(MouseButton::Left);
    }
-   frame.pointerMoved = frame.pointer.x != previousUIPointer_.x || frame.pointer.y != previousUIPointer_.y;
-   previousUIPointer_ = frame.pointer;
-   frame.pointerDown = input.IsMousePressed(MouseButton::Left);
-   frame.pointerPressed = input.IsMouseTriggered(MouseButton::Left);
-   frame.pointerReleased = input.IsMouseReleased(MouseButton::Left);
+
    frame.confirm = actions.GetActionState("UI", "UI.Confirm").triggered;
    frame.cancel = actions.GetActionState("UI", "UI.Cancel").triggered;
    frame.vertical = actions.GetActionState("UI", "UI.Navigate").value.x;
@@ -158,6 +170,47 @@ void Renderer::DrawManagedUI() {
          queue({item.size.x * std::clamp(visual.fillAmount, 0.0f, 1.0f), item.size.y},
             {tint[0], tint[1], tint[2], item.opacity * tint[3]});
       }
+   }
+}
+
+void Renderer::DrawCameraLetterbox() {
+   if (letterboxProgress_ <= 0.0f || !assetManager_ || !textRenderer_) return;
+
+   auto* textures = assetManager_->GetTextureManager();
+   auto* white = textures ? textures->GetTexture("white1x1") : nullptr;
+
+   if (!white) return;
+
+   constexpr float kLetterboxHeightRatio = 0.12f; ///< 画面の高さに対する片側の黒帯の最大比率。
+   const float t = letterboxProgress_;
+   const float opacity = t * t * (3.0f - 2.0f * t);
+   const float height = uiViewportSize_.y * kLetterboxHeightRatio * opacity;
+   const auto identity = MakeIdentity4x4();
+   const auto drawBar = [&](float y) {
+      const auto command = textRenderer_->QueueQuad({uiViewportSize_.x, height}, MakeTranslateMatrix({0.0f, y, 0.0f}),
+         {}, {1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, opacity}, white->GetTextureSrvHandleGPU(), uiViewportSize_, identity);
+      SubmitDrawCommand(DrawCommand(RenderPass::Overlay, command));
+   };
+
+   // 通常UIの上に黒帯と案内を順に重ね、カット切り替え時はまとめて暗転させる。
+   drawBar(0.0f);
+   drawBar(uiViewportSize_.y - height);
+
+   auto* fonts = assetManager_->GetFontManager();
+
+   if (!fonts || letterboxCaption_.empty() || letterboxCaptionStyle_.color.w <= 0.0f) return;
+
+   constexpr float kCaptionMargin = 32.0f; ///< 案内と右端の間隔（基準UIのピクセル）。
+   auto style = letterboxCaptionStyle_;
+   style.pivot = {};
+   const auto layout = fonts->LayoutText(letterboxCaption_, style);
+   const auto matrix = MakeTranslateMatrix({uiViewportSize_.x - layout.size.x - kCaptionMargin,
+      uiViewportSize_.y - (height + layout.size.y) * 0.5f, 0.0f});
+   const auto commands = textRenderer_->QueueText(layout, style, Transform{}, UITextComponent::kShowAllGlyphs,
+      Window::kUiReferenceWidth, Window::kUiReferenceHeight, uiViewportSize_.x, uiViewportSize_.y, &matrix);
+
+   for (const auto& command : commands) {
+      SubmitDrawCommand(DrawCommand(RenderPass::Overlay, command));
    }
 }
 }

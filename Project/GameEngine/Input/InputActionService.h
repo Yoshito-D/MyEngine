@@ -47,6 +47,11 @@ public:
    const InputActionState& GetActionState(
       const std::string& actionMap, const std::string& actionId, std::uint32_t playerSlot = 0) const;
 
+   /// @brief 指定デバイスの割り当てをゲーム内の共通表記で返す。該当する割り当てがなければ空文字列を返す。
+   /// @param forGamePad trueならゲームパッド、falseならキーボードの割り当てを取得する。
+   std::string DescribeActionBindings(
+      const std::string& actionMap, const std::string& actionId, bool forGamePad) const;
+
    /// @brief ゲーム用アクションの取得を遮断する。物理入力と再割り当ては継続する。
    void SetGameplayInputBlocked(bool blocked) { gameplayInputBlocked_ = blocked; }
 

@@ -1,5 +1,6 @@
 #include "GameProject/App/Component/UI/MenuNavigation.h"
 #include "GameProject/App/Component/UI/MenuSelectionAnimationComponent.h"
+#include <algorithm>
 
 namespace App {
 std::int32_t MenuNavigation::ReadDirection(float axis) {
@@ -17,10 +18,15 @@ std::int32_t MenuNavigation::ReadDirection(float axis) {
 }
 
 bool MenuNavigation::Move(const MenuSelectionAnimationComponent& animation, std::int32_t direction) {
+   return Move(animation, direction, animation.GetOptionCount());
+}
+
+bool MenuNavigation::Move(
+   const MenuSelectionAnimationComponent& animation, std::int32_t direction, std::size_t optionLimit) {
    if (direction == 0) {
       return false;
    }
-   const auto count = static_cast<std::int32_t>(animation.GetOptionCount());
+   const auto count = static_cast<std::int32_t>(std::min(animation.GetOptionCount(), optionLimit));
    if (count == 0) {
       return false;
    }

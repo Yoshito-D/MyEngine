@@ -121,8 +121,7 @@ void PauseMenuComponent::Update(float) {
 
    auto& ui = world_->GetUI();
    const auto* pauseScreen = world_->FindObjectById(pauseScreenId_);
-   const auto* settingsScreen = world_->FindObjectById(settingsScreenId_);
-   const bool showingSettings = settingsScreen && ui.IsUpdateVisible(*settingsScreen);
+   const bool showingSettings = IsSettingsVisible();
    const bool showingPause = (pauseScreen && ui.IsUpdateVisible(*pauseScreen)) || showingSettings;
 
    // 背景と枠は下の画面に残し、設定の表示中はメニューの中身だけを隠す。
@@ -138,6 +137,11 @@ void PauseMenuComponent::Update(float) {
 
    // ポーズ固有の適用条件と演出値はゲーム側で決め、エンジンへは汎用の描画・音量操作だけを渡す。
    GameEngine::EngineContext::SetOverlayBackgroundBlur(showingPause ? kPauseBackgroundBlur : 0.0f);
+
+   if (settingsOnly_) {
+      UpdateSelectionSound(showingSettings ? settingsScreenId_ : std::string{});
+      return;
+   }
 
    if (auto* audio = GameEngine::EngineContext::GetAudio()) {
       audio->SetBgmDucking(showingPause ? kPausedBgmGain : 1.0f);
@@ -191,7 +195,11 @@ bool PauseMenuComponent::CreatePauseScreen() {
 
    BindButton(pauseScreenId_, "restart", [this]() { RequestSceneChange(true); });
    BindButton(pauseScreenId_, "title", [this]() { RequestSceneChange(false); });
-   BindButton(pauseScreenId_, "settings", [this]() { OpenSettings(); });
+   BindButton(pauseScreenId_, "settings", [this]() {
+      if (OpenSettings()) {
+         PlayUISound(kDecisionSoundAsset);
+      }
+   });
    BindButton(pauseScreenId_, "resume", [this]() { CloseTopScreen(); });
    return true;
 }
@@ -204,8 +212,15 @@ void PauseMenuComponent::BindButton(const std::string& rootId, const char* key, 
    }
 }
 
-void PauseMenuComponent::OpenSettings() {
-   if (!world_ || GameEngine::EngineContext::IsSceneTransitioning()) return;
+bool PauseMenuComponent::IsSettingsVisible() const {
+   const auto* screen = world_ ? world_->FindObjectById(settingsScreenId_) : nullptr;
+   return screen && world_->GetUI().IsUpdateVisible(*screen);
+}
+
+bool PauseMenuComponent::OpenSettings() {
+   if (!world_ || !IsEnabled() || GameEngine::EngineContext::IsSceneTransitioning()) {
+      return false;
+   }
 
    auto& ui = world_->GetUI();
 
@@ -213,11 +228,18 @@ void PauseMenuComponent::OpenSettings() {
       settingsScreenId_ = ui.InstantiateScreen(kSettingsScreenAsset);
 
       if (settingsScreenId_.empty()) {
-         Logger::Error("Pause settings could not be created: " + ui.GetLastError());
-         return;
+         Logger::Error("Audio settings could not be created: " + ui.GetLastError());
+         return false;
       }
 
       BindButton(settingsScreenId_, "back", [this]() { CloseTopScreen(); });
+
+      if (settingsOnly_) {
+         auto* screen = world_->FindObjectById(settingsScreenId_)->GetComponent<GameEngine::UIScreenComponent>();
+         auto settings = screen->DescribeSettings();
+         settings.pausesGameplay = false;
+         screen->Configure(settings);
+      }
    }
 
    // 音量はシーンより長く生存するAudioが保持し、リスタートやタイトル遷移後も引き継ぐ。
@@ -229,9 +251,7 @@ void PauseMenuComponent::OpenSettings() {
          [audio](float value) { audio->SetBusVolume(GameEngine::AudioBus::Se, value); });
    }
 
-   if (ui.Push(settingsScreenId_)) {
-      PlayUISound(kDecisionSoundAsset);
-   }
+   return ui.Push(settingsScreenId_);
 }
 
 void PauseMenuComponent::BindVolumeSlider(const char* key, float volume, std::function<void(float)> callback) {
@@ -244,7 +264,7 @@ void PauseMenuComponent::BindVolumeSlider(const char* key, float volume, std::fu
 
             if (UpdateVolumeText(key, value)) {
                PlayUISound(kCursorSoundAsset);
-               // マウスで選択と音量変更を同時に行っても、カーソル音を二重に鳴らさない。
+               // 選択と音量変更が同じフレームに起きても、カーソル音を二重に鳴らさない。
                selectionScreenId_ = settingsScreenId_;
                selectedElementId_ = world_->GetUI().GetFocusedElementId(settingsScreenId_);
             }
@@ -410,12 +430,18 @@ void PauseMenuComponent::OnDetach() {
 }
 
 nlohmann::json PauseMenuComponent::Serialize() const {
-   return {{"titleScene", titleScene_}};
+   return {{"titleScene", titleScene_}, {"settingsOnly", settingsOnly_}};
 }
 
 void PauseMenuComponent::Deserialize(const nlohmann::json& data) {
-   if (data.is_object() && data.contains("titleScene") && data.at("titleScene").is_string()) {
+   if (!data.is_object()) return;
+
+   if (data.contains("titleScene") && data.at("titleScene").is_string()) {
       titleScene_ = data.at("titleScene").get<std::string>();
+   }
+
+   if (data.contains("settingsOnly") && data.at("settingsOnly").is_boolean()) {
+      settingsOnly_ = data.at("settingsOnly").get<bool>();
    }
 }
 
@@ -425,7 +451,11 @@ void PauseMenuComponent::DrawInspector() {
 
    if (!ImGui::CollapsingHeader(header.c_str())) return;
 
-   GameEngine::EditorUI::SceneReference("Title Scene", titleScene_);
+   ImGui::Checkbox("Settings Only", &settingsOnly_);
+
+   if (!settingsOnly_) {
+      GameEngine::EditorUI::SceneReference("Title Scene", titleScene_);
+   }
 }
 #endif
 }
