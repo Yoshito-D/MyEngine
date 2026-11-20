@@ -187,22 +187,6 @@ float SmoothStep01(float value) {
    return t * t * (3.0f - 2.0f * t);
 }
 
-float AngleDegrees(const GameEngine::Vector3& from, const GameEngine::Vector3& to) {
-   float fromLength = from.Length();
-   float toLength = to.Length();
-
-   if (fromLength <= 1e-6f || toLength <= 1e-6f) {
-      return 0.0f;
-   }
-
-   float dot = from.Dot(to) / (fromLength * toLength);
-   return std::acos(std::clamp(dot, -1.0f, 1.0f)) * kRadiansToDegrees;
-}
-
-bool IsFiniteVector(const GameEngine::Vector3& value) {
-   return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
-}
-
 GameEngine::Quaternion MakeCameraRotationFromBasis(
    const GameEngine::Vector3& right, const GameEngine::Vector3& up, const GameEngine::Vector3& forward) {
    GameEngine::Matrix4x4 viewRotation{};

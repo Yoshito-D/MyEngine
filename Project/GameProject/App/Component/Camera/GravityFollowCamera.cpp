@@ -475,6 +475,14 @@ void GravityFollowCamera::MutateCameraState(CameraState& state, float deltaTime)
    UpdateAccelerationEffect(state, deltaTime);
 }
 
+void GravityFollowCamera::ApplyVehicleLookInput(const Vector2& input, float deltaTime) {
+   if (input.x == 0.0f && input.y == 0.0f) return;
+
+   // 正規化入力を既存のマウス感度（rad/pixel）で扱えるようピクセル相当量に換算する。
+   constexpr float kLookPixelsPerSecond = 150.0f;
+   ProcessInput({input.x * kLookPixelsPerSecond * deltaTime, input.y * kLookPixelsPerSecond * deltaTime}, 0, true);
+}
+
 void GravityFollowCamera::ProcessInput(const Vector2& mouseDelta, int32_t wheelDelta, bool isDragging) {
    // ドラッグ中はヨー（水平旋回）とピッチ（上下角）を更新する
    if (isDragging) {

@@ -16,14 +16,16 @@ namespace App {
 
 /// @brief 車両操作と決定に現在割り当てられているゲーム内案内用の入力名。
 struct VehicleControlLabels {
-   std::string steer;   ///< 左右の旋回操作。
+   std::string steer;          ///< 左右の旋回操作。
+   std::string drift;          ///< 専用ボタン方式のドリフト操作。
+   bool usesDriftButton = false; ///< 専用ボタンを押しながら旋回する設定かどうか。
    std::string pitch;   ///< 空中での前後姿勢操作。
    std::string roll;    ///< 空中での左右姿勢操作。
    std::string jump;    ///< ジャンプ操作。
    std::string confirm; ///< 説明などを進める決定操作。
 
-   /// @brief 旋回と持続旋回によるドリフトの共通案内を返す。
-   std::string SteeringPrompt() const;
+   /// @brief 車両のドリフト方式に合った操作案内を返す。
+   std::string DriftPrompt() const;
 
    /// @brief ジャンプ操作の共通案内を返す。
    std::string JumpPrompt() const;
@@ -74,8 +76,9 @@ public:
    /// @brief 決定ボタンがこのフレームに押されたかを同じプレイヤースロットで取得する。
    bool IsConfirmTriggered() const;
 
-   /// @brief 指定スロットの割り当てと接続状態から、車両操作と決定の入力名を取得する。
-   static VehicleControlLabels DescribeControlLabels(std::uint32_t playerSlot);
+   /// @brief プレイヤーの割り当て・接続状態・ドリフト方式から案内用の入力名を取得する。
+   /// @param input 対象車両の入力部品。未指定時は先頭プレイヤーの継続操舵用案内を返す。
+   static VehicleControlLabels DescribeControlLabels(const VehicleInputComponent* input);
 
    /// @brief ジャンプ入力を許可し、再許可時はボタンを離すまで入力を保留する。
    void SetJumpEnabled(bool enabled);

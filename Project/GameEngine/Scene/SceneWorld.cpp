@@ -101,27 +101,15 @@ bool SceneWorld::IsValidSnapshot(const nlohmann::json& data) {
          }
          continue;
       }
-      ObjectType type;
-      if (kind == "Generic") {
-         type = ObjectType::Generic;
-      } else if (kind == "Model") {
-         type = ObjectType::Model;
-      } else if (kind == "Sprite") {
-         type = ObjectType::Sprite;
-      } else if (kind == "UIText") {
-         type = ObjectType::UIText;
-      } else if (kind == "Skybox") {
-         type = ObjectType::Skybox;
-      } else {
-         return false;
-      }
-      if (!object.contains("components")) {
+      const auto type = SceneObjectStore::FindObjectType(kind);
+
+      if (!type || !object.contains("components")) {
          return false;
       }
       std::unordered_set<std::string> componentTypes;
       for (const auto& component : object.at("components")) {
          const auto name = component.value("typeName", std::string{});
-         if (!componentTypes.insert(name).second || !ComponentRegistry::GetInstance().Supports(name, type)) {
+         if (!componentTypes.insert(name).second || !ComponentRegistry::GetInstance().Supports(name, *type)) {
             return false;
          }
       }
@@ -261,7 +249,15 @@ void SceneWorld::Clear() {
    particleSubEmitterRuntime_->FinishFrame();
 }
 
-void SceneWorld::Update(float deltaTime) {
+void SceneWorld::RegisterParticle(ParticleSystem& particle) {
+   particles_.push_back(&particle);
+}
+
+void SceneWorld::UnregisterParticle(ParticleSystem& particle) {
+   std::erase(particles_, &particle);
+}
+
+void SceneWorld::Update(float deltaTime, float uiDeltaTime) {
    const auto objects = objectStore_.GetObjects();
    const bool gameplay = !uiSystem_->PausesGameplay();
    for (auto* object : objects) {
@@ -272,16 +268,16 @@ void SceneWorld::Update(float deltaTime) {
          object->UpdateComponents(deltaTime, ObjectUpdateDomain::Gameplay);
       }
       if (objectStore_.Contains(object) && uiSystem_->IsUpdateVisible(*object)) {
-         object->UpdateComponents(EngineContext::GetUIFrameDeltaTime(), ObjectUpdateDomain::UI);
+         object->UpdateComponents(uiDeltaTime, ObjectUpdateDomain::UI);
       }
    }
    if (!gameplay) return;
-   const auto particles = ParticleSystem::GetRegisteredParticleSystems();
-   for (auto* particle : particles) {
-      if (particle && particle->GetWorld() == this) {
-         particle->Update(deltaTime);
-      }
+   // 更新中の子生成は予約に留め、走査後にだけ登録する。
+   for (auto* particle : particles_) {
+      particle->Update(deltaTime);
    }
+
+
    particleSubEmitterRuntime_->ProcessPending();
    if (cameraBrain_) {
       cameraBrain_->Update(deltaTime);

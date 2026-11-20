@@ -39,8 +39,6 @@
       "preLandingTerrainLookBlend": 0.30000001192092896,
       "rearLerpSpeed": 7.5,
       "rotationLerpSpeed": 12.0,
-      "showCameraEvidenceWindow": false,
-      "showCameraMeasurementOverlay": true,
       "speedBoostMax": 35.0,
       "speedBoostThreshold": 1.5,
       "speedChangeDistanceKickMax": 4.0,

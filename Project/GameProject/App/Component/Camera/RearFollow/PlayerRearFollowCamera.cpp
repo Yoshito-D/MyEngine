@@ -1,14 +1,16 @@
 #include "GameEngine/Utility/JsonValue.h"
 #include "GameEngine/Framework/EngineContext.h"
-#include <cstdint>
 #include "GameProject/App/Component/Camera/RearFollow/PlayerRearFollowCamera.h"
-#include "GameProject/App/Component/Camera/RearFollow/RearCameraDebugView.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraMath.h"
 #include "GameEngine/Scene/Camera/Camera.h"
 #include "GameEngine/Scene/Camera/Components/PerlinNoise.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameEngine/Window/Window.h"
+#include <algorithm>
+#include <cmath>
+
 #ifdef USE_IMGUI
+#include "GameProject/App/Component/Camera/RearFollow/RearCameraDebugView.h"
 #include "imgui.h"
 #endif
 
@@ -248,7 +250,7 @@ void PlayerRearFollowCamera::ResetRuntimeState() {
    speed_.Reset(*this);
    position_.Reset(*this);
    aim_.Reset(*this);
-   recorder_.Reset(*this);
+
    if (auto* owner = GetOwnerCamera()) {
       // 演出側のFOVを初期化した直後にカメラ本体へも反映し、次回更新まで以前の画角が残るのを防ぐ。
       auto state = owner->GetState();
@@ -269,10 +271,6 @@ void PlayerRearFollowCamera::SetLandingPrediction(const GameEngine::Vector3& up,
 
 void PlayerRearFollowCamera::OnAttach() {
    ResetRuntimeState();
-}
-
-RearCameraFrameView PlayerRearFollowCamera::GetFrameView() const {
-   return {input_, transition_, direction_, planet_, speed_, gravity_, aim_};
 }
 
 void PlayerRearFollowCamera::MutateCameraState(GameEngine::CameraState& state, float deltaTime) {
@@ -298,18 +296,6 @@ void PlayerRearFollowCamera::MutateCameraState(GameEngine::CameraState& state, f
    aim_.ApplyLookAt(input_, *this, transition_.GetState(), transition_.ComputePreLandingGuideBlend(input_),
       direction_.GetState(), state, eye, up, deltaTime);
    KeepFailedLandingInFrame(state, deltaTime);
-
-   // 計測はカメラ補間用dtではなくゲーム更新時刻を使用し、同じフレームの重複を避ける。
-   recorder_.RecordCameraMeasurementSample(GameEngine::EngineContext::GetDeltaTime(),
-      GameEngine::EngineContext::GetGameFrameNumber(), *this, GetFrameView());
-   RearCameraDebugView::DrawCameraMeasurementOverlay(*this, recorder_);
-#ifdef USE_IMGUI
-   const auto sharedBefore = GetSharedParameters();
-   auto settings = DescribeSettings();
-   RearCameraDebugView::DrawCameraEvidenceWindow(settings, GetFrameView(), recorder_);
-   Configure(settings);
-   CommitParameterEdit(sharedBefore, ImGui::IsAnyItemActive());
-#endif
 }
 
 void PlayerRearFollowCamera::SetLandingFailureFraming(
@@ -376,40 +362,12 @@ GameEngine::Vector3 PlayerRearFollowCamera::GetCameraRight() const {
    return aim_.GetState().cachedRight;
 }
 
-GameEngine::Vector3 PlayerRearFollowCamera::GetCameraForward() const {
-   return aim_.GetState().cachedForward;
-}
-
-void PlayerRearFollowCamera::StartCameraMeasurement(const std::string& testName) {
-   recorder_.StartCameraMeasurement(testName, GetFrameView());
-}
-
-bool PlayerRearFollowCamera::StopCameraMeasurement(bool saveToFile) {
-   return recorder_.StopCameraMeasurement(saveToFile, *this);
-}
-
-void PlayerRearFollowCamera::ClearCameraMeasurement() {
-   recorder_.ClearCameraMeasurement();
-}
-
-bool PlayerRearFollowCamera::IsCameraMeasurementActive() const {
-   return recorder_.GetState().cameraMeasurementActive;
-}
-
-size_t PlayerRearFollowCamera::GetCameraMeasurementSampleCount() const {
-   return recorder_.GetState().cameraMeasurementSamples.size();
-}
-
-const std::string& PlayerRearFollowCamera::GetLastCameraMeasurementPath() const {
-   return recorder_.GetState().lastCameraMeasurementPath;
-}
-
 #ifdef USE_IMGUI
 void PlayerRearFollowCamera::DrawInspector() {
    bool enabled = IsEnabled();
    const auto sharedBefore = GetSharedParameters();
    auto settings = DescribeSettings();
-   RearCameraDebugView::DrawInspector(settings, enabled, GetFrameView(), recorder_);
+   RearCameraDebugView::DrawInspector(settings, enabled);
    Configure(settings);
    CommitParameterEdit(sharedBefore, ImGui::IsAnyItemActive());
    SetEnabled(enabled);
@@ -463,8 +421,6 @@ nlohmann::json PlayerRearFollowCamera::Serialize() const {
       {"lookAtRecoveryRange", lookAtRecoveryRange},
       {"lookAtRecoveryCurveControl1", lookAtRecoveryCurveControl1},
       {"lookAtRecoveryCurveControl2", lookAtRecoveryCurveControl2},
-      {"showCameraMeasurementOverlay", showCameraMeasurementOverlay},
-      {"showCameraEvidenceWindow", showCameraEvidenceWindow},
    };
 }
 
@@ -555,10 +511,6 @@ void PlayerRearFollowCamera::ReadParameters(const nlohmann::json& data, [[maybe_
       GameEngine::JsonValue::ReadFloat(data, "lookAtRecoveryCurveControl1", lookAtRecoveryCurveControl1), 0.0f, 1.0f);
    lookAtRecoveryCurveControl2 = std::clamp(
       GameEngine::JsonValue::ReadFloat(data, "lookAtRecoveryCurveControl2", lookAtRecoveryCurveControl2), 0.0f, 1.0f);
-   showCameraMeasurementOverlay =
-      GameEngine::JsonValue::ReadBool(data, "showCameraMeasurementOverlay", showCameraMeasurementOverlay);
-   showCameraEvidenceWindow =
-      GameEngine::JsonValue::ReadBool(data, "showCameraEvidenceWindow", showCameraEvidenceWindow);
    input_.autoSpeed = GameEngine::JsonValue::ReadFloat(data, "autoSpeed", input_.autoSpeed);
 
    // シーン復元時だけ履歴を初期化し、共有設定を編集中に反映するときは追従・補間状態を維持する。

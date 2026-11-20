@@ -1,11 +1,15 @@
 #include "GameEngine/pch.h"
 #include "GameEngine/Scene/SceneManager.h"
-#include "GameEngine/Framework/EngineContext.h"
+#include "GameEngine/Audio/Audio.h"
+#include "GameEngine/Graphics/Renderer/Renderer.h"
 #include "GameEngine/Object/Component/Audio/AudioSceneLifecycle.h"
 #include <fstream>
+#include <utility>
 
 namespace GameEngine {
-SceneManager::SceneManager(SceneCatalog& catalog) : catalog_(catalog) {
+SceneManager::SceneManager(
+   SceneCatalog& catalog, AssetManager& assets, Audio& audio, CameraManager& cameras, Renderer& renderer)
+   : assets_(assets), audio_(audio), cameras_(cameras), renderer_(renderer), catalog_(catalog) {
    ConfigureTransitionStates();
    transitionMachine_.Start(TransitionState::Idle);
 }
@@ -13,7 +17,7 @@ SceneManager::SceneManager(SceneCatalog& catalog) : catalog_(catalog) {
 void SceneManager::ConfigureTransitionStates() {
    transitionMachine_.AddState(TransitionState::Idle, {.onEnter = [this]() {
       elapsed_ = opacity_ = 0.0f;
-      EngineContext::SetSceneTransitionOpacity(opacity_);
+      renderer_.SetSceneTransitionOpacity(opacity_);
    }});
 
    StateMachine<TransitionState>::State fadingOut = {
@@ -29,7 +33,7 @@ void SceneManager::ConfigureTransitionStates() {
    transitionMachine_.AddState(TransitionState::PreparingFadeIn, {.onEnter = [this]() {
       elapsed_ = 0.0f;
       opacity_ = 1.0f;
-      EngineContext::SetSceneTransitionOpacity(opacity_);
+      renderer_.SetSceneTransitionOpacity(opacity_);
    }});
 
    StateMachine<TransitionState>::State fadingIn = {
@@ -53,7 +57,7 @@ void SceneManager::UpdateFade(float deltaTime, bool fadingOut) {
    elapsed_ += deltaTime;
    const float progress = std::clamp(elapsed_ / kTransitionDuration, 0.0f, 1.0f);
    opacity_ = fadingOut ? progress : 1.0f - progress;
-   EngineContext::SetSceneTransitionOpacity(opacity_);
+   renderer_.SetSceneTransitionOpacity(opacity_);
 
    if (progress >= 1.0f) {
       transitionMachine_.RequestState(fadingOut ? TransitionState::WaitingForCommit : TransitionState::Idle);
@@ -67,7 +71,7 @@ SceneManager::~SceneManager() {
 }
 
 void SceneManager::SetLifecycleCallbacks(std::function<void()> before,
-   std::function<void(const SceneSnapshot&, bool)> after, std::function<SceneSnapshot()> recovery) {
+   std::function<void(Scene&, const SceneSnapshot&)> after, std::function<SceneRecovery(const Scene&)> recovery) {
    beforeReplace_ = std::move(before);
    afterReplace_ = std::move(after);
    captureRecovery_ = std::move(recovery);
@@ -82,6 +86,7 @@ bool SceneManager::IsSceneTransitioning() const {
 }
 
 SceneLoadResult SceneManager::Report(SceneLoadStatus status, std::string message) {
+   lastRequestError_.clear();
    lastResult_ = {status, std::move(message)};
 
    if (status != SceneLoadStatus::Succeeded) {
@@ -90,7 +95,7 @@ SceneLoadResult SceneManager::Report(SceneLoadStatus status, std::string message
    return lastResult_;
 }
 
-bool SceneManager::ReadScene(const std::string& name, SceneSnapshot& snapshot) {
+bool SceneManager::ReadScene(const std::string& name, SceneSnapshot& snapshot, std::string& failure) {
    try {
       if (!catalog_.Reload()) {
          throw std::runtime_error(catalog_.GetLastError());
@@ -113,7 +118,7 @@ bool SceneManager::ReadScene(const std::string& name, SceneSnapshot& snapshot) {
       }
       return true;
    } catch (const std::exception& error) {
-      Report(SceneLoadStatus::Rejected, error.what());
+      failure = error.what();
       return false;
    }
 }
@@ -124,34 +129,39 @@ SceneLoadResult SceneManager::LoadInitialScene(const std::string& name) {
    }
    SceneSnapshot snapshot;
 
-   if (!ReadScene(name, snapshot)) {
-      return Report(SceneLoadStatus::Fatal, lastResult_.message);
+   std::string failure;
+
+   if (!ReadScene(name, snapshot, failure)) {
+      return Report(SceneLoadStatus::Fatal, std::move(failure));
    }
    return Replace(snapshot);
 }
 
-bool SceneManager::RequestSceneChange(const std::string& name) {
-   if (lastResult_.status == SceneLoadStatus::Fatal) {
-      return false;
+SceneRequestStatus SceneManager::RequestSceneChange(const std::string& name) {
+   if (!currentScene_ || lastResult_.status == SceneLoadStatus::Fatal) {
+      return SceneRequestStatus::Unavailable;
    }
 
    if (IsSceneTransitioning()) {
-      Report(SceneLoadStatus::Rejected, "Scene transition is already pending");
-      return false;
+      lastRequestError_ = "Scene transition is already pending";
+      return SceneRequestStatus::Busy;
    }
+
    SceneSnapshot snapshot;
 
-   if (!ReadScene(name, snapshot)) {
-      return false;
+   if (!ReadScene(name, snapshot, lastRequestError_)) {
+      Logger::Error(lastRequestError_);
+      return SceneRequestStatus::InvalidTarget;
    }
 
    // 予約時に読込と検証を済ませ、暗転後のフレーム境界では確定済みスナップショットを適用する。
    pending_ = std::move(snapshot);
-   return true;
+   lastRequestError_.clear();
+   return SceneRequestStatus::Accepted;
 }
 
-bool SceneManager::RequestReload() {
-   return currentScene_ && RequestSceneChange(currentScene_->GetDefinition().name);
+SceneRequestStatus SceneManager::RequestReload() {
+   return RequestSceneChange(GetCurrentSceneName());
 }
 
 SceneLoadResult SceneManager::RestoreSnapshot(const SceneSnapshot& snapshot) {
@@ -165,116 +175,126 @@ SceneLoadResult SceneManager::Replace(const SceneSnapshot& snapshot) {
    if (replacing_) {
       return Report(SceneLoadStatus::Rejected, "Reentrant scene replacement");
    }
+
+   replacing_ = true;
+   struct ReplacementScope {
+      bool& replacing;
+      Audio* audio = nullptr;
+
+      void FinishAudio(bool hasBgm) {
+         if (auto* pending = std::exchange(audio, nullptr)) {
+            pending->EndBgmSceneChange(hasBgm);
+         }
+      }
+
+      ~ReplacementScope() {
+         FinishAudio(false);
+         replacing = false;
+      }
+   } replacement{replacing_};
+
    // アセット準備に失敗した場合は現在のWorldと実行中の状態を維持する。
    const bool hadScene = currentScene_ != nullptr;
-   if (!Scene::PrepareAssets(snapshot.data)) {
+
+   if (!Scene::PrepareAssets(snapshot.data, assets_)) {
       return Report(hadScene ? SceneLoadStatus::Rejected : SceneLoadStatus::Fatal,
          "Could not prepare scene assets: " + snapshot.definition.name);
    }
 
-   // モード変更や資源の解放より先に復旧元を確保し、復旧時はシーンファイルを読み直さない。
-   SceneSnapshot recovery;
+   // モードや資源の変更前に、復元用データと編集状態を今回の切替に閉じ込める。
+   SceneRecovery recovery;
+
    try {
       if (hadScene) {
-         recovery = captureRecovery_ ? captureRecovery_()
-                                     : SceneSnapshot{currentScene_->GetDefinition(),
-                                          currentScene_->GetSceneWorld().SerializeToJson()};
+         recovery = captureRecovery_
+                       ? captureRecovery_(*currentScene_)
+                       : SceneRecovery{{currentScene_->GetDefinition(), currentScene_->GetSceneWorld().SerializeToJson()},
+                            {}};
       }
    } catch (const std::exception& error) {
       return Report(SceneLoadStatus::Rejected, error.what());
    }
-   replacing_ = true;
+
    CancelTransition();
-   auto* audio = EngineContext::GetAudio();
+   audio_.StopPreviews();
 
-   if (audio) {
-      audio->StopPreviews();
-
-      if (audio->IsAvailable()) {
-         // 旧シーンの破棄でBGM所有者が解放されても、次のシーンの要求が判明するまで停止判断を保留する。
-         audio->BeginBgmSceneChange();
-      }
+   if (audio_.IsAvailable()) {
+      // 旧シーンのBGM所有者が解放されても、次のシーンの要求が判明するまで停止判断を保留する。
+      audio_.BeginBgmSceneChange();
+      replacement.audio = &audio_;
    }
-   std::string failure;
+
+   const auto discardScene = [this]() {
+      if (currentScene_ && beforeReplace_) {
+         beforeReplace_();
+      }
+
+      currentScene_.reset();
+   };
+
+   const auto installScene = [this](const SceneSnapshot& source, const auto& attach) {
+      currentScene_ = std::make_unique<Scene>(source.definition, cameras_);
+
+      if (!currentScene_->Initialize(source.data)) {
+         throw std::runtime_error("Scene construction failed: " + source.definition.name);
+      }
+
+      if (attach) {
+         attach(*currentScene_, source);
+      }
+   };
+
+   auto status = SceneLoadStatus::Succeeded;
+   std::string description = "Loaded scene: " + snapshot.definition.name;
+
    try {
-      if (beforeReplace_) {
-         beforeReplace_();
-      }
-      currentScene_.reset();
-      currentScene_ = std::make_unique<Scene>(snapshot.definition);
-
-      if (!currentScene_->Initialize(snapshot.data)) {
-         throw std::runtime_error("Scene construction failed: " + snapshot.definition.name);
-      }
-
-      if (afterReplace_) {
-         afterReplace_(snapshot, false);
-      }
+      discardScene();
+      installScene(snapshot, afterReplace_);
    } catch (const std::exception& error) {
-      failure = error.what();
-   }
+      description = error.what();
 
-   if (!failure.empty()) {
-      // 構築途中のシーンと外部の接続を片付けてから、退避した旧シーンを再構築する。
-      if (beforeReplace_) {
-         beforeReplace_();
-      }
-      currentScene_.reset();
-
-      if (!hadScene) {
-         if (audio && audio->IsAvailable()) {
-            audio->EndBgmSceneChange(false);
-         }
-         replacing_ = false;
-         return Report(SceneLoadStatus::Fatal, failure);
-      }
       try {
-         if (!Scene::PrepareAssets(recovery.data)) {
+         // 構築途中のシーンと外部接続を外してから、退避した旧シーンを再構築する。
+         discardScene();
+
+         if (!hadScene) {
+            return Report(SceneLoadStatus::Fatal, std::move(description));
+         }
+
+         if (!Scene::PrepareAssets(recovery.snapshot.data, assets_)) {
             throw std::runtime_error("Could not prepare assets for the previous snapshot");
          }
-         currentScene_ = std::make_unique<Scene>(recovery.definition);
 
-         if (!currentScene_->Initialize(recovery.data)) {
-            throw std::runtime_error("Could not restore the previous snapshot");
+         installScene(recovery.snapshot, recovery.attach);
+         status = SceneLoadStatus::Recovered;
+         description += "; restored " + recovery.snapshot.definition.name;
+      } catch (const std::exception& recoveryError) {
+         try {
+            discardScene();
+         } catch (const std::exception& cleanupError) {
+            Logger::Error("Scene detachment failed: " + std::string(cleanupError.what()));
+            currentScene_.reset();
          }
 
-         if (afterReplace_) {
-            afterReplace_(recovery, true);
-         }
-      } catch (const std::exception& error) {
-         if (beforeReplace_) {
-            beforeReplace_();
-         }
-         currentScene_.reset();
-
-         if (audio && audio->IsAvailable()) {
-            audio->EndBgmSceneChange(false);
-         }
-         replacing_ = false;
-         return Report(SceneLoadStatus::Fatal, failure + "; recovery failed: " + error.what());
+         return Report(SceneLoadStatus::Fatal, description + "; recovery failed: " + recoveryError.what());
       }
    }
 
-   // 新規読込か復旧かにかかわらず、最終的に有効になったシーンのBGM要求で継続を判断する。
-   if (audio && audio->IsAvailable()) {
-      audio->EndBgmSceneChange(HasSceneBgmRequest(currentScene_->GetSceneWorld()));
+   // 新規読込か復旧かにかかわらず、実際に有効になったシーンのBGM要求で継続を判断する。
+   if (replacement.audio) {
+      replacement.FinishAudio(HasSceneBgmRequest(currentScene_->GetSceneWorld()));
    }
+
 #ifndef USE_IMGUI
    // 旧シーンのポーズを引き継ぐと、新しいシーンのBGMや自動再生SEの生成が拒否される。
-   if (audio) {
-      audio->SetGamePaused(false, false);
-   }
-
+   audio_.SetGamePaused(false, false);
    BeginSceneAudio(currentScene_->GetSceneWorld());
 #endif
-   replacing_ = false;
    BeginFadeIn();
-   return Report(failure.empty() ? SceneLoadStatus::Succeeded : SceneLoadStatus::Recovered,
-      failure.empty() ? "Loaded scene: " + snapshot.definition.name
-                      : failure + "; restored " + recovery.definition.name);
+   return Report(status, std::move(description));
 }
 
-void SceneManager::EditorUpdate() {
+void SceneManager::UpdateTransitionFade() {
    const auto state = transitionMachine_.GetCurrentState();
 
    if (state != TransitionState::FadingOut && state != TransitionState::FadingIn) return;
@@ -287,13 +307,7 @@ void SceneManager::EditorUpdate() {
    transitionMachine_.ResolveRequests();
 }
 
-void SceneManager::RuntimeUpdate() {
-   if (currentScene_) {
-      currentScene_->RuntimeUpdate(EngineContext::GetDeltaTime());
-   }
-}
-
-void SceneManager::CheckSceneChange() {
+void SceneManager::CommitPendingSceneChange() {
    if (replacing_) return;
 
    // 最初の描画で発生する資源準備も暗転中に済ませ、表示できる状態になってから復帰時間を計測する。

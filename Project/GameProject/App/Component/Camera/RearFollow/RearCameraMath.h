@@ -20,9 +20,6 @@ constexpr float kMaxSpringStep = 1.0f / 120.0f;
 // 旧ターボ係数が最大になっていた速度差を統合後も基準として使う。
 constexpr float kSpeedDeltaForMaxKick = 5.0f;
 constexpr float kGroundDirectionProjectionBlendRange = 0.15f;
-using GameEngine::MathConstants::kRadiansToDegrees;
-constexpr size_t kMaxCameraMeasurementSamples = 36000;
-constexpr const char* kCameraMeasurementDirectory = "../Generated/CameraMeasurements";
 
 /// @brief 非有限値を既定値へ戻し、描画に使えるFOV範囲へ制限する。
 float ClampCameraFov(float fov);
@@ -67,12 +64,6 @@ float SignedAngleAroundAxis(const GameEngine::Vector3& from, const GameEngine::V
 
 /// @brief 0..1 の値を端で滑らかになるS字カーブへ変換する
 float SmoothStep01(float value);
-
-/// @brief 2方向のなす角を度で返す
-float AngleDegrees(const GameEngine::Vector3& from, const GameEngine::Vector3& to);
-
-/// @brief ベクトルの全要素が有限値かを返す
-bool IsFiniteVector(const GameEngine::Vector3& value);
 
 /// @brief カメラの直交基底からワールド回転クォータニオンを構築する
 /// @details ビュー行列の回転部はワールド回転の転置なので、軸を列へ格納して変換する。

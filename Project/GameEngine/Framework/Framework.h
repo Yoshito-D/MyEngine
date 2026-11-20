@@ -16,6 +16,12 @@
 #include "GameEngine/Graphics/Renderer/Light/LightManager.h"
 
 namespace GameEngine {
+
+class SceneCatalog;
+class SceneManager;
+class SceneWorld;
+class UISystem;
+
 class Framework {
 public:
    /// @brief デフォルトコンストラクタ
@@ -49,9 +55,25 @@ protected:
    void InitializeEngine(bool gameplayMouseInputEnabled, const InputActionConfiguration& inputConfiguration);
 
    /// @brief 生入力からUIを更新し、ゲーム入力の遮断とUI実時間を確定する。
-   void UpdateUIFrame(bool runtimeUpdate, float uiDeltaTime);
+   /// @param ui このフレームで更新するシーンのUI。
+   /// @param runtimeUpdate UI操作とアニメーションを進めるかどうか。
+   /// @param uiDeltaTime UI更新に使う実時間（秒）。
+   void UpdateUIFrame(UISystem& ui, bool runtimeUpdate, float uiDeltaTime);
+
+   /// @brief アプリケーションのカタログとフレームワーク所有のサービスを使うシーン管理を作成する。
+   std::unique_ptr<SceneManager> CreateSceneManager(SceneCatalog& catalog);
+
+   /// @brief 初期化済みの音声サービスを取得する。参照はフレームワークを終了するまで有効。
+   Audio& GetAudioService() { return *audio_; }
+
+   /// @brief 最後に計測した実フレーム時間（秒）を取得する。
+   float GetRealDeltaTime() const { return timeProfiler_->GetDeltaTime(); }
+
+   /// @brief 指定Worldの描画を完了し、フレーム一時資源を解放する。Worldなしでも描画を完了する。
+   void RenderFrame(SceneWorld* world);
 
 private:
+   bool gameplayMouseInputEnabled_ = true; ///< ゲームの入力にマウスを含めるかどうか。
    bool waitForGameplayInputRelease_ = false; ///< メニュー終了操作をゲームへ持ち越さないための中立待ち。
 #ifdef _DEBUG
    /// @brief 他の所有メンバー破棄後にDirect3Dリソースの解放漏れを確認する監視オブジェクト。

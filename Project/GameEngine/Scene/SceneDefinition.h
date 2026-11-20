@@ -6,6 +6,14 @@
 
 namespace GameEngine {
 
+/// @brief シーン切替の予約受付結果。後続の構築・復旧結果はSceneLoadResultで通知する。
+enum class SceneRequestStatus {
+   Accepted,      ///< 予約が成立し、フレーム境界での切替を待っている。
+   Busy,          ///< 別の予約またはフェードが進行中。
+   InvalidTarget, ///< 指定先が未登録、読込不能、またはシーン形式が不正。
+   Unavailable   ///< 現在のシーンがないか、致命的な読込失敗が発生済み。
+};
+
 /// @brief シーンの論理名と、読み書きに使用する実ファイルパス。
 struct SceneDefinition {
    std::string name;               ///< 識別とエディター表示に使う名前。

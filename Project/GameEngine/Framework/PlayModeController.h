@@ -6,6 +6,7 @@
 
 namespace GameEngine {
 
+class Audio;
 class SceneManager;
 class Object;
 
@@ -22,6 +23,9 @@ const char* ToString(PlayMode mode);
 /// @brief 編集・再生・一時停止の遷移とゲーム時間を管理する
 class PlayModeController {
 public:
+   /// @brief プレイ中の音声状態を操作するサービスを接続する。音声サービスはこの制御より長く生存する。
+   explicit PlayModeController(Audio& audio) : audio_(audio) {}
+
    /// @brief 再生開始を次回更新へ予約する
    void RequestPlay();
 
@@ -48,7 +52,8 @@ public:
 
    /// @brief 予約された状態遷移を処理してゲーム時間を更新する
    /// @param sceneManager シーンの保存と復元に使用するマネージャー
-   void ProcessRequests(SceneManager& sceneManager);
+   /// @param realDeltaTime このフレームの実時間（秒）。
+   void ProcessRequests(SceneManager& sceneManager, float realDeltaTime);
 
    /// @brief 現在のプレイモードを取得する
    PlayMode GetMode() const { return mode_; }
@@ -108,6 +113,7 @@ private:
    /// @brief 再生開始時に保存したシーン情報を破棄する
    void ClearPlaySessionState();
 
+   Audio& audio_;                     ///< フレームワークが所有する音声サービス。
    PlayMode mode_ = PlayMode::Edit;      ///< 現在のプレイモード。
    bool playRequested_ = false;          ///< 次のフレーム境界でプレイを開始する要求。
    bool stopRequested_ = false;          ///< 次のフレーム境界でプレイを停止する要求。

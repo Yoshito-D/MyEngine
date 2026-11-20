@@ -158,72 +158,121 @@ bool ComponentContainer::Deserialize(const nlohmann::json& componentsData) {
       return false;
    }
 
-   std::unordered_set<std::string> validatedTypes;
+   std::unordered_set<std::string> serializedTypeNames;
+
    for (const auto& entry : componentsData) {
-      if (!entry.is_object() || !entry.contains("typeName") || !entry.at("typeName").is_string()) {
+      if (!entry.is_object() || !entry.contains("typeName") || !entry.at("typeName").is_string() ||
+          (entry.contains("enabled") && !entry.at("enabled").is_boolean()) ||
+          (entry.contains("data") && !entry.at("data").is_object()) ||
+          (entry.contains("parameterAssetId") && !entry.at("parameterAssetId").is_string())) {
          return false;
       }
-      const auto type = entry.at("typeName").get<std::string>();
-      if (!validatedTypes.insert(type).second ||
+
+      const auto& type = entry.at("typeName").get_ref<const std::string&>();
+
+      if (!serializedTypeNames.insert(type).second ||
           !ComponentRegistry::GetInstance().Supports(type, owner_.GetObjectType())) {
          return false;
       }
    }
 
-   // JSONを完全スナップショットとして扱うため、まず存在する型名を収集する。
-   // 先に追加・更新を始めると、削除対象判定が途中状態へ依存してしまう。
-   std::unordered_set<std::string> serializedTypeNames;
+   struct Change {
+      IObjectComponent* component;
+      bool enabled;
+      bool wasEnabled;
+      std::optional<ParameterComponent::PreparedParameters> desired;
+      std::optional<ParameterComponent::PreparedParameters> previous;
+   };
 
-   for (const auto& componentData : componentsData) {
-      if (componentData.is_object()) {
-         const std::string typeName = componentData.value("typeName", "");
-
-         if (!typeName.empty()) {
-            serializedTypeNames.insert(typeName);
-         }
-      }
-   }
-
-   // components_を走査中に直接eraseせず、型名を退避してから削除してIterator無効化を避ける。
-   std::vector<std::string> removedTypeNames;
+   std::unordered_set<IObjectComponent*> original;
+   std::vector<std::string> removedTypes;
 
    for (const auto& component : components_) {
-      if (component && !serializedTypeNames.contains(component->GetTypeName())) {
-         removedTypeNames.emplace_back(component->GetTypeName());
+      original.insert(component.get());
+
+      if (!serializedTypeNames.contains(component->GetTypeName())) {
+         removedTypes.emplace_back(component->GetTypeName());
       }
    }
 
-   for (const auto& typeName : removedTypeNames) {
-      RemoveByTypeName(typeName);
-   }
+   std::vector<Change> changes;
+   changes.reserve(componentsData.size());
+   size_t applied = 0;
 
-   for (const auto& componentData : componentsData) {
-      if (!componentData.is_object()) {
-         continue;
+   try {
+      // 追加時に作られる依存部品も含め、既存部品を外す前にすべての設定を準備する。
+      for (const auto& entry : componentsData) {
+         const auto& type = entry.at("typeName").get_ref<const std::string&>();
+         auto* component = AddByTypeName(type);
+
+         if (!component) {
+            throw std::runtime_error("Could not attach component: " + type);
+         }
+
+         const bool wasEnabled = component->IsEnabled();
+         Change change{component, entry.value("enabled", wasEnabled), wasEnabled, {}, {}};
+
+         if (entry.contains("data")) {
+            change.desired = component->PrepareParameters(entry, EngineContext::GetParameterAssetStore());
+
+            if (!change.desired) {
+               throw std::runtime_error("Could not prepare component parameters: " + type);
+            }
+
+            if (original.contains(component)) {
+               change.previous = component->CaptureParameters();
+            }
+         }
+
+         changes.push_back(std::move(change));
       }
 
-      const std::string typeName = componentData.value("typeName", "");
+      for (auto& change : changes) {
+         ++applied;
 
-      if (typeName.empty()) {
-         continue;
+         if (change.desired) {
+            change.component->ApplyParameters(std::move(*change.desired));
+         }
+
+         change.component->SetEnabled(change.enabled);
       }
+   } catch (const std::exception& error) {
+      Logger::Warning("Component snapshot restore failed: " + std::string(error.what()));
 
-      // AddByTypeNameは同型が既にあれば既存実体を返すため、新規作成と状態上書きを同じ経路で処理できる。
-      auto* component = AddByTypeName(typeName);
+      // 書き換えた既存値を戻す際に、欠損・更新済みの共有アセットを読み直さない。
+      while (applied > 0) {
+         auto& change = changes[--applied];
 
-      if (!component) {
-         return false;
-      }
+         if (!original.contains(change.component)) {
+            continue;
+         }
 
-      if (componentData.contains("enabled") && componentData.at("enabled").is_boolean()) {
-         component->SetEnabled(componentData.at("enabled").get<bool>());
-      }
+         try {
+            if (change.previous) {
+               change.component->ApplyParameters(std::move(*change.previous));
+            }
 
-      if (componentData.contains("data") && componentData.at("data").is_object()) {
-         if (!component->RestoreParameters(componentData, EngineContext::GetParameterAssetStore())) {
-            return false;
+            change.component->SetEnabled(change.wasEnabled);
+         } catch (const std::exception& restoreError) {
+            Logger::Error("Component rollback failed: " + std::string(restoreError.what()));
          }
       }
+
+      std::vector<std::string> addedTypes;
+      for (auto it = components_.rbegin(); it != components_.rend(); ++it) {
+         if (!original.contains(it->get())) {
+            addedTypes.emplace_back((*it)->GetTypeName());
+         }
+      }
+      for (const auto& type : addedTypes) {
+         RemoveByTypeName(type);
+      }
+
+      return false;
+   }
+
+   for (const auto& type : removedTypes) {
+      RemoveByTypeName(type);
    }
 
    return true;

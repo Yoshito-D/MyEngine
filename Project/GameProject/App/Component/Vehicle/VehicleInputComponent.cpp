@@ -1,4 +1,6 @@
 #include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
+#include "GameEngine/Object/Object.h"
+#include "GameProject/App/Component/Vehicle/VehicleDrift.h"
 #include <cstdint>
 
 #include "GameEngine/Input/InputActionService.h"
@@ -38,8 +40,14 @@ std::string JoinPrompts(std::string first, const std::string& second) {
 
 } // namespace
 
-std::string VehicleControlLabels::SteeringPrompt() const {
-   return GameEngine::FormatInputPrompt(steer, "ドリフト");
+std::string VehicleControlLabels::DriftPrompt() const {
+   using GameEngine::FormatInputPrompt;
+
+   if (usesDriftButton) {
+      return JoinPrompts(FormatInputPrompt(steer, "旋回"), FormatInputPrompt(drift, "ドリフト"));
+   }
+
+   return FormatInputPrompt(steer, "ドリフト");
 }
 
 std::string VehicleControlLabels::JumpPrompt() const {
@@ -47,16 +55,22 @@ std::string VehicleControlLabels::JumpPrompt() const {
 }
 
 std::string VehicleControlLabels::GroundPrompts() const {
-   return JoinPrompts(SteeringPrompt(), JumpPrompt());
+   return JoinPrompts(DriftPrompt(), JumpPrompt());
 }
 
 std::string VehicleControlLabels::AirPrompts() const {
    return JoinPrompts(GameEngine::FormatInputPrompt(pitch, "ピッチ"), GameEngine::FormatInputPrompt(roll, "ロール"));
 }
 
-VehicleControlLabels VehicleInputComponent::DescribeControlLabels(std::uint32_t playerSlot) {
+VehicleControlLabels VehicleInputComponent::DescribeControlLabels(const VehicleInputComponent* input) {
    using GameEngine::EngineContext;
+   const auto playerSlot = input ? input->DescribeSettings().playerSlot : 0u;
+   const auto* drift = input && input->HasOwner() ? input->GetOwner().GetComponent<VehicleDrift>() : nullptr;
+   const bool usesDriftButton = drift && drift->UsesDriftButton();
    return {.steer = EngineContext::DescribeInputActionBindings(kGameplayActionMap, kSteerAction, playerSlot),
+      .drift = usesDriftButton ? EngineContext::DescribeInputActionBindings(kGameplayActionMap, kDriftAction, playerSlot)
+                               : std::string{},
+      .usesDriftButton = usesDriftButton,
       .pitch = EngineContext::DescribeInputActionBindings(kGameplayActionMap, kPitchAction, playerSlot),
       .roll = EngineContext::DescribeInputActionBindings(kGameplayActionMap, kRollAction, playerSlot),
       .jump = EngineContext::DescribeInputActionBindings(kGameplayActionMap, kJumpAction, playerSlot),

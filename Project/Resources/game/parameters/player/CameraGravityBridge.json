@@ -3,9 +3,6 @@
    "domain": "Object",
    "componentType": "CameraGravityBridge",
    "data": {
-      "autoCapturePresentationSequence": false,
-      "autoCapturePresentationVideoFrames": false,
-      "debugDrawPresentationGuides": false,
       "driftCameraDistanceReduction": 0.30000001192092896,
       "driftCameraHeightOffset": -1.350000023841858,
       "driftCameraLerpSpeed": 7.0,
@@ -19,11 +16,6 @@
       "miniTurboShakeDuration": 0.20000000298023224,
       "miniTurboShakeFrequency": 8.0,
       "miniTurboShakeHorizontalAmplitude": 0.15000000596046448,
-      "miniTurboShakeVerticalAmplitude": 0.15000000596046448,
-      "presentationCaptureJumpDelay": 1.25,
-      "presentationGuideLength": 8.0,
-      "presentationVideoCaptureDuration": 8.0,
-      "presentationVideoCaptureStartDelay": 3.25,
-      "presentationVideoFrameRate": 10.0
+      "miniTurboShakeVerticalAmplitude": 0.15000000596046448
    }
 }

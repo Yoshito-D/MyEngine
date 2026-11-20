@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <initializer_list>
+#include <optional>
 #include <string>
 #include <nlohmann/json.hpp>
 
@@ -37,6 +38,26 @@ public:
 
    /// @brief コンポーネントEnvelopeに設定と参照IDを保存する。
    void WriteParameters(nlohmann::json& entry) const;
+
+   /// @brief アセット読込を済ませた設定。シーンへの適用と失敗時の復元に使用する。
+   class PreparedParameters {
+      friend class ParameterComponent;
+      ParameterAssetStore* store_ = nullptr;
+      std::string assetId_;
+      std::uint64_t revision_ = 0;
+      nlohmann::json sharedValues_;
+      nlohmann::json values_;
+   };
+
+   /// @brief 現在の設定とアセット接続を、ファイルを読み直さずに元へ戻せる形で取得する。
+   PreparedParameters CaptureParameters() const;
+
+   /// @brief シーンの個別設定と共有アセットを検証・結合する。設定値は変更しない。
+   /// @return 適用可能な設定。アセットが欠けているか設定が不正な場合は空。
+   std::optional<PreparedParameters> PrepareParameters(const nlohmann::json& entry, ParameterAssetStore& store);
+
+   /// @brief 検証済みの設定を適用してアセット接続を更新する。
+   void ApplyParameters(PreparedParameters prepared);
 
    /// @brief 初期設定を復元し、共有アセット参照を接続する。
    bool RestoreParameters(const nlohmann::json& entry, ParameterAssetStore& store);

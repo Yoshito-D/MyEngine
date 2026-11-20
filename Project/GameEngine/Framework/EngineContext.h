@@ -6,11 +6,11 @@
 #include <vector>
 #include <optional>
 #include <functional>
-#include <filesystem>
 #include <memory>
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
 #include "GameEngine/Input/Input.h"
 #include "GameEngine/Input/InputActionService.h"
+#include "GameEngine/Scene/SceneDefinition.h"
 #include "GameEngine/Audio/Audio.h"
 #include "GameEngine/Scene/SceneManager.h"
 #include "GameEngine/Graphics/Renderer/Renderer.h"
@@ -41,9 +41,6 @@ class Object;
 class EngineContextInitializer {
 private:
    friend class Framework;
-#ifdef MYPROJECT_NON_RELEASE
-   friend std::int32_t RunAudioSelfTests();
-#endif
 
    //================================================================
    // 初期化
@@ -53,15 +50,7 @@ private:
       Renderer* renderer, AssetManager* assetManager, TimeProfiler* timeProfiler, CameraManager* cameraManager,
       LightManager* lightManager, bool gameplayMouseInputEnabled);
 
-   void SetGraphicsDevice(GraphicsDevice* graphicsDevice);
-   void SetInput(Input* input);
-   void SetInputActionService(InputActionService* inputActionService);
-   void SetAudio(Audio* audio);
-   void SetRenderer(Renderer* renderer);
-   void SetAssetManager(AssetManager* assetManager);
-   void SetTimeProfiler(TimeProfiler* timeProfiler);
-   void SetCameraManager(CameraManager* cameraManager);
-   void SetLightManager(LightManager* lightManager);
+   void Reset();
 };
 
 class CinemachineBrain;
@@ -74,11 +63,8 @@ public:
    /// @brief アプリケーション所有のシーン管理を接続する。破棄前に接続を解除する。
    static void SetSceneManager(SceneManager* manager);
 
-   /// @brief UI入力と時間のフレーム状態を確定する。ゲーム用入力だけを遮断する。
-   static void SetUIFrameState(float deltaTime, bool gameplayInputBlocked);
-
-   /// @brief UIへ配布するフレーム時間（秒）を返す。エディター停止時は0。
-   static float GetUIFrameDeltaTime();
+   /// @brief 画面が開いている間や入力の解放待ちに、ゲーム向け入力を遮断する。
+   static void SetGameplayInputBlocked(bool blocked);
 
    /// @brief エディターの生入力参照区間を開始・終了する。ゲーム更新の外でだけ使用する。
    static void SetEditorInputAccess(bool enabled);
@@ -145,9 +131,6 @@ public:
    /// @param key キーコード
    /// @return キーがリリースされた場合はtrue
    static bool IsKeyReleased(KeyCode key);
-
-   /// @brief ゲーム内でマウスを入力として扱う設定かを返す。編集中のアクセス許可は別に扱う。
-   static bool IsGameplayMouseInputEnabled();
 
    /// @brief マウスのボタンが押されているか
    /// @param button マウスボタン（0:左, 1:右, 2:中ボタン）
@@ -310,12 +293,8 @@ public:
 
    /// @brief シーンを変更する
    /// @param name シーン名
-   /// @return 遷移先を検証し、切替を予約できた場合にtrue。
-   static bool ChangeScene(const std::string& name);
-
-   /// @brief シーン遷移用の全画面暗転率を設定する
-   /// @param opacity 0で通常表示、1で完全な黒
-   static void SetSceneTransitionOpacity(float opacity);
+   /// @return 予約の受付状態。実際のシーン構築は後続フレームで行う。
+   static SceneRequestStatus RequestSceneChange(const std::string& name);
 
    /// @brief カメラ演出用の暗転と黒帯の表示状態を設定する。
    /// @param opacity 0で通常表示、1で完全な黒。非有限値は0として扱う。
@@ -356,12 +335,6 @@ public:
    /// @param deltaTime ゲーム用デルタタイム（秒）
    static void SetGameDeltaTime(float deltaTime);
 
-   /// @brief 現在のゲーム更新フレーム番号を取得する
-   static uint64_t GetGameFrameNumber();
-
-   /// @brief ゲーム更新を始める直前にフレーム番号を1つ進める
-   static void AdvanceGameFrameNumber();
-
 #ifdef USE_IMGUI
 
    /// @brief エディターのプレイ状態を管理するコントローラーを接続する
@@ -387,9 +360,6 @@ public:
 
    /// @brief 現在のフレームでランタイム更新を実行すべきか判定する
    static bool ShouldRunRuntimeUpdate();
-
-   /// @brief プレイ状態とタイムスケールを反映したデルタタイムを取得する
-   static float GetGameDeltaTime();
 
    /// @brief ゲーム時間へ適用する倍率を取得する
    static float GetTimeScale();
@@ -508,18 +478,11 @@ public:
    // カメラマネージャー
    //================================================================
 
-   /// @brief CameraUnit（Brain+Cameraペア）を生成し登録する
-   /// @return 出力カメラと一緒に登録した初期化済みBrain
-   static CinemachineBrain* CreateCameraUnit(std::unique_ptr<Camera> outputCamera);
-
    /// @brief アクティブなCinemachineBrainを取得する
    static CinemachineBrain* GetActiveBrain();
 
    /// @brief アクティブなカメラを取得する（Renderer内部用）
    static Camera* GetActiveCamera();
-
-   /// @brief 全CameraUnitを削除する（シーン終了時に呼び出す）
-   static void ClearCameraUnits();
 
    /// @brief グラフィックスデバイスを取得する
    static GraphicsDevice* GetGraphicsDevice();
@@ -747,20 +710,10 @@ public:
    /// @return ピクセル単位の幅と高さ
    static Vector2 MeasureText(std::string_view text, const TextStyle& style);
 
-   /// @brief 次に完成するゲーム画面をPNGへ保存する
-   /// @param outputPath 保存先PNGパス
-   static void RequestScreenshot(const std::filesystem::path& outputPath);
-
 #ifdef USE_IMGUI
 
    /// @brief シーンビューへマウスカーソルが重なっているか取得する
    static bool GetIsSceneHovered();
-
-   /// @brief エディターのドックスペースが表示中か取得する
-   static bool GetIsDockSpaceVisible();
-
-   /// @brief エディターのドックスペース表示を切り替える
-   static void SetDockSpaceVisible(bool visible);
 
    /// @brief エディタの共通メニューと閉じるボタンで共有する表示状態を取得する。
    /// @param stableId ウィンドウの固定ID。

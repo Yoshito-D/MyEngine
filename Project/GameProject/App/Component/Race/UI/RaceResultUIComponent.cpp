@@ -69,7 +69,13 @@ void RaceResultUIComponent::Update(float) {
    text->SetText(BuildResultText());
 
    // 決定演出は演出コンポーネントだけが更新する。
-   if (resultRequested_) return;
+   if (resultRequested_) {
+      if (GameEngine::EngineContext::IsSceneTransitioning()) return;
+
+      // フェードが終わっても旧シーンが残る場合は選択を再開する。
+      resultRequested_ = false;
+      animation->Reveal(navigation_.GetSelectedIndex());
+   }
 
    animation->Select(navigation_.GetSelectedIndex(), false);
    RefreshSelectionText(*animation);
@@ -131,17 +137,17 @@ bool RaceResultUIComponent::ConfirmSelection(MenuSelectionAnimationComponent& an
    }
 
    if (navigation_.GetSelectedIndex() == 0) {
-      if (titleScene_.empty()) {
+      if (titleScene_.empty() ||
+          GameEngine::EngineContext::RequestSceneChange(titleScene_) != GameEngine::SceneRequestStatus::Accepted) {
          return false;
       }
-
-      GameEngine::EngineContext::ChangeScene(titleScene_);
    } else if (!raceManager_->RequestRestart()) {
       return false;
    }
 
-   resultRequested_ = animation.ConfirmSelection();
-   return resultRequested_;
+   animation.ConfirmSelection();
+   resultRequested_ = true;
+   return true;
 }
 
 std::string RaceResultUIComponent::BuildResultText() const {

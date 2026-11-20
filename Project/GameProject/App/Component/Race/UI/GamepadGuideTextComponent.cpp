@@ -58,8 +58,7 @@ void GamepadGuideTextComponent::Update(float deltaTime) {
    const bool airborne = characterJump_ && characterJump_->IsJumping();
 
    // 走行入力と同じスロットの割り当てを毎フレーム参照し、接続と再割り当てを表示へ反映する。
-   const auto playerSlot = vehicleInput_ ? vehicleInput_->DescribeSettings().playerSlot : 0u;
-   const auto controls = VehicleInputComponent::DescribeControlLabels(playerSlot);
+   const auto controls = VehicleInputComponent::DescribeControlLabels(vehicleInput_);
    text->SetText(airborne ? controls.AirPrompts() : controls.GroundPrompts());
 }
 

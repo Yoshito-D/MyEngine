@@ -205,7 +205,7 @@ bool PlayModeController::SaveComponent(Object& object, const std::string& compon
 }
 #endif
 
-void PlayModeController::ProcessRequests(SceneManager& sceneManager) {
+void PlayModeController::ProcessRequests(SceneManager& sceneManager, float realDeltaTime) {
 #ifdef USE_IMGUI
    // ゲーム更新より前に削除・差し替え済みComponentへのキャッシュを切り離す。
    if (auto* scene = sceneManager.GetCurrentScene()) {
@@ -246,15 +246,12 @@ void PlayModeController::ProcessRequests(SceneManager& sceneManager) {
 
    if (mode_ == PlayMode::Playing) {
       // 通常再生は実フレーム時間、Stepは再現性のある固定時間を使い、どちらもtimeScaleを最後に適用する。
-      gameDeltaTime_ = EngineContext::GetUnscaledDeltaTime() * timeScale_;
+      gameDeltaTime_ = realDeltaTime * timeScale_;
       shouldRunRuntimeUpdate_ = true;
    } else if (consumeStep) {
       gameDeltaTime_ = stepDeltaTime_ * timeScale_;
       shouldRunRuntimeUpdate_ = true;
    }
-
-   // EngineContext経由の全ゲーム処理へ、ここで確定した単一のDeltaTimeを配布する。
-   EngineContext::SetGameDeltaTime(gameDeltaTime_);
 }
 
 void PlayModeController::SetTimeScale(float timeScale) {
@@ -270,9 +267,7 @@ void PlayModeController::StopForSceneInitialization() {
    ClearTransitionRequests();
    EngineContext::SetGameDeltaTime(gameDeltaTime_);
 
-   if (auto* audio = EngineContext::GetAudio()) {
-      audio->SetGamePaused(previousMode != PlayMode::Edit, previousMode != PlayMode::Edit);
-   }
+   audio_.SetGamePaused(previousMode != PlayMode::Edit, previousMode != PlayMode::Edit);
 
    // シーン遷移は同じPlayセッションの一部。開始Snapshotは明示的なStopまで保持する。
    playRequested_ = previousMode != PlayMode::Edit;
@@ -285,9 +280,7 @@ void PlayModeController::StartPlaying(SceneManager& sceneManager) {
    if (hasPlaySession_) {
       mode_ = PlayMode::Playing;
 
-      if (auto* audio = EngineContext::GetAudio()) {
-         audio->SetGamePaused(false, false);
-      }
+      audio_.SetGamePaused(false, false);
 
       if (auto* scene = sceneManager.GetCurrentScene()) {
          BeginSceneAudio(scene->GetSceneWorld());
@@ -324,10 +317,8 @@ void PlayModeController::StartPlaying(SceneManager& sceneManager) {
    // Snapshot取得後にPlayingへ移し、Serialize中の処理からはまだEdit状態として見えるようにする。
    mode_ = PlayMode::Playing;
 
-   if (auto* audio = EngineContext::GetAudio()) {
-      audio->SetGamePaused(false, false);
-      audio->StopPreviews();
-   }
+   audio_.SetGamePaused(false, false);
+   audio_.StopPreviews();
 
    if (auto* scene = sceneManager.GetCurrentScene()) {
       BeginSceneAudio(scene->GetSceneWorld());
@@ -372,10 +363,8 @@ void PlayModeController::StopPlaying(SceneManager& sceneManager) {
       mode_ = PlayMode::Edit;
    }
 
-   if (auto* audio = EngineContext::GetAudio()) {
-      audio->StopGameAudio();
-      audio->StopPreviews();
-   }
+   audio_.StopGameAudio();
+   audio_.StopPreviews();
    ClearPlaySessionState();
 }
 
@@ -386,10 +375,8 @@ void PlayModeController::StopAfterLoadFailure() {
    EngineContext::SetGameDeltaTime(0.0f);
    ClearTransitionRequests();
    ClearPlaySessionState();
-   if (auto* audio = EngineContext::GetAudio()) {
-      audio->StopGameAudio();
-      audio->SetGamePaused(false, false);
-   }
+   audio_.StopGameAudio();
+   audio_.SetGamePaused(false, false);
 }
 
 void PlayModeController::ClearTransitionRequests() {

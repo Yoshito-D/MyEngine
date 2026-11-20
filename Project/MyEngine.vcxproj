@@ -191,7 +191,6 @@
     <ClCompile Include="GameProject\App\Component\Race\StageIntroSequence.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\VehicleCameraEffects.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\LandingPrediction.cpp" />
-    <ClCompile Include="GameProject\App\Component\Camera\CameraPresentationCapture.cpp" />
     <ClCompile Include="GameEngine\Math\Functions\CollisionGeometry.cpp" />
     <ClCompile Include="GameEngine\Editor\ParameterAssetEditor.cpp" />
     <ClCompile Include="GameEngine\Object\Component\Base\ParameterComponent.cpp" />
@@ -496,7 +495,6 @@
     <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraSpeedEffects.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraPositionSolver.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraAimSolver.cpp" />
-    <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraMeasurementRecorder.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraDebugView.cpp" />
     <ClCompile Include="GameProject\App\Component\Camera\ScreenSpaceBasis.cpp" />
     <ClCompile Include="GameProject\App\Component\Character\CharacterJump.cpp" />
@@ -574,7 +572,6 @@
     <ClInclude Include="GameProject\App\Component\Race\StageIntroSequence.h" />
     <ClInclude Include="GameProject\App\Component\Camera\VehicleCameraEffects.h" />
     <ClInclude Include="GameProject\App\Component\Camera\LandingPrediction.h" />
-    <ClInclude Include="GameProject\App\Component\Camera\CameraPresentationCapture.h" />
     <ClInclude Include="GameEngine\Math\Functions\CollisionGeometry.h" />
     <ClInclude Include="GameEngine\Editor\ParameterAssetEditor.h" />
     <ClInclude Include="GameEngine\Object\Component\Base\ParameterComponent.h" />
@@ -796,11 +793,9 @@
     <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraSpeedEffects.h" />
     <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraPositionSolver.h" />
     <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraAimSolver.h" />
-    <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraMeasurementRecorder.h" />
     <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraDebugView.h" />
     <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraTypes.h" />
     <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraMath.h" />
-    <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraFrameView.h" />
     <ClInclude Include="GameProject\App\Component\Camera\ScreenSpaceBasis.h" />
     <ClInclude Include="GameProject\App\Component\Character\CharacterJump.h" />
     <ClInclude Include="GameProject\App\Component\Character\CharacterLanding.h" />

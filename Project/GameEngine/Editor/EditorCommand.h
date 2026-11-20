@@ -35,7 +35,8 @@ public:
 
    /// @brief 直前の実行結果を取り消す
    /// @param context 操作対象のエディタシーン
-   virtual void Undo(EditorCommandTarget& context) = 0;
+   /// @return 元の状態を復元できた場合はtrue。失敗時は履歴上の位置を維持する。
+   virtual bool Undo(EditorCommandTarget& context) = 0;
 
    /// @brief Undo/Redoメニューへ表示する操作名を取得する
    /// @return コマンドが所有する有効な文字列
@@ -117,7 +118,7 @@ public:
 
    /// @brief 現在の状態をRedo用に保存してから、生成したObjectまたは粒子システムを削除する。
    /// @param context 実行時の対象を安定IDから解決できる編集シーンへの操作窓口。
-   void Undo(EditorCommandTarget& context) override;
+   bool Undo(EditorCommandTarget& context) override;
 
    /// @brief Undo/Redoメニューへ表示する要素の生成の操作名を返す。
    /// @return コマンドの存続中有効な操作名。呼び出し側では解放しない。
@@ -145,7 +146,7 @@ public:
 
    /// @brief 保存した編集前の状態を既存のObjectまたは粒子システムへ適用する。
    /// @param context 実行時の対象を安定IDから解決できる編集シーンへの操作窓口。
-   void Undo(EditorCommandTarget& context) override;
+   bool Undo(EditorCommandTarget& context) override;
 
    /// @brief Undo/Redoメニューへ表示する状態編集の操作名を返す。
    /// @return コマンドの存続中有効な操作名。呼び出し側では解放しない。
@@ -176,7 +177,7 @@ public:
 
    /// @brief 同じ安定IDの仮想カメラへ、部品構成を含む変更前の状態を復元する。
    /// @param context 現在の編集操作窓口。
-   void Undo(EditorCommandTarget& context) override;
+   bool Undo(EditorCommandTarget& context) override;
 
    /// @brief Undo/Redoメニューへ表示するカメラ編集の操作名を返す。
    const char* GetName() const override { return "Edit Virtual Camera"; }
@@ -201,7 +202,7 @@ public:
 
    /// @brief 対象Objectの親IDとHierarchy表示順を変更前へ戻す。
    /// @param context 実行時の対象を安定IDから解決できる編集シーンへの操作窓口。
-   void Undo(EditorCommandTarget& context) override;
+   bool Undo(EditorCommandTarget& context) override;
 
    /// @brief Undo/Redoメニューへ表示する親子関係と表示順の変更の操作名を返す。
    /// @return コマンドの存続中有効な操作名。呼び出し側では解放しない。
@@ -231,7 +232,7 @@ public:
 
    /// @brief 削除前の保存状態からObjectを復元し、子の親参照と選択を戻す。
    /// @param context 実行時の対象を安定IDから解決できる編集シーンへの操作窓口。
-   void Undo(EditorCommandTarget& context) override;
+   bool Undo(EditorCommandTarget& context) override;
 
    /// @brief Undo/Redoメニューへ表示するObjectの削除の操作名を返す。
    /// @return コマンドの存続中有効な操作名。呼び出し側では解放しない。
@@ -256,7 +257,7 @@ public:
 
    /// @brief 保存状態から粒子システムを復元し、削除前の再生状態と選択を戻す。
    /// @param context 実行時の対象を安定IDから解決できる編集シーンへの操作窓口。
-   void Undo(EditorCommandTarget& context) override;
+   bool Undo(EditorCommandTarget& context) override;
 
    /// @brief Undo/Redoメニューへ表示する粒子システムの削除の操作名を返す。
    /// @return コマンドの存続中有効な操作名。呼び出し側では解放しない。
@@ -283,14 +284,13 @@ public:
 
    /// @brief 対象Objectのローカルトランスフォームを操作前の姿勢へ戻す。
    /// @param context 実行時の対象を安定IDから解決できる編集シーンへの操作窓口。
-   void Undo(EditorCommandTarget& context) override;
+   bool Undo(EditorCommandTarget& context) override;
 
    /// @brief Undo/Redoメニューへ表示するObjectの変形の操作名を返す。
    /// @return コマンドの存続中有効な操作名。呼び出し側では解放しない。
    const char* GetName() const override { return "Transform Object"; }
 
 private:
-   void Apply(EditorCommandTarget& context, const Transform& transform) const;
 
    std::string objectId_; ///< 編集や参照の対象オブジェクトを識別する安定Entity ID。
    Transform before_{};   ///< 取り消し時に戻す編集前の状態。
@@ -313,14 +313,13 @@ public:
 
    /// @brief 対象粒子システムの放出形状を操作前の姿勢へ戻す。
    /// @param context 実行時の対象を安定IDから解決できる編集シーンへの操作窓口。
-   void Undo(EditorCommandTarget& context) override;
+   bool Undo(EditorCommandTarget& context) override;
 
    /// @brief Undo/Redoメニューへ表示する粒子システムの変形の操作名を返す。
    /// @return コマンドの存続中有効な操作名。呼び出し側では解放しない。
    const char* GetName() const override { return "Transform Particle System"; }
 
 private:
-   void Apply(EditorCommandTarget& context, const Transform& transform) const;
 
    std::string objectId_; ///< 編集や参照の対象オブジェクトを識別する安定Entity ID。
    Transform before_{};   ///< 取り消し時に戻す編集前の状態。
@@ -342,7 +341,7 @@ public:
 
    /// @brief 復元した対象の直前の状態を保存し、確定済みの安定IDで対象を削除する。
    /// @param context 実行時の対象を安定IDから解決できる編集シーンへの操作窓口。
-   void Undo(EditorCommandTarget& context) override;
+   bool Undo(EditorCommandTarget& context) override;
 
    /// @brief Undo/Redoメニューへ表示するスナップショットの復元の操作名を返す。
    /// @return コマンドの存続中有効な操作名。呼び出し側では解放しない。
@@ -370,7 +369,7 @@ public:
 
    /// @brief 保存したObject全体の状態を適用し、依存コンポーネントも含めて操作前へ戻す。
    /// @param context 実行時の対象を安定IDから解決できる編集シーンへの操作窓口。
-   void Undo(EditorCommandTarget& context) override;
+   bool Undo(EditorCommandTarget& context) override;
 
    /// @brief Undo/Redoメニューへ表示するコンポーネントの追加・削除の操作名を返す。
    /// @return コマンドの存続中有効な操作名。呼び出し側では解放しない。
