@@ -4,13 +4,13 @@
 #include "GameProject/App/Component/Camera/IVehicleCamera.h"
 #include "GameEngine/Scene/Camera/Core/CameraState.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraPositionSolver.h"
-#include "GameProject/App/Component/Camera/RearFollow/RearCameraMeasurementRecorder.h"
-#include <cstddef>
+#include "GameProject/App/Component/Camera/RearFollow/RearCameraAimSolver.h"
+#include "GameProject/App/Component/Camera/RearFollow/RearCameraDirectionTracker.h"
+#include "GameProject/App/Component/Camera/RearFollow/RearCameraGravityUp.h"
+#include "GameProject/App/Component/Camera/RearFollow/RearCameraPlanetGuide.h"
+#include "GameProject/App/Component/Camera/RearFollow/RearCameraSpeedEffects.h"
+#include "GameProject/App/Component/Camera/RearFollow/RearCameraTransition.h"
 #include <cstdint>
-#include <string>
-#include <vector>
-#include <algorithm>
-#include <cmath>
 
 namespace App {
 
@@ -39,12 +39,6 @@ public:
 
    /// @brief 関連する追従設定を検証して一括適用する。
    void Configure(const RearCameraSettings& requested);
-
-   /// @brief 外部から渡された追従入力を読み取り専用で返す。
-   const RearCameraInput& GetInput() const { return input_; }
-
-   /// @brief 計測・UI用に、所有する計算結果の非所有ビューを返す。
-   RearCameraFrameView GetFrameView() const;
 
    /// @brief 重力Up・追従位置・注視姿勢を依存順に計算してカメラへ反映する。
    void MutateCameraState(GameEngine::CameraState& state, float deltaTime) override;
@@ -124,30 +118,6 @@ public:
    /// @brief 直近更新時のカメラRightを取得する
    GameEngine::Vector3 GetCameraRight() const;
 
-   /// @brief 直近更新時のカメラ前方を取得する
-   GameEngine::Vector3 GetCameraForward() const;
-
-   /// @brief カメラ3軸のフレーム計測を開始する
-   /// @param testName CSVへ記録する検証条件名
-   void StartCameraMeasurement(const std::string& testName = "camera_live");
-
-   /// @brief カメラ3軸のフレーム計測を停止する
-   /// @param saveToFile trueならCSVと要約JSONを保存する
-   /// @return 保存を要求しなかった場合、または保存に成功した場合はtrue
-   bool StopCameraMeasurement(bool saveToFile = true);
-
-   /// @brief 記録済みのカメラ計測履歴と集計値を消去する
-   void ClearCameraMeasurement();
-
-   /// @brief カメラ計測中かを返す
-   bool IsCameraMeasurementActive() const;
-
-   /// @brief 現在保持しているカメラ計測フレーム数を返す
-   size_t GetCameraMeasurementSampleCount() const;
-
-   /// @brief 最後に保存したカメラ計測CSVのパスを返す
-   const std::string& GetLastCameraMeasurementPath() const;
-
    /// @brief カメラ設定をシリアライズする
    nlohmann::json Serialize() const override;
 
@@ -194,7 +164,6 @@ private:
    RearCameraSpeedEffects speed_;
    RearCameraPositionSolver position_;
    RearCameraAimSolver aim_;
-   RearCameraMeasurementRecorder recorder_;
    RearCameraInput input_; ///< 外部から渡された追従入力。
 };
 

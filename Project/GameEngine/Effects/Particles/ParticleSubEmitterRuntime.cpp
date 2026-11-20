@@ -23,7 +23,7 @@ void ParticleSubEmitterRuntime::Queue(const std::string& effectPath, const Vecto
 
 void ParticleSubEmitterRuntime::Retire(std::unique_ptr<ParticleSystem> child) {
    // レジストリは非所有なので直ちに解除し、GPU資源だけをフレーム境界まで保持する。
-   ParticleSystem::UnregisterParticleSystem(child.get());
+   child->SetWorld(nullptr);
    retiredChildren_.push_back(std::move(child));
 }
 
@@ -47,7 +47,6 @@ void ParticleSubEmitterRuntime::ProcessPending() {
 
       auto child = std::make_unique<ParticleSystem>();
       child->SetWorld(&world_);
-      child->SetEditorInspectable(false);
 
       if (!child->LoadFromJson(event.effectPath)) {
          continue;

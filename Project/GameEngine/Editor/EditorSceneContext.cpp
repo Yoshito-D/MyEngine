@@ -434,8 +434,8 @@ public:
       return true;
    }
 
-   /// @brief 子孫を含めて操作を取り消す。
-   void Undo(EditorCommandTarget& target) override { target.ApplyUIScreen(asset_, !remove_, false); }
+   /// @brief 子孫を含めて画面の追加・削除を取り消し、成功した場合にtrueを返す。
+   bool Undo(EditorCommandTarget& target) override { return !target.ApplyUIScreen(asset_, !remove_, false).empty(); }
 
    /// @brief 履歴に表示する操作名を返す。
    const char* GetName() const override { return remove_ ? "Delete UI Screen" : "Place UI Screen"; }
@@ -531,8 +531,11 @@ nlohmann::json EditorSceneContext::CommandOperations::ApplyUIScreen(
          return {};
       }
       snapshot["editorHierarchyOrder"] = owner_.hierarchyOrder_;
+      if (!store.DeleteSubtree(id)) {
+         return {};
+      }
+
       owner_.SelectObject(nullptr);
-      store.DeleteSubtree(id);
       return snapshot;
    }
    const auto id = store.RestoreSubtree(asset, freshIds, error);

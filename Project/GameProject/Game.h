@@ -45,7 +45,5 @@ private:
    std::unique_ptr<GameEngine::PlayModeController> playModeController_ = nullptr;
    /// @brief 現在シーンの選択・ギズモ・編集状態を管理する所有セッション。
    std::unique_ptr<GameEngine::EditorSceneSession> editorSession_;
-   bool recoveryFromPlay_ = false; ///< 置換失敗の復旧元がプレイ開始前の保存状態かどうか。
-   bool recoveryWasDirty_ = false; ///< 復旧時に戻す元の未保存変更フラグ。
 #endif
 };

@@ -17,32 +17,23 @@ bool EditorCommandStack::Execute(std::unique_ptr<IEditorCommand> command, Editor
 }
 
 bool EditorCommandStack::Undo(EditorCommandTarget& context) {
-   if (undoStack_.empty()) {
+   if (undoStack_.empty() || !undoStack_.back()->Undo(context)) {
       return false;
    }
 
-   // Command自身がUndo中にRedo用スナップショットを更新できるため、同じインスタンスを反対側のStackへ移す。
-   auto command = std::move(undoStack_.back());
+   // 復元に成功した同じCommandを移し、Undo中に更新したRedo用スナップショットを保持する。
+   redoStack_.push_back(std::move(undoStack_.back()));
    undoStack_.pop_back();
-   command->Undo(context);
-   redoStack_.push_back(std::move(command));
    return true;
 }
 
 bool EditorCommandStack::Redo(EditorCommandTarget& context) {
-   if (redoStack_.empty()) {
+   if (redoStack_.empty() || !redoStack_.back()->Execute(context)) {
       return false;
    }
 
-   auto command = std::move(redoStack_.back());
+   undoStack_.push_back(std::move(redoStack_.back()));
    redoStack_.pop_back();
-
-   // 再実行に失敗したCommandは現在状態と整合しないため、Undo履歴へ戻さずこの分岐を打ち切る。
-   if (!command->Execute(context)) {
-      return false;
-   }
-
-   undoStack_.push_back(std::move(command));
    return true;
 }
 
@@ -89,25 +80,29 @@ const char* CreateObjectCommand::GetName() const {
 }
 
 bool CreateObjectCommand::Execute(EditorCommandTarget& context) {
-   snapshot_ = context.Create(kind_, initialTransform_, assetId_, parentId_, snapshot_);
+   auto restored = context.Create(kind_, initialTransform_, assetId_, parentId_, snapshot_);
 
-   if (!snapshot_.is_object()) {
+   if (!restored.is_object() || restored.value("id", "").empty()) {
       return false;
    }
 
-   objectId_ = snapshot_.value("id", "");
-   return !objectId_.empty();
+   // 初回と再実行で同じ登録IDと保存状態を保持する。
+   objectId_ = restored.value("id", "");
+   snapshot_ = std::move(restored);
+   return true;
 }
 
-void CreateObjectCommand::Undo(EditorCommandTarget& context) {
+bool CreateObjectCommand::Undo(EditorCommandTarget& context) {
    const bool particle = kind_ == Kind::Particle;
-
-   if (!context.Contains(objectId_, particle)) return;
-
-   // Undo前の全状態を保持し、Redoも初回と同じID・設定・親を復元する。
-   snapshot_ = context.Capture(objectId_, particle);
    RemovedEditorEntity removed;
-   context.Remove(objectId_, particle, removed);
+
+   if (!context.Remove(objectId_, particle, removed)) {
+      return false;
+   }
+
+   // Undo前の全状態を保持し、Redoで同じID・設定・親を復元する。
+   snapshot_ = std::move(removed.snapshot);
+   return true;
 }
 
 EditObjectStateCommand::EditObjectStateCommand(
@@ -133,8 +128,8 @@ bool EditObjectStateCommand::Execute(EditorCommandTarget& context) {
    return Apply(context, after_);
 }
 
-void EditObjectStateCommand::Undo(EditorCommandTarget& context) {
-   Apply(context, before_);
+bool EditObjectStateCommand::Undo(EditorCommandTarget& context) {
+   return Apply(context, before_);
 }
 
 bool EditObjectStateCommand::Apply(EditorCommandTarget& context, const nlohmann::json& snapshot) {
@@ -165,8 +160,8 @@ bool EditVirtualCameraStateCommand::Execute(EditorCommandTarget& context) {
    return context.ApplyCameraSnapshot(id_, after_);
 }
 
-void EditVirtualCameraStateCommand::Undo(EditorCommandTarget& context) {
-   context.ApplyCameraSnapshot(id_, before_);
+bool EditVirtualCameraStateCommand::Undo(EditorCommandTarget& context) {
+   return context.ApplyCameraSnapshot(id_, before_);
 }
 
 ReorderObjectCommand::ReorderObjectCommand(std::string id, std::string beforeParent, std::string afterParent,
@@ -183,8 +178,8 @@ bool ReorderObjectCommand::Execute(EditorCommandTarget& context) {
    return Apply(context, afterParent_, afterOrder_);
 }
 
-void ReorderObjectCommand::Undo(EditorCommandTarget& context) {
-   Apply(context, beforeParent_, beforeOrder_);
+bool ReorderObjectCommand::Undo(EditorCommandTarget& context) {
+   return Apply(context, beforeParent_, beforeOrder_);
 }
 
 bool ReorderObjectCommand::Apply(
@@ -199,8 +194,8 @@ bool DeleteObjectCommand::Execute(EditorCommandTarget& context) {
    return context.Remove(objectId_, false, removed_);
 }
 
-void DeleteObjectCommand::Undo(EditorCommandTarget& context) {
-   context.Restore(removed_, false);
+bool DeleteObjectCommand::Undo(EditorCommandTarget& context) {
+   return context.Restore(removed_, false);
 }
 
 DeleteParticleSystemCommand::DeleteParticleSystemCommand(std::string objectId) : objectId_(std::move(objectId)) {
@@ -210,8 +205,8 @@ bool DeleteParticleSystemCommand::Execute(EditorCommandTarget& context) {
    return context.Remove(objectId_, true, removed_);
 }
 
-void DeleteParticleSystemCommand::Undo(EditorCommandTarget& context) {
-   context.Restore(removed_, true);
+bool DeleteParticleSystemCommand::Undo(EditorCommandTarget& context) {
+   return context.Restore(removed_, true);
 }
 
 TransformObjectCommand::TransformObjectCommand(std::string objectId, const Transform& before, const Transform& after)
@@ -222,12 +217,8 @@ bool TransformObjectCommand::Execute(EditorCommandTarget& context) {
    return context.ApplyPose(objectId_, after_, false);
 }
 
-void TransformObjectCommand::Undo(EditorCommandTarget& context) {
-   Apply(context, before_);
-}
-
-void TransformObjectCommand::Apply(EditorCommandTarget& context, const Transform& transform) const {
-   context.ApplyPose(objectId_, transform, false);
+bool TransformObjectCommand::Undo(EditorCommandTarget& context) {
+   return context.ApplyPose(objectId_, before_, false);
 }
 
 TransformParticleSystemCommand::TransformParticleSystemCommand(
@@ -239,12 +230,8 @@ bool TransformParticleSystemCommand::Execute(EditorCommandTarget& context) {
    return context.ApplyPose(objectId_, after_, true);
 }
 
-void TransformParticleSystemCommand::Undo(EditorCommandTarget& context) {
-   Apply(context, before_);
-}
-
-void TransformParticleSystemCommand::Apply(EditorCommandTarget& context, const Transform& transform) const {
-   context.ApplyPose(objectId_, transform, true);
+bool TransformParticleSystemCommand::Undo(EditorCommandTarget& context) {
+   return context.ApplyPose(objectId_, before_, true);
 }
 
 RestoreObjectSnapshotCommand::RestoreObjectSnapshotCommand(nlohmann::json snapshot, std::string commandName)
@@ -256,26 +243,29 @@ bool RestoreObjectSnapshotCommand::Execute(EditorCommandTarget& context) {
       return false;
    }
 
-   snapshot_ = context.RestoreSnapshot(snapshot_);
+   auto restored = context.RestoreSnapshot(snapshot_);
 
-   if (!snapshot_.is_object()) {
+   if (!restored.is_object() || restored.value("id", "").empty()) {
       return false;
    }
 
-   // 初回に採番された実IDを次回の復元入力にも保持し、複製のRedoで参照先IDを変えない。
-   restoredObjectId_ = snapshot_.value("id", "");
-   return !restoredObjectId_.empty();
+   // 初回と再実行で同じ登録IDと保存状態を保持する。
+   restoredObjectId_ = restored.value("id", "");
+   snapshot_ = std::move(restored);
+   return true;
 }
 
-void RestoreObjectSnapshotCommand::Undo(EditorCommandTarget& context) {
+bool RestoreObjectSnapshotCommand::Undo(EditorCommandTarget& context) {
    const bool particle = snapshot_.value("objectType", "Model") == "ParticleSystem";
-
-   if (!context.Contains(restoredObjectId_, particle)) return;
-
-   // Undo直前の状態を保存し、実際の登録IDで取り消す。
-   snapshot_ = context.Capture(restoredObjectId_, particle);
    RemovedEditorEntity removed;
-   context.Remove(restoredObjectId_, particle, removed);
+
+   if (!context.Remove(restoredObjectId_, particle, removed)) {
+      return false;
+   }
+
+   // Undo前の全状態を保持し、Redoで同じID・設定・親を復元する。
+   snapshot_ = std::move(removed.snapshot);
+   return true;
 }
 
 ModifyComponentCommand::ModifyComponentCommand(std::string objectId, std::string typeName, bool add)
@@ -295,10 +285,8 @@ bool ModifyComponentCommand::Execute(EditorCommandTarget& context) {
    return context.ModifyComponent(objectId_, typeName_, add_);
 }
 
-void ModifyComponentCommand::Undo(EditorCommandTarget& context) {
-   if (beforeSnapshot_.is_object()) {
-      context.ApplySnapshot(objectId_, beforeSnapshot_, false);
-   }
+bool ModifyComponentCommand::Undo(EditorCommandTarget& context) {
+   return beforeSnapshot_.is_object() && context.ApplySnapshot(objectId_, beforeSnapshot_, false);
 }
 
 } // namespace GameEngine

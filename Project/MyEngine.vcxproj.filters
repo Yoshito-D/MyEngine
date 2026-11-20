@@ -305,9 +305,6 @@
     <ClCompile Include="GameProject\App\Component\Camera\LandingPrediction.cpp">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="GameProject\App\Component\Camera\CameraPresentationCapture.cpp">
-      <Filter>GameProject\App\Component\Camera</Filter>
-    </ClCompile>
     <ClCompile Include="GameEngine\Math\Functions\CollisionGeometry.cpp">
       <Filter>GameEngine\Math\Functions</Filter>
     </ClCompile>
@@ -932,9 +929,6 @@
     <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraMath.cpp">
       <Filter>GameProject\App\Component\Camera\RearFollow</Filter>
     </ClCompile>
-    <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraMeasurementRecorder.cpp">
-      <Filter>GameProject\App\Component\Camera\RearFollow</Filter>
-    </ClCompile>
     <ClCompile Include="GameProject\App\Component\Camera\RearFollow\RearCameraPlanetGuide.cpp">
       <Filter>GameProject\App\Component\Camera\RearFollow</Filter>
     </ClCompile>
@@ -1104,9 +1098,6 @@
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Camera\LandingPrediction.h">
-      <Filter>GameProject\App\Component\Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Component\Camera\CameraPresentationCapture.h">
       <Filter>GameProject\App\Component\Camera</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Math\Functions\CollisionGeometry.h">
@@ -1778,16 +1769,10 @@
     <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraDirectionTracker.h">
       <Filter>GameProject\App\Component\Camera\RearFollow</Filter>
     </ClInclude>
-    <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraFrameView.h">
-      <Filter>GameProject\App\Component\Camera\RearFollow</Filter>
-    </ClInclude>
     <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraGravityUp.h">
       <Filter>GameProject\App\Component\Camera\RearFollow</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraMath.h">
-      <Filter>GameProject\App\Component\Camera\RearFollow</Filter>
-    </ClInclude>
-    <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraMeasurementRecorder.h">
       <Filter>GameProject\App\Component\Camera\RearFollow</Filter>
     </ClInclude>
     <ClInclude Include="GameProject\App\Component\Camera\RearFollow\RearCameraPlanetGuide.h">

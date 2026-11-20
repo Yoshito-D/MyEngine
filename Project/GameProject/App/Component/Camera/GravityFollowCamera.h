@@ -34,6 +34,11 @@ public:
    /// @brief 入力を反映して方位・ピッチ・距離を更新する
    void ProcessInput(const GameEngine::Vector2& mouseDelta, int32_t wheelDelta, bool isDragging);
 
+   /// @brief 正規化された車両視点入力を、このカメラの水平・垂直旋回へ変換する。
+   /// @param input 左右・上下の正規化入力（各 -1～1）。
+   /// @param deltaTime フレーム時間（秒）。
+   void ApplyVehicleLookInput(const GameEngine::Vector2& input, float deltaTime) override;
+
    /// @brief 重力Upを設定する（目標値。実際の描画には補間済み値を使用）
    void SetGravityUp(const GameEngine::Vector3& up) { gravityUp_ = up; }
 

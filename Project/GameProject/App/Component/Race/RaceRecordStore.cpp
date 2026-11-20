@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Race/RaceRecordStore.h"
+#include "GameEngine/Utility/JsonFile.h"
 #include "GameEngine/Utility/Logger.h"
 #include <nlohmann/json.hpp>
 #include <algorithm>
@@ -6,9 +7,6 @@
 #include <cmath>
 #include <filesystem>
 #include <fstream>
-#ifdef _WIN32
-#include <Windows.h>
-#endif
 namespace App {
 namespace {
 constexpr std::int32_t kRecordFormatVersion = 1;
@@ -120,57 +118,12 @@ bool RaceRecordStore::SaveBestTimes(const std::string& file, const std::string& 
 
    root["races"][key]["bestTimes"] = bestTimes_;
 
-   std::error_code error;
-
-   if (!recordPath.parent_path().empty()) {
-      std::filesystem::create_directories(recordPath.parent_path(), error);
-
-      if (error) {
-         LogRecordWarning(file, "could not create record directory: " + error.message());
-         return false;
-      }
-   }
-
-   std::filesystem::path temporaryPath = recordPath;
-   temporaryPath += ".tmp";
-
    // 書き込み途中の本番ファイルを残さないよう、一時ファイルを完成させてから置換する。
-   try {
-      std::ofstream output(temporaryPath, std::ios::out | std::ios::trunc);
-
-      if (!output.is_open()) {
-         LogRecordWarning(file, "could not open temporary record file");
-         return false;
-      }
-
-      output << root.dump(kJsonIndentSize) << '\n';
-      output.close();
-
-      if (!output) {
-         LogRecordWarning(file, "could not finish writing temporary record file");
-         return false;
-      }
-   } catch (const std::exception& exception) {
-      LogRecordWarning(file, std::string("failed to write records: ") + exception.what());
+   if (!GameEngine::SaveJsonFileAtomically(recordPath, root, kJsonIndentSize)) {
+      LogRecordWarning(file, "could not save records");
       return false;
    }
 
-#ifdef _WIN32
-   // Windowsでは置換とディスク反映を同じAPIで要求し、既存ファイルも安全に更新する。
-   if (!MoveFileExW(temporaryPath.c_str(), recordPath.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
-      LogRecordWarning(file, "could not replace record file (Win32 error " + std::to_string(GetLastError()) + ")");
-      std::filesystem::remove(temporaryPath, error);
-      return false;
-   }
-#else
-   std::filesystem::rename(temporaryPath, recordPath, error);
-
-   if (error) {
-      LogRecordWarning(file, "could not replace record file: " + error.message());
-      std::filesystem::remove(temporaryPath, error);
-      return false;
-   }
-#endif
    return true;
 }
 

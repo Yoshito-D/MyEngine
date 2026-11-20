@@ -1,5 +1,6 @@
 #pragma once
 
+#include "GameEngine/Math/Types/Vector2.h"
 #include "GameEngine/Math/Types/Vector3.h"
 
 namespace GameEngine {
@@ -30,6 +31,11 @@ class IVehicleCamera {
 public:
    /// @brief 派生カメラを安全に破棄する。
    virtual ~IVehicleCamera() = default;
+
+   /// @brief 手動視点操作に対応するカメラへ、選択中のフレームにだけ操作量を渡す。
+   /// @param input 左右・上下の正規化入力（各 -1～1）。
+   /// @param deltaTime フレーム時間（秒）。
+   virtual void ApplyVehicleLookInput(const GameEngine::Vector2&, float) {}
 
    /// @brief 共通追従入力を各カメラの内部表現へ変換する。
    virtual void ApplyVehicleFollowInput(const VehicleCameraFollowInput& input) = 0;

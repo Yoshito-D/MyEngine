@@ -74,7 +74,7 @@ void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld
    airControlStartUp_ = {};
    airControlInputReceived_ = false;
    airRotationPerformed_ = false;
-   sceneChangeRequested_ = false;
+   completionTransitionAttempted_ = false;
    completionElapsed_ = 0.0f;
    phaseSettings_ = {};
    frameInput_ = {};
@@ -97,8 +97,7 @@ void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld
 void TutorialProgressComponent::UpdatePresentation(float deltaTime) {
    TutorialGuideState state;
    state.phase = GetPhase();
-   const auto playerSlot = vehicleInput_ ? vehicleInput_->DescribeSettings().playerSlot : 0u;
-   state.controls = VehicleInputComponent::DescribeControlLabels(playerSlot);
+   state.controls = VehicleInputComponent::DescribeControlLabels(vehicleInput_);
    state.miniTurboCount = miniTurboCount_;
    state.canFireMiniTurbo = vehicleEvents_ && vehicleEvents_->GetSnapshot().miniTurboReady;
    state.isDrifting = vehicleEvents_ && vehicleEvents_->GetSnapshot().isDrifting;
@@ -181,7 +180,7 @@ void TutorialProgressComponent::ConfigurePhases() {
       {.onEnter =
             [this]() {
                completionElapsed_ = 0.0f;
-               sceneChangeRequested_ = false;
+               completionTransitionAttempted_ = false;
             },
          .onUpdate = [this](float deltaTime) { UpdateComplete(deltaTime); }});
 
@@ -348,9 +347,10 @@ void TutorialProgressComponent::UpdateComplete(float deltaTime) {
    completionElapsed_ += deltaTime;
 
    // クリア文を読む時間を確保し、遷移要求は一度だけ発行する。
-   if (!sceneChangeRequested_ && !nextScene_.empty() && completionElapsed_ >= completionDelay_) {
-      sceneChangeRequested_ = true;
-      GameEngine::EngineContext::ChangeScene(nextScene_);
+   if (!completionTransitionAttempted_ && !nextScene_.empty() && completionElapsed_ >= completionDelay_ &&
+       !GameEngine::EngineContext::IsSceneTransitioning()) {
+      GameEngine::EngineContext::RequestSceneChange(nextScene_);
+      completionTransitionAttempted_ = true;
    }
 }
 

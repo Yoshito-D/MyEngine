@@ -38,6 +38,9 @@ public:
       SustainedSteer = 1, ///< 同方向ステアを一定時間継続することでドリフト開始
    };
 
+   /// @brief 現在の設定でドリフトに専用ボタンが必要な場合はtrueを返す。
+   bool UsesDriftButton() const { return driftMode == DriftMode::ButtonMode; }
+
    /// @brief シーン保存とファクトリ検索で使うコンポーネント型名。
    static constexpr const char* kTypeName = "VehicleDrift";
    /// @brief エディターに表示する日本語名と英語名。

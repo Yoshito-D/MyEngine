@@ -26,9 +26,6 @@ bool PredictLanding(const GameEngine::Vector3& position, const GameEngine::Vecto
    GameEngine::Vector3 simulatedPosition = position;
    GameEngine::Vector3 simulatedVelocity = velocity;
 
-   // 軌道表示と接触判定が同じ積分結果を参照できるよう、初期点から記録する。
-   outPrediction.trajectoryPoints.clear();
-   outPrediction.trajectoryPoints.push_back(position);
    GameEngine::Vector3 initialToSelf = simulatedPosition - planetCenter;
    float initialDistance = initialToSelf.Length();
 
@@ -65,7 +62,6 @@ bool PredictLanding(const GameEngine::Vector3& position, const GameEngine::Vecto
       // GravityBody と同じ半陰的オイラー順序で、候補惑星の放射重力による移動を先読みする。
       simulatedVelocity = gravityBody.PredictVelocity(simulatedVelocity, surfaceUp, step);
       simulatedPosition += simulatedVelocity * step;
-      outPrediction.trajectoryPoints.push_back(simulatedPosition);
 
       GameEngine::Vector3 nextToSelf = simulatedPosition - planetCenter;
       float nextDistance = nextToSelf.Length();
@@ -113,7 +109,6 @@ bool PredictLanding(const GameEngine::Vector3& position, const GameEngine::Vecto
          outPrediction.backward = -landingForward;
          outPrediction.contactPoint = planetCenter + hitUp * (surfaceRadius + landingOffset);
          outPrediction.secondsToImpact = elapsed + step * crossingAlpha;
-         outPrediction.trajectoryPoints.back() = hitPosition;
          return true;
       }
 

@@ -1,7 +1,10 @@
 #pragma once
 
 #include "GameEngine/Math/MathUtils.h"
-#include <functional>
+#include "GameEngine/Object/ObjectType.h"
+#include <optional>
+#include <span>
+#include <string_view>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -22,21 +25,14 @@ class UIText;
 /// @brief 保存シーンから生成する各Object型を所有し、安定IDと遅延削除を管理する。
 class SceneObjectStore {
 public:
-   /// @brief 保存JSONからObjectを生成し、指定ストアへ所有権を登録して返すファクトリ。
-   /// @details 新しい具象型はAdoptObjectで登録する。失敗時はnullptrを返し、共通状態の復元はストアへ任せる。
-   using ObjectFactory = std::function<Object*(SceneObjectStore&, const nlohmann::json&)>;
-
    /// @brief 指定Worldに所属するObjectとパーティクルの所有ストアを作成する。
    explicit SceneObjectStore(SceneWorld& world);
 
    /// @brief 所有するシーンオブジェクトを破棄する。
    ~SceneObjectStore();
 
-   /// @brief シーン保存用の型名に対応する生成処理を登録する。同名の登録は置き換える。
-   /// @param objectType Objectの保存JSONに記録する型名。
-   /// @param factory 新しいObjectを生成して指定ストアへ登録する処理。
-   /// @return 登録成功時はtrue。型名が空またはファクトリが未設定なら変更せずfalse。
-   bool RegisterObjectFactory(const std::string& objectType, ObjectFactory factory);
+   /// @brief 保存名を対応するObject種別へ変換する。未定義の名前には空を返す。
+   static std::optional<ObjectType> FindObjectType(std::string_view name);
 
    /// @brief 未登録Objectの所有権を受け取り、所属Worldと安定IDを登録する。
    /// @param object このストアが所有する新しいObject。nullptrなら何も登録しない。
@@ -265,7 +261,14 @@ private:
    void BumpCounterFromId(const std::string& id);
 
    /// @brief シーン保存用の型名から、このストアへObjectを登録する生成処理を引くマップ。
-   std::unordered_map<std::string, ObjectFactory> objectFactories_;
+   struct ObjectKind {
+      ObjectType type;
+      const char* name;
+      Object* (*create)(SceneObjectStore&, const nlohmann::json&);
+   };
+
+   static std::span<const ObjectKind> GetObjectKinds();
+   static const char* GetObjectTypeName(ObjectType type);
    SceneWorld& world_;                            ///< 所属シーンのオブジェクトと実行時状態を参照するワールド。
    std::vector<std::unique_ptr<Object>> objects_; ///< シーン内で生成したObjectの所有一覧。
    std::vector<std::unique_ptr<ParticleSystem>> particleSystems_; ///< シーン内で生成したParticleSystemの所有一覧。

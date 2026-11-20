@@ -590,7 +590,7 @@ void Renderer::DrawSkeleton(
    }
 }
 
-void Renderer::EndFrame() {
+void Renderer::EndFrame(SceneWorld* world) {
 #ifdef USE_IMGUI
    if (editorController_) {
       editorController_->ShowPlayModeToolbar();
@@ -608,16 +608,27 @@ void Renderer::EndFrame() {
    // 自動登録オブジェクトをすべてキュー化してから、テキストとラインの共有バッファを確定する。
    // これ以降に追加すると当該フレームのアップロード範囲へ含まれない。
    DrawAutoRegisteredModels();
-   DrawAutoRegisteredSprites();
-   DrawAutoRegisteredParticles();
-   DrawSceneTrails();
-   DrawAutoRegisteredTexts();
+   const auto* ui = world ? &world->GetUI() : nullptr;
+   DrawAutoRegisteredSprites(ui);
+
+   if (world) {
+      for (auto* particle : world->GetParticles()) {
+         Draw(particle);
+      }
+
+      DrawSceneTrails(*world);
+   }
+
+   DrawAutoRegisteredTexts(ui);
 
    // ポストエフェクト対象のラインと対象外ラインを別キューへ送り、合成前後の位置を固定する。
    FlushLineRenderer(lineRenderer_.get(), RenderPass::Opaque);
    FlushLineRenderer(postProcessLineRenderer_.get(), RenderPass::PostProcess);
 
-   DrawManagedUI();
+   if (world) {
+      DrawManagedUI(*world);
+   }
+
    DrawCameraLetterbox();
    textRenderer_->UploadBuffers();
 
@@ -770,7 +781,7 @@ void Renderer::DrawAutoRegisteredModels() {
    }
 }
 
-void Renderer::DrawAutoRegisteredSprites() {
+void Renderer::DrawAutoRegisteredSprites(const UISystem* ui) {
    auto* textureManager = assetManager_ ? assetManager_->GetTextureManager() : nullptr;
 
    if (!textureManager) return;
@@ -778,8 +789,7 @@ void Renderer::DrawAutoRegisteredSprites() {
    auto* fallbackTexture = textureManager->GetTexture("white1x1");
 
    for (auto* sprite : Sprite::GetRegisteredSprites()) {
-      if (!sprite || (EngineContext::GetCurrentScene() &&
-                        EngineContext::GetCurrentScene()->GetSceneWorld().GetUI().IsManaged(*sprite))) {
+      if (!sprite || (ui && ui->IsManaged(*sprite))) {
          continue;
       }
 
@@ -836,23 +846,12 @@ void Renderer::DrawAutoRegisteredSkyboxes() {
    }
 }
 
-void Renderer::DrawAutoRegisteredParticles() {
-   for (auto* particleSystem : ParticleSystem::GetRegisteredParticleSystems()) {
-      if (!particleSystem) {
-         continue;
-      }
-
-      Draw(particleSystem);
-   }
-}
-
-void Renderer::DrawSceneTrails() {
-   auto* scene = EngineContext::GetCurrentScene();
+void Renderer::DrawSceneTrails(SceneWorld& world) {
    auto* camera = cameraManager_ ? cameraManager_->GetActiveCamera() : nullptr;
 
-   if (!scene || !camera) return;
+   if (!camera) return;
 
-   auto& objects = scene->GetSceneWorld().GetObjectStore();
+   auto& objects = world.GetObjectStore();
 
    for (auto* object : objects.GetObjects()) {
       auto* trail = object->GetComponent<TrailComponent>();
@@ -867,7 +866,7 @@ void Renderer::DrawSceneTrails() {
    }
 }
 
-void Renderer::DrawAutoRegisteredTexts() {
+void Renderer::DrawAutoRegisteredTexts(const UISystem* ui) {
    FontManager* fontManager = assetManager_ ? assetManager_->GetFontManager() : nullptr;
 
    if (!fontManager || !textRenderer_) return;
@@ -883,8 +882,7 @@ void Renderer::DrawAutoRegisteredTexts() {
    });
 
    for (UIText* text : texts) {
-      if (!text || (EngineContext::GetCurrentScene() &&
-                      EngineContext::GetCurrentScene()->GetSceneWorld().GetUI().IsManaged(*text))) {
+      if (!text || (ui && ui->IsManaged(*text))) {
          continue;
       }
 

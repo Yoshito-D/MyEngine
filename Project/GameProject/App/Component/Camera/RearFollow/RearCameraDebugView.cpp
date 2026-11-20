@@ -1,147 +1,16 @@
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraDebugView.h"
-#include <cstdint>
-#include "GameProject/App/Component/Camera/RearFollow/RearCameraMath.h"
-#include "GameEngine/Framework/EngineContext.h"
-#include <cstdio>
+
 #ifdef USE_IMGUI
-#include "imgui.h"
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
+#include "GameEngine/Math/Functions/MathConstants.h"
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
-#endif
+#include "GameProject/App/Component/Camera/RearFollow/RearCameraAimSolver.h"
+#include "imgui.h"
+#include <cstdint>
 
 namespace App {
-using namespace RearCameraMath;
 
-void RearCameraDebugView::DrawCameraMeasurementOverlay(
-   const RearCameraSettings& settings, const RearCameraMeasurementRecorder& recorder) {
-   if (!settings.showCameraMeasurementOverlay || recorder.GetState().cameraMeasurementSamples.empty()) return;
-
-   const CameraMeasurementSample& latest = recorder.GetState().cameraMeasurementSamples.back();
-   GameEngine::TextStyle shadowStyle{};
-   shadowStyle.fontId = "arial";
-   shadowStyle.fontSize = 20;
-   shadowStyle.color = {0.0f, 0.0f, 0.0f, 0.92f};
-   shadowStyle.sortingOrder = 910;
-   GameEngine::TextStyle style = shadowStyle;
-   style.color = recorder.GetState().cameraMeasurementActive ? GameEngine::Vector4{1.0f, 0.75f, 0.12f, 1.0f}
-                                                             : GameEngine::Vector4{0.55f, 1.0f, 0.65f, 1.0f};
-   style.sortingOrder = 911;
-
-   auto DrawLine = [&](const std::string& text, float y) {
-      GameEngine::EngineContext::DrawUIText(text, {26.0f, y + 2.0f}, shadowStyle);
-      GameEngine::EngineContext::DrawUIText(text, {24.0f, y}, style);
-   };
-
-   char text[192]{};
-   std::snprintf(text, sizeof(text), "CAMERA MEASUREMENT %s  frames=%llu  time=%.2fs",
-      recorder.GetState().cameraMeasurementActive ? "REC" : "STOP",
-      static_cast<unsigned long long>(recorder.GetState().cameraMeasurementSamples.size()),
-      recorder.GetState().cameraMeasurementElapsedSeconds);
-   DrawLine(text, 176.0f);
-   std::snprintf(text, sizeof(text), "Up direction deg/frame current=%.3f  max=%.3f  60FPS limit=%.3f",
-      latest.gravityUpStepDegrees, recorder.GetState().cameraMeasurementMaxGravityUpStepDegrees,
-      std::max(0.0f, settings.gravityUpLerpSpeed) * kRadiansToDegrees / 60.0f);
-   DrawLine(text, 202.0f);
-   std::snprintf(text, sizeof(text), "Horizontal deg/frame current=%.3f  max=%.3f  stability=%.3f",
-      latest.cameraRightStepDegrees, recorder.GetState().cameraMeasurementMaxRightStepDegrees,
-      latest.lookAtRecoveryBlend);
-   DrawLine(text, 228.0f);
-   std::snprintf(text, sizeof(text), "axis alignment error=%.7f  axis length error=%.7f  invalid=%llu",
-      recorder.GetState().cameraMeasurementMaxOrthogonalityError, recorder.GetState().cameraMeasurementMaxLengthError,
-      static_cast<unsigned long long>(recorder.GetState().cameraMeasurementInvalidCount));
-   DrawLine(text, 254.0f);
-}
-
-#ifdef USE_IMGUI
-void RearCameraDebugView::DrawCameraEvidenceWindow(
-   RearCameraSettings& settings, const RearCameraFrameView& frame, RearCameraMeasurementRecorder& recorder) {
-   bool visible = GameEngine::EngineContext::GetEditorWindowVisibility(
-      "RearCameraEvidence", {"カメラの調整と計測", "Camera Tuning and Measurement"}, settings.showCameraEvidenceWindow);
-   settings.showCameraEvidenceWindow = visible;
-
-   if (!visible) return;
-
-   ImGui::SetNextWindowPos(ImVec2(350.0f, 32.0f), ImGuiCond_FirstUseEver);
-   ImGui::SetNextWindowSize(ImVec2(660.0f, 535.0f), ImGuiCond_FirstUseEver);
-   const bool drawContents = ImGui::Begin("カメラの調整と計測", &visible);
-   GameEngine::EngineContext::SetEditorWindowVisibility("RearCameraEvidence", visible);
-   settings.showCameraEvidenceWindow = visible;
-
-   if (!drawContents) {
-      ImGui::End();
-      return;
-   }
-
-   ImGui::TextUnformatted("横向きを通常へ戻す形");
-   ImGui::SliderFloat("戻り始め", &settings.lookAtRecoveryCurveControl1, 0.0f, 1.0f, "%.2f");
-   ImGui::SliderFloat("戻り終わり", &settings.lookAtRecoveryCurveControl2, 0.0f, 1.0f, "%.2f");
-
-   float recoveryCurvePreview[65]{};
-
-   for (std::int32_t index = 0; index < 65; ++index) {
-      recoveryCurvePreview[index] = frame.aim.EvaluateLookAtRecoveryCurve(settings, static_cast<float>(index) / 64.0f);
-   }
-
-   ImGui::PlotLines("##PresentationRecoveryCurve", recoveryCurvePreview, 65, 0,
-      "横向きが安定するほど、通常の向きへ戻す割合", 0.0f, 1.0f, ImVec2(-1.0f, 105.0f));
-
-   ImGui::Separator();
-   ImGui::TextUnformatted("ゲーム中の計測");
-
-   if (ImGui::Button("現在の動きを計測し直す")) {
-      recorder.StartCameraMeasurement("manual_current_settings", frame);
-   }
-
-   ImGui::SameLine();
-
-   if (ImGui::Button("上方向を180度変える固定条件で確認")) {
-      recorder.RunFixedGravityUpVerification(settings);
-   }
-
-   ImGui::Text("状態: %s　記録: %lluフレーム　経過: %.2f秒",
-      recorder.GetState().cameraMeasurementActive ? "計測中" : "停止",
-      static_cast<unsigned long long>(recorder.GetState().cameraMeasurementSamples.size()),
-      recorder.GetState().cameraMeasurementElapsedSeconds);
-   ImGui::Text("上方向の最大変化: %.3f度/フレーム　横向きの最大変化: %.3f度/フレーム",
-      recorder.GetState().cameraMeasurementMaxGravityUpStepDegrees,
-      recorder.GetState().cameraMeasurementMaxRightStepDegrees);
-   ImGui::Text("計算失敗: %llu件", static_cast<unsigned long long>(recorder.GetState().cameraMeasurementInvalidCount));
-
-   if (!recorder.GetState().cameraMeasurementSamples.empty()) {
-      const size_t historyCount = std::min<size_t>(recorder.GetState().cameraMeasurementSamples.size(), 360);
-      const size_t historyStart = recorder.GetState().cameraMeasurementSamples.size() - historyCount;
-      std::vector<float> upwardHistory(historyCount);
-      std::vector<float> horizontalHistory(historyCount);
-
-      for (size_t index = 0; index < historyCount; ++index) {
-         const CameraMeasurementSample& sample = recorder.GetState().cameraMeasurementSamples[historyStart + index];
-         upwardHistory[index] = sample.gravityUpStepDegrees;
-         horizontalHistory[index] = sample.cameraRightStepDegrees;
-      }
-
-      char upwardOverlay[96]{};
-      char horizontalOverlay[96]{};
-      std::snprintf(upwardOverlay, sizeof(upwardOverlay), "上方向の変化　最大 %.3f度/フレーム",
-         recorder.GetState().cameraMeasurementMaxGravityUpStepDegrees);
-      std::snprintf(horizontalOverlay, sizeof(horizontalOverlay), "横向きの変化　最大 %.3f度/フレーム",
-         recorder.GetState().cameraMeasurementMaxRightStepDegrees);
-
-      ImGui::PlotLines("##PresentationUpwardHistory", upwardHistory.data(),
-         static_cast<std::int32_t>(upwardHistory.size()), 0, upwardOverlay, 0.0f,
-         std::max(1.0f, recorder.GetState().cameraMeasurementMaxGravityUpStepDegrees * 1.1f), ImVec2(-1.0f, 95.0f));
-      ImGui::PlotLines("##PresentationHorizontalHistory", horizontalHistory.data(),
-         static_cast<std::int32_t>(horizontalHistory.size()), 0, horizontalOverlay, 0.0f,
-         std::max(1.0f, recorder.GetState().cameraMeasurementMaxRightStepDegrees * 1.1f), ImVec2(-1.0f, 95.0f));
-   }
-
-   ImGui::End();
-}
-#endif
-
-#ifdef USE_IMGUI
-
-void RearCameraDebugView::DrawInspector(RearCameraSettings& settings, bool& enabled, const RearCameraFrameView& frame,
-   RearCameraMeasurementRecorder& recorder) {
+void RearCameraDebugView::DrawInspector(RearCameraSettings& settings, bool& enabled) {
    auto Tr = GameEngine::LocalizeEditorText;
    auto DrawHelp = [Tr](const char* japanese, const char* english) {
       ImGui::SameLine();
@@ -152,8 +21,7 @@ void RearCameraDebugView::DrawInspector(RearCameraSettings& settings, bool& enab
       }
    };
 
-   if (ImGui::Checkbox(Tr("有効", "Enabled"), &enabled)) {
-   }
+   ImGui::Checkbox(Tr("有効", "Enabled"), &enabled);
 
    ImGui::TextDisabled(
       "%s", Tr("(?) にカーソルを合わせると役割を表示します。補間速度は大きいほど速く、秒数は大きいほど遅く変化します。",
@@ -373,139 +241,16 @@ void RearCameraDebugView::DrawInspector(RearCameraSettings& settings, bool& enab
 
       for (std::int32_t index = 0; index < 65; ++index) {
          recoveryCurvePreview[index] =
-            frame.aim.EvaluateLookAtRecoveryCurve(settings, static_cast<float>(index) / 64.0f);
+            RearCameraAimSolver::EvaluateLookAtRecoveryCurve(settings, static_cast<float>(index) / 64.0f);
       }
 
       ImGui::PlotLines("##LookAtRecoveryCurve", recoveryCurvePreview, 65, 0,
          Tr("横向きが安定するほど、通常の向きへ戻す割合",
             "Return to the normal direction as horizontal stability recovers"),
          0.0f, 1.0f, ImVec2(-1.0f, 100.0f));
-      ImGui::Text("%s: %.3f　%s: %.3f", Tr("現在の安定度", "Current Stability"),
-         frame.aim.GetState().lastLookAtRecoveryInput, Tr("通常へ戻す割合", "Return Amount"),
-         frame.aim.GetState().lastLookAtRecoveryBlend);
    }
-
-   if (ImGui::CollapsingHeader(Tr("カメラ計測", "Camera Measurement"), ImGuiTreeNodeFlags_DefaultOpen)) {
-      ImGui::Checkbox(
-         Tr("ゲーム画面へ計測値を表示", "Show Measurement Overlay"), &settings.showCameraMeasurementOverlay);
-      bool visible = GameEngine::EngineContext::GetEditorWindowVisibility("RearCameraEvidence",
-         {"カメラの調整と計測", "Camera Tuning and Measurement"}, settings.showCameraEvidenceWindow);
-
-      if (ImGui::Checkbox(Tr("調整と計測の別画面を表示", "Show Tuning and Measurement Window"), &visible)) {
-         GameEngine::EngineContext::SetEditorWindowVisibility("RearCameraEvidence", visible);
-      }
-
-      settings.showCameraEvidenceWindow = visible;
-
-      if (ImGui::Button(Tr("計測開始", "Start Measurement"))) {
-         recorder.StartCameraMeasurement("manual_current_settings", frame);
-      }
-
-      ImGui::SameLine();
-
-      if (ImGui::Button(Tr("停止してCSV保存", "Stop and Save CSV"))) {
-         recorder.StopCameraMeasurement(true, settings);
-      }
-
-      ImGui::SameLine();
-
-      if (ImGui::Button(Tr("履歴を消去", "Clear History"))) {
-         recorder.ClearCameraMeasurement();
-      }
-
-      if (ImGui::Button(Tr("60フレーム/秒で上方向を180度変える", "Run 60 FPS 180-degree Up Test"))) {
-         recorder.RunFixedGravityUpVerification(settings);
-      }
-
-      DrawHelp("実ゲームと同じ向きの変え方を一定間隔で再現し、1フレームの上限と到達までのフレーム数を保存します。",
-         "Repeats the in-game direction change at a fixed interval and saves the per-frame limit and arrival frame count.");
-
-      ImGui::Text("%s: %s  %s: %llu  %s: %.3fs", Tr("状態", "State"),
-         recorder.GetState().cameraMeasurementActive ? Tr("計測中", "Recording") : Tr("停止", "Stopped"),
-         Tr("フレーム", "Frames"), static_cast<unsigned long long>(recorder.GetState().cameraMeasurementSamples.size()),
-         Tr("経過", "Elapsed"), recorder.GetState().cameraMeasurementElapsedSeconds);
-      ImGui::Text("%s %.3f度/フレーム　%s %.3f度/フレーム", Tr("上方向の最大変化", "Maximum Upward Change"),
-         recorder.GetState().cameraMeasurementMaxGravityUpStepDegrees,
-         Tr("横向きの最大変化", "Maximum Horizontal Change"), recorder.GetState().cameraMeasurementMaxRightStepDegrees);
-      ImGui::Text("%s: %llu件", Tr("計算失敗", "Calculation Failures"),
-         static_cast<unsigned long long>(recorder.GetState().cameraMeasurementInvalidCount));
-
-      if (!recorder.GetState().cameraMeasurementSamples.empty()) {
-         const size_t historyCount = std::min<size_t>(recorder.GetState().cameraMeasurementSamples.size(), 360);
-         const size_t historyStart = recorder.GetState().cameraMeasurementSamples.size() - historyCount;
-         std::vector<float> gravityUpHistory(historyCount);
-         std::vector<float> rightHistory(historyCount);
-         std::vector<float> targetErrorHistory(historyCount);
-
-         for (size_t index = 0; index < historyCount; ++index) {
-            const CameraMeasurementSample& sample = recorder.GetState().cameraMeasurementSamples[historyStart + index];
-            gravityUpHistory[index] = sample.gravityUpStepDegrees;
-            rightHistory[index] = sample.cameraRightStepDegrees;
-            targetErrorHistory[index] = sample.targetGravityUpErrorDegrees;
-         }
-
-         char gravityOverlay[96]{};
-         char rightOverlay[96]{};
-         std::snprintf(gravityOverlay, sizeof(gravityOverlay), "上方向の変化　最大 %.3f度/フレーム",
-            recorder.GetState().cameraMeasurementMaxGravityUpStepDegrees);
-         std::snprintf(rightOverlay, sizeof(rightOverlay), "横向きの変化　最大 %.3f度/フレーム",
-            recorder.GetState().cameraMeasurementMaxRightStepDegrees);
-         ImGui::PlotLines("##GravityUpStepHistory", gravityUpHistory.data(),
-            static_cast<std::int32_t>(gravityUpHistory.size()), 0, gravityOverlay, 0.0f,
-            std::max(1.0f, recorder.GetState().cameraMeasurementMaxGravityUpStepDegrees * 1.1f), ImVec2(-1.0f, 90.0f));
-         ImGui::PlotLines("##RightStepHistory", rightHistory.data(), static_cast<std::int32_t>(rightHistory.size()), 0,
-            rightOverlay, 0.0f, std::max(1.0f, recorder.GetState().cameraMeasurementMaxRightStepDegrees * 1.1f),
-            ImVec2(-1.0f, 90.0f));
-         ImGui::PlotLines("##GravityUpTargetErrorHistory", targetErrorHistory.data(),
-            static_cast<std::int32_t>(targetErrorHistory.size()), 0,
-            Tr("目標の上方向まで残っている角度", "Angle Remaining to the Target Up Direction"), 0.0f, 180.0f,
-            ImVec2(-1.0f, 90.0f));
-      }
-
-      if (!recorder.GetState().lastCameraMeasurementPath.empty()) {
-         ImGui::TextWrapped("%s: %s", Tr("保存先", "Saved To"), recorder.GetState().lastCameraMeasurementPath.c_str());
-      }
-   }
-
-   ImGui::Separator();
-   ImGui::Text("%s: %s", Tr("空中", "Airborne"), frame.input.isAirborne ? Tr("はい", "true") : Tr("いいえ", "false"));
-   ImGui::Text("%s: %.2f", Tr("空中ブレンド", "Airborne Blend"), frame.transition.GetState().currentAirborneBlend);
-   ImGui::Text("%s: %.2f", Tr("画面位置ブレンド", "Player Framing Blend"),
-      frame.transition.GetState().currentPlayerFramingBlend);
-   ImGui::Text("%s: %s", Tr("着地予測", "Landing Prediction"),
-      frame.input.landingPredictionValid ? Tr("有効", "valid") : Tr("なし", "none"));
-   ImGui::Text("%s: %.2f  %s: %.2f", Tr("着地予測残り秒", "Predicted Impact Seconds"),
-      frame.input.predictedLandingSeconds, Tr("着地前ブレンド", "Pre-landing Blend"),
-      frame.transition.GetState().currentPreLandingBlend);
-   ImGui::Text("%s: %s  %s: %.2f", Tr("地上復帰スナップショット", "Ground Release Snapshot"),
-      frame.transition.GetState().isLandingReleaseActive ? Tr("有効", "active") : Tr("なし", "none"),
-      Tr("適用率", "Guide Blend"), frame.transition.ComputePreLandingGuideBlend(frame.input));
-   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("予測着地Up", "Predicted Landing Up"), frame.input.predictedLandingUp.x,
-      frame.input.predictedLandingUp.y, frame.input.predictedLandingUp.z);
-   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("予測着地後方", "Predicted Landing Rear"),
-      frame.input.predictedLandingBackward.x, frame.input.predictedLandingBackward.y,
-      frame.input.predictedLandingBackward.z);
-   ImGui::Text("%s: %.2f", Tr("惑星補間重力係数", "Planet Blend Gravity Factor"),
-      frame.planet.GetState().currentPlanetDirectionGravityFactor);
-   ImGui::Text("%s: %.2f", Tr("現在の惑星ガイド追従速度", "Current Planet Guide Follow Speed"),
-      frame.planet.ComputePlanetDirectionFollowSpeed(frame.input, settings));
-   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("目標GravityUp", "Target GravityUp"), frame.input.gravityUp.x,
-      frame.input.gravityUp.y, frame.input.gravityUp.z);
-   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("現在GravityUp", "Current GravityUp"),
-      frame.gravity.GetState().currentGravityUp.x, frame.gravity.GetState().currentGravityUp.y,
-      frame.gravity.GetState().currentGravityUp.z);
-   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("追従前方向", "Follow Forward"), frame.input.followForward.x,
-      frame.input.followForward.y, frame.input.followForward.z);
-   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("プレイヤー速度ベクトル", "Player Velocity"), frame.input.playerVelocity.x,
-      frame.input.playerVelocity.y, frame.input.playerVelocity.z);
-   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("空中補助進行方向", "Air Move Fallback"), frame.input.airborneMoveForward.x,
-      frame.input.airborneMoveForward.y, frame.input.airborneMoveForward.z);
-   ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("注視惑星中心", "Look Planet Center"), frame.input.planetCenter.x,
-      frame.input.planetCenter.y, frame.input.planetCenter.z);
-   ImGui::Text("%s: %.2f  %s: %.3f", Tr("プレイヤー速度", "Player Speed"), frame.input.playerSpeed,
-      Tr("現在FOV (deg)", "Current FOV (deg)"),
-      frame.speed.GetState().currentFov * GameEngine::MathConstants::kRadiansToDegrees);
 }
-#endif
 
 } // namespace App
+
+#endif

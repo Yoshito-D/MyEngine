@@ -241,7 +241,7 @@ void ParticleEmitterComponent::ClearSlots() {
 void ParticleEmitterComponent::UnregisterParticleSystemsForRender() {
    for (auto& slot : slots_) {
       if (slot.particleSystem) {
-         ParticleSystem::UnregisterParticleSystem(slot.particleSystem.get());
+         slot.particleSystem->SetWorld(nullptr);
       }
    }
 }
@@ -659,7 +659,6 @@ bool ParticleEmitterComponent::LoadSlot(EmitterSlot& slot) {
    }
 
    ps->SetWorld(HasOwner() ? GetOwner().GetWorld() : nullptr);
-   ps->SetEditorInspectable(false);
    ps->Create();
 
    if (!slot.jsonPath.empty()) {

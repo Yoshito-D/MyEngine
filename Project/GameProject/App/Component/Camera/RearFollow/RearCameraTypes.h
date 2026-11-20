@@ -1,9 +1,6 @@
 #pragma once
 
 #include "GameEngine/Scene/Camera/Core/CameraState.h"
-#include <cstdint>
-#include <string>
-#include <vector>
 
 namespace App {
 
@@ -147,45 +144,6 @@ struct RearCameraSettings {
 
    /// @brief Right回復カーブの2つ目の制御点Y（Xは2/3で固定）
    float lookAtRecoveryCurveControl2 = 1.0f;
-
-   /// @brief 計測中の主要値をゲーム画面へ重ねて表示するか
-   bool showCameraMeasurementOverlay = true;
-
-   /// @brief 調整用の曲線と実測履歴をエディタ画面へ表示するか
-   bool showCameraEvidenceWindow = false;
-};
-
-/// @brief 1フレーム分のカメラ計測値
-struct CameraMeasurementSample {
-   uint64_t frame = 0;                        ///< 測定対象のゲームフレーム番号。
-   float timeSeconds = 0.0f;                  ///< 測定開始からの累積時間（秒）。
-   float deltaTimeSeconds = 0.0f;             ///< この測定フレームの時間刻み（秒）。
-   float gravityUpStepDegrees = 0.0f;         ///< 前フレームからの重力Up方向の変化角（度）。
-   float cameraRightStepDegrees = 0.0f;       ///< 前フレームからのカメラ右方向の変化角（度）。
-   float cameraUpStepDegrees = 0.0f;          ///< 前フレームからのカメラ上方向の変化角（度）。
-   float cameraForwardStepDegrees = 0.0f;     ///< 前フレームからのカメラ前方向の変化角（度）。
-   float targetGravityUpErrorDegrees = 0.0f;  ///< カメラ側の重力Upと目標重力Upの誤差角（度）。
-   float cameraForwardGravityUpAbsDot = 0.0f; ///< カメラ前方と重力Upの内積の絶対値。平行に近いほど1。
-   float rightLength = 1.0f;                  ///< カメラ右方向ベクトルの長さ。
-   float upLength = 1.0f;                     ///< カメラ上方向ベクトルの長さ。
-   float forwardLength = 1.0f;                ///< カメラ前方向ベクトルの長さ。
-   float rightUpAbsDot = 0.0f;                ///< カメラ右方向と上方向の内積の絶対値。直交時は0。
-   float upForwardAbsDot = 0.0f;              ///< カメラ上方向と前方向の内積の絶対値。直交時は0。
-   float forwardRightAbsDot = 0.0f;           ///< カメラ前方向と右方向の内積の絶対値。直交時は0。
-   float lookAtCandidateRightLength = 1.0f;   ///< 注視方向から構築した候補右ベクトルの長さ。退化の検出に使う。
-   float lookAtRecoveryInput = 1.0f;          ///< 注視姿勢の退化からの回復量を求める入力値。
-   float lookAtRecoveryBlend = 1.0f;          ///< 注視姿勢の回復処理へ適用した補間割合。
-   float preLandingBlend = 0.0f;              ///< 予測着地方向へカメラを寄せる現在の割合。
-   float predictedImpactSeconds = 0.0f;       ///< 着地予測で得た接触までの残り時間（秒）。
-   bool airborne = false;                     ///< 測定時にプレイヤーが空中状態だったかどうか。
-   bool landingPredictionValid = false;       ///< 今フレームの着地予測が有効か。
-   bool invalid = false;                      ///< 非有限値や不正なカメラ基底を検出した測定かどうか。
-   GameEngine::Vector3 targetGravityUp = {0.0f, 1.0f, 0.0f}; ///< 追従の目標となる重力Up方向。
-   /// @brief 補間中の現在重力Up（惑星切り替え時のロール急変を防ぐ）。
-   GameEngine::Vector3 currentGravityUp = {0.0f, 1.0f, 0.0f};
-   GameEngine::Vector3 cameraRight = {1.0f, 0.0f, 0.0f};   ///< カメラのワールド右方向。
-   GameEngine::Vector3 cameraUp = {0.0f, 1.0f, 0.0f};      ///< カメラのワールド上方向。
-   GameEngine::Vector3 cameraForward = {0.0f, 0.0f, 1.0f}; ///< カメラのワールド前方向。
 };
 
 /// @brief 1フレームの追従入力。予測失効時も直前の予測値は解除補間のため保持する。
@@ -377,81 +335,11 @@ struct RearCameraAimState {
    /// @brief 直近計算のカメラ前方
    GameEngine::Vector3 cachedForward = {0.0f, 0.0f, 1.0f};
 
-   /// @brief LookAtで算出したRight候補の正規化前の長さ
-   float lastLookAtCandidateRightLength = 1.0f;
-
-   /// @brief Right回復カーブへ入力した退化回復率
-   float lastLookAtRecoveryInput = 1.0f;
-
-   /// @brief Right回復カーブから得た混合率
-   float lastLookAtRecoveryBlend = 1.0f;
-
    /// @brief 補間済みのカメラ回転
    GameEngine::Quaternion currentViewRotation = GameEngine::Quaternion::Identity();
 
    /// @brief カメラ回転が初期化済みかどうか
    bool isViewRotationInitialized = false;
-};
-
-/// @brief フレーム計測の履歴。担当クラスが所有し、参照側には読み取りだけを許可する。
-struct RearCameraMeasurementState {
-
-   /// @brief カメラ計測中か
-   bool cameraMeasurementActive = false;
-
-   /// @brief カメラ計測で前フレーム軸を取得済みか
-   bool cameraMeasurementHasPrevious = false;
-
-   /// @brief カメラ計測の経過秒数
-   float cameraMeasurementElapsedSeconds = 0.0f;
-
-   /// @brief カメラ計測の次フレーム番号
-   uint64_t cameraMeasurementNextFrame = 0;
-
-   /// @brief 最後に計測したゲーム更新フレーム番号
-   uint64_t cameraMeasurementLastGameFrame = UINT64_MAX;
-
-   /// @brief カメラ計測条件名
-   std::string cameraMeasurementTestName = "camera_live";
-
-   /// @brief 最後に保存したCSVパス
-   std::string lastCameraMeasurementPath;
-
-   /// @brief 計測開始前フレームの補間済みGravityUp
-   GameEngine::Vector3 cameraMeasurementPreviousGravityUp = {0.0f, 1.0f, 0.0f};
-
-   /// @brief 計測開始前フレームのカメラRight
-   GameEngine::Vector3 cameraMeasurementPreviousRight = {1.0f, 0.0f, 0.0f};
-
-   /// @brief 計測開始前フレームのカメラUp
-   GameEngine::Vector3 cameraMeasurementPreviousUp = {0.0f, 1.0f, 0.0f};
-
-   /// @brief 計測開始前フレームのカメラ前方
-   GameEngine::Vector3 cameraMeasurementPreviousForward = {0.0f, 0.0f, 1.0f};
-
-   /// @brief 記録済みのフレーム計測値
-   std::vector<CameraMeasurementSample> cameraMeasurementSamples;
-
-   /// @brief 計測中のGravityUp最大1フレーム角度
-   float cameraMeasurementMaxGravityUpStepDegrees = 0.0f;
-
-   /// @brief 計測中のRight最大1フレーム角度
-   float cameraMeasurementMaxRightStepDegrees = 0.0f;
-
-   /// @brief 計測中のUp最大1フレーム角度
-   float cameraMeasurementMaxUpStepDegrees = 0.0f;
-
-   /// @brief 計測中のForward最大1フレーム角度
-   float cameraMeasurementMaxForwardStepDegrees = 0.0f;
-
-   /// @brief 計測中の基底軸間の最大絶対内積
-   float cameraMeasurementMaxOrthogonalityError = 0.0f;
-
-   /// @brief 計測中の単位長からの最大誤差
-   float cameraMeasurementMaxLengthError = 0.0f;
-
-   /// @brief 計測中に検出した非有限値フレーム数
-   uint64_t cameraMeasurementInvalidCount = 0;
 };
 
 /// @brief 前回更新からの空中状態の変化。全段階が同じイベントを使用する。

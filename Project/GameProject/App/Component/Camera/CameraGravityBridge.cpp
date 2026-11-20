@@ -2,6 +2,7 @@
 #include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameProject/App/Component/Camera/CameraModeSwitcher.h"
+#include "GameProject/App/Component/Camera/LandingPrediction.h"
 #include "GameProject/App/Component/Character/CharacterLanding.h"
 #include "GameProject/App/Component/Character/CharacterJump.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
@@ -11,6 +12,7 @@
 #include "GameProject/App/Component/Vehicle/VehicleController.h"
 #include "GameProject/App/Component/Vehicle/VehicleDrift.h"
 #include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
+#include "GameProject/App/Component/Vehicle/VehicleMover.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
@@ -51,7 +53,6 @@ void CameraGravityBridge::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    OnReferencesChanged(sceneWorld);
    const auto* events = HasOwner() ? GetOwner().GetComponent<VehicleEvents>() : nullptr;
    effects_.Reset(events ? events->GetSnapshot() : VehicleEventSnapshot{});
-   presentation_.Reset(events ? events->GetSnapshot() : VehicleEventSnapshot{});
 }
 
 void CameraGravityBridge::Update(float deltaTime) {
@@ -72,8 +73,7 @@ void CameraGravityBridge::Update(float deltaTime) {
 
    const auto* cameraMode = GetOwner().GetComponent<CameraModeSwitcher>();
    const auto* selectedCamera = cameraMode ? cameraMode->GetSelectedCamera() : nullptr;
-   const bool rearCameraSelected = playerRearFollowCamera_ && playerRearFollowCamera_->IsEnabled() &&
-                                   (!selectedCamera || playerRearFollowCamera_->GetOwnerCamera() == selectedCamera);
+
    // 着地済みの基準を参照側から取得し、惑星選択側からの設定書き換えを不要にする。
    if (switcher) {
       float radius = 0.0f;
@@ -165,8 +165,6 @@ void CameraGravityBridge::Update(float deltaTime) {
 
       // 条件を満たさないフレームでは前回値を残さず、カメラ側の予測補間を確実に解除する。
       playerRearFollowCamera_->ClearLandingPrediction();
-      LandingPrediction prediction{};
-      bool hasLandingPrediction = false;
 
       if (isAirborne && hasCameraPlanet && gravityBody && landing) {
          const auto* air = GetOwner().GetComponent<VehicleAirController>();
@@ -176,18 +174,17 @@ void CameraGravityBridge::Update(float deltaTime) {
             air && air->IsEnabled() && controller && controller->IsEnabled() && mover && mover->IsEnabled();
          const float airDrag = appliesAirDrag ? air->GetAirDrag() : 0.0f;
          float predictionHorizon = std::max(0.0f, playerRearFollowCamera_->GetPreLandingPredictionHorizon());
-         hasLandingPrediction = PredictLanding(pos, playerVelocity, cameraPlanetCenter, cameraPlanetSurfaceRadius,
-            landing->DescribeSettings().landingOffset, landing->DescribeSettings().obbHalfExtents, rotation,
-            *gravityBody, airDrag, predictionHorizon, forward, playerRearFollowCamera_->GetCameraRight(), prediction);
+         LandingPrediction prediction{};
+         const bool hasLandingPrediction =
+            PredictLanding(pos, playerVelocity, cameraPlanetCenter, cameraPlanetSurfaceRadius,
+               landing->DescribeSettings().landingOffset, landing->DescribeSettings().obbHalfExtents, rotation,
+               *gravityBody, airDrag, predictionHorizon, forward, playerRearFollowCamera_->GetCameraRight(), prediction);
 
          if (hasLandingPrediction) {
             playerRearFollowCamera_->SetLandingPrediction(
                prediction.up, prediction.backward, prediction.contactPoint, prediction.secondsToImpact);
          }
       }
-
-      presentation_.Update(settings_, deltaTime, rearCameraSelected, *playerRearFollowCamera_, jump,
-         events ? events->GetSnapshot() : VehicleEventSnapshot{}, hasLandingPrediction ? &prediction : nullptr);
    }
 
    const bool grounded = (!landing || landing->IsGrounded()) && (!jump || !jump->IsJumping());
@@ -253,22 +250,6 @@ void CameraGravityBridge::DrawInspector() {
                                 "Height offsets are added to normal height (positive: up, negative: down)."));
    ImGui::DragFloat(Tr("ドリフトカメラの補間速度 (1/s)", "Drift Camera Lerp Speed (1/s)"),
       &settings_.driftCameraLerpSpeed, 0.1f, 0.1f, 30.0f);
-   ImGui::Separator();
-   ImGui::Checkbox(Tr("発表用カメラガイド", "Presentation Camera Guides"), &settings_.debugDrawPresentationGuides);
-   ImGui::DragFloat(
-      Tr("ガイド矢印の長さ", "Guide Arrow Length"), &settings_.presentationGuideLength, 0.1f, 1.0f, 30.0f);
-   ImGui::Checkbox(
-      Tr("発表用連続撮影", "Auto-capture Presentation Sequence"), &settings_.autoCapturePresentationSequence);
-   ImGui::DragFloat(
-      Tr("自動ジャンプ待ち時間", "Auto-jump Delay"), &settings_.presentationCaptureJumpDelay, 0.05f, 0.0f, 10.0f);
-   ImGui::Checkbox(
-      Tr("発表動画用の連番PNG", "Presentation Video Frames"), &settings_.autoCapturePresentationVideoFrames);
-   ImGui::DragFloat(Tr("動画フレームレート (fps)", "Video Frame Rate (fps)"), &settings_.presentationVideoFrameRate,
-      1.0f, 1.0f, 60.0f);
-   ImGui::DragFloat(Tr("動画撮影開始待ち", "Video Capture Start Delay"), &settings_.presentationVideoCaptureStartDelay,
-      0.05f, 0.0f, 30.0f);
-   ImGui::DragFloat(Tr("動画撮影時間 (s)", "Video Capture Duration (s)"), &settings_.presentationVideoCaptureDuration,
-      0.1f, 0.0f, 60.0f);
    Configure(DescribeSettings());
 }
 #endif
@@ -290,14 +271,6 @@ nlohmann::json CameraGravityBridge::Serialize() const {
    json["driftCameraHeightOffset"] = settings_.driftCameraHeightOffset;
    json["driftLookTargetHeightOffset"] = settings_.driftLookTargetHeightOffset;
    json["driftCameraLerpSpeed"] = settings_.driftCameraLerpSpeed;
-   json["debugDrawPresentationGuides"] = settings_.debugDrawPresentationGuides;
-   json["presentationGuideLength"] = settings_.presentationGuideLength;
-   json["autoCapturePresentationSequence"] = settings_.autoCapturePresentationSequence;
-   json["presentationCaptureJumpDelay"] = settings_.presentationCaptureJumpDelay;
-   json["autoCapturePresentationVideoFrames"] = settings_.autoCapturePresentationVideoFrames;
-   json["presentationVideoFrameRate"] = settings_.presentationVideoFrameRate;
-   json["presentationVideoCaptureStartDelay"] = settings_.presentationVideoCaptureStartDelay;
-   json["presentationVideoCaptureDuration"] = settings_.presentationVideoCaptureDuration;
    return json;
 }
 
@@ -386,43 +359,6 @@ void CameraGravityBridge::ReadParameters(const nlohmann::json& data, [[maybe_unu
       settings_.driftCameraLerpSpeed = data.at("driftCameraLerpSpeed").get<float>();
    }
 
-   if (data.contains("debugDrawPresentationGuides") && data.at("debugDrawPresentationGuides").is_boolean()) {
-      settings_.debugDrawPresentationGuides = data.at("debugDrawPresentationGuides").get<bool>();
-   }
-
-   if (data.contains("presentationGuideLength") && data.at("presentationGuideLength").is_number()) {
-      settings_.presentationGuideLength = std::max(1.0f, data.at("presentationGuideLength").get<float>());
-   }
-
-   if (data.contains("autoCapturePresentationSequence") && data.at("autoCapturePresentationSequence").is_boolean()) {
-      settings_.autoCapturePresentationSequence = data.at("autoCapturePresentationSequence").get<bool>();
-   }
-
-   if (data.contains("presentationCaptureJumpDelay") && data.at("presentationCaptureJumpDelay").is_number()) {
-      settings_.presentationCaptureJumpDelay = std::max(0.0f, data.at("presentationCaptureJumpDelay").get<float>());
-   }
-
-   if (data.contains("autoCapturePresentationVideoFrames") &&
-       data.at("autoCapturePresentationVideoFrames").is_boolean()) {
-      settings_.autoCapturePresentationVideoFrames = data.at("autoCapturePresentationVideoFrames").get<bool>();
-   }
-
-   if (data.contains("presentationVideoFrameRate") && data.at("presentationVideoFrameRate").is_number()) {
-      settings_.presentationVideoFrameRate =
-         std::clamp(data.at("presentationVideoFrameRate").get<float>(), 1.0f, 60.0f);
-   }
-
-   if (data.contains("presentationVideoCaptureStartDelay") &&
-       data.at("presentationVideoCaptureStartDelay").is_number()) {
-      settings_.presentationVideoCaptureStartDelay =
-         std::max(0.0f, data.at("presentationVideoCaptureStartDelay").get<float>());
-   }
-
-   if (data.contains("presentationVideoCaptureDuration") && data.at("presentationVideoCaptureDuration").is_number()) {
-      settings_.presentationVideoCaptureDuration =
-         std::max(0.0f, data.at("presentationVideoCaptureDuration").get<float>());
-   }
-
    Configure(DescribeSettings());
 }
 
@@ -490,34 +426,9 @@ void CameraGravityBridge::Configure(const Settings& requested) {
    settings.driftCameraDistanceReduction = std::clamp(settings.driftCameraDistanceReduction, 0.0f, 0.5f);
    settings.driftCameraLerpSpeed = std::max(0.1f, settings.driftCameraLerpSpeed);
 
-   if (!std::isfinite(settings.presentationGuideLength)) {
-      settings.presentationGuideLength = defaults.presentationGuideLength;
-   }
-
-   if (!std::isfinite(settings.presentationCaptureJumpDelay)) {
-      settings.presentationCaptureJumpDelay = defaults.presentationCaptureJumpDelay;
-   }
-
-   if (!std::isfinite(settings.presentationVideoFrameRate)) {
-      settings.presentationVideoFrameRate = defaults.presentationVideoFrameRate;
-   }
-
-   if (!std::isfinite(settings.presentationVideoCaptureStartDelay)) {
-      settings.presentationVideoCaptureStartDelay = defaults.presentationVideoCaptureStartDelay;
-   }
-
-   if (!std::isfinite(settings.presentationVideoCaptureDuration)) {
-      settings.presentationVideoCaptureDuration = defaults.presentationVideoCaptureDuration;
-   }
-
    settings.landingShakeAmplitude = std::max(0.0f, settings.landingShakeAmplitude);
    settings.landingShakeFrequency = std::max(0.1f, settings.landingShakeFrequency);
    settings.landingShakeDuration = std::max(0.0f, settings.landingShakeDuration);
-   settings.presentationGuideLength = std::max(1.0f, settings.presentationGuideLength);
-   settings.presentationCaptureJumpDelay = std::max(0.0f, settings.presentationCaptureJumpDelay);
-   settings.presentationVideoFrameRate = std::clamp(settings.presentationVideoFrameRate, 1.0f, 60.0f);
-   settings.presentationVideoCaptureStartDelay = std::max(0.0f, settings.presentationVideoCaptureStartDelay);
-   settings.presentationVideoCaptureDuration = std::max(0.0f, settings.presentationVideoCaptureDuration);
    settings_ = settings;
 }
 

@@ -4,6 +4,7 @@
 #include "GameEngine/Scene/SceneObjectStore.h"
 #include <memory>
 #include <nlohmann/json.hpp>
+#include <span>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -28,7 +29,13 @@ public:
    void SetCameraBrain(CinemachineBrain* brain) { cameraBrain_ = brain; }
 
    /// @brief World内のObjectとパーティクルを一度ずつ更新してからカメラを評価する。
-   void Update(float deltaTime);
+   /// @param deltaTime ゲーム時間の経過秒数。
+   /// @param uiDeltaTime UI更新に使用する経過秒数。
+   void Update(float deltaTime, float uiDeltaTime);
+
+   /// @brief 直置き・コンポーネント所有・子エフェクトを含む、現在フレームのパーティクル一覧。
+   /// @details システムの追加・解除まで有効な非所有ビュー。
+   std::span<ParticleSystem* const> GetParticles() const { return particles_; }
 
    /// @brief シーンが所有するUI実行系を取得する。
    UISystem& GetUI() { return *uiSystem_; }
@@ -115,12 +122,17 @@ public:
    void ResolveReferences(const std::vector<Object*>& objects, bool initializeRuntime = true);
 
 private:
+   friend class ParticleSystem;
+   void RegisterParticle(ParticleSystem& particle);
+   void UnregisterParticle(ParticleSystem& particle);
+
    CinemachineBrain* GetCameraBrain() const;
    bool ApplySnapshot(const nlohmann::json& sceneData);
    void RestoreCameras(const nlohmann::json& sceneData);
 
    CinemachineBrain* cameraBrain_ = nullptr; ///< このワールドの仮想カメラを接続するBrainへの非所有参照。
    std::unique_ptr<UISystem> uiSystem_;      ///< 画面・配置・入力のシーン固有実行系。
+   std::vector<ParticleSystem*> particles_; ///< 所有者から登録された、このWorldの更新・描画対象。
    SceneObjectStore objectStore_;            ///< 共通の生成・削除・復元ストア。
    std::unique_ptr<ParticleSubEmitterRuntime> particleSubEmitterRuntime_; ///< このワールド専用の子エフェクト実行系。
    std::vector<std::unique_ptr<VirtualCamera>> virtualCameras_;           ///< このワールドが所有する仮想カメラ一覧。

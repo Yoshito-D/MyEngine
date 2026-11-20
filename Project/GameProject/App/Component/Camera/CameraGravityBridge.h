@@ -1,5 +1,5 @@
 #pragma once
-#include "GameProject/App/Component/Camera/CameraPresentationCapture.h"
+
 #include "GameProject/App/Component/Camera/VehicleCameraEffects.h"
 
 #include <cmath>
@@ -64,7 +64,7 @@ public:
    void ApplySharedParameters(const nlohmann::json& data) override;
 
    /// @brief 保存・編集用の設定値。実行状態や所有ポインターを含まない。
-   struct Settings : VehicleCameraEffectsSettings, CameraPresentationCaptureSettings {};
+   using Settings = VehicleCameraEffectsSettings;
 
    /// @brief 表示・編集用の設定値をコピーする。
    Settings DescribeSettings() const;
@@ -77,7 +77,6 @@ private:
 
    Settings settings_;
    VehicleCameraEffects effects_;
-   CameraPresentationCapture presentation_;
 
    /// @brief 重力方向を算出するための惑星中心
    GameEngine::Vector3 planetCenter_ = {0.0f, 0.0f, 0.0f};

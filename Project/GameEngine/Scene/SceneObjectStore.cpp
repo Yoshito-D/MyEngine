@@ -30,34 +30,44 @@ std::string BuildNameFromAssetId(const std::string& assetId) {
 } // namespace
 
 SceneObjectStore::SceneObjectStore(SceneWorld& world) : world_(world) {
-   // ファクトリは呼び出し元ストアを受け取り、別Worldの所有先や寿命をキャプチャーしない。
-   RegisterObjectFactory("Generic", [](SceneObjectStore& store, const nlohmann::json& data) {
-      return store.CreateGenericObject(nullptr, data.value("id", ""));
-   });
-   RegisterObjectFactory("Model", [](SceneObjectStore& store, const nlohmann::json& data) {
-      const std::string assetId = EngineContext::GetParameterAssetStore().ResolveObjectAssetId(data);
-      return store.CreateModel(assetId, nullptr, data.value("id", ""));
-   });
-   RegisterObjectFactory("Sprite", [](SceneObjectStore& store, const nlohmann::json& data) {
-      const std::string assetId = EngineContext::GetParameterAssetStore().ResolveObjectAssetId(data);
-      return store.CreateSprite(assetId, nullptr, data.value("id", ""));
-   });
-   RegisterObjectFactory("UIText", [](SceneObjectStore& store, const nlohmann::json& data) {
-      return store.CreateUIText(nullptr, data.value("id", ""));
-   });
-   RegisterObjectFactory("Skybox",
-      [](SceneObjectStore& store, const nlohmann::json& data) { return store.CreateSkybox(data.value("id", "")); });
 }
 
 SceneObjectStore::~SceneObjectStore() = default;
 
-bool SceneObjectStore::RegisterObjectFactory(const std::string& objectType, ObjectFactory factory) {
-   if (objectType.empty() || !factory) {
-      return false;
-   }
+std::span<const SceneObjectStore::ObjectKind> SceneObjectStore::GetObjectKinds() {
+   // 保存名・互換性の判定に使う種別・復元Factoryを同じ定義から取得する。
+   static constexpr ObjectKind kinds[] = {
+      {ObjectType::Generic, "Generic", [](SceneObjectStore& store, const nlohmann::json& data) {
+         return store.CreateGenericObject(nullptr, data.value("id", ""));
+      }},
+      {ObjectType::Model, "Model", [](SceneObjectStore& store, const nlohmann::json& data) {
+         const auto assetId = EngineContext::GetParameterAssetStore().ResolveObjectAssetId(data);
+         return store.CreateModel(assetId, nullptr, data.value("id", ""));
+      }},
+      {ObjectType::Sprite, "Sprite", [](SceneObjectStore& store, const nlohmann::json& data) -> Object* {
+         const auto assetId = EngineContext::GetParameterAssetStore().ResolveObjectAssetId(data);
+         return store.CreateSprite(assetId, nullptr, data.value("id", ""));
+      }},
+      {ObjectType::UIText, "UIText", [](SceneObjectStore& store, const nlohmann::json& data) {
+         return store.CreateUIText(nullptr, data.value("id", ""));
+      }},
+      {ObjectType::Skybox, "Skybox", [](SceneObjectStore& store, const nlohmann::json& data) {
+         return store.CreateSkybox(data.value("id", ""));
+      }},
+   };
+   return kinds;
+}
 
-   objectFactories_.insert_or_assign(objectType, std::move(factory));
-   return true;
+std::optional<ObjectType> SceneObjectStore::FindObjectType(std::string_view name) {
+   const auto kinds = GetObjectKinds();
+   const auto found = std::ranges::find_if(kinds, [name](const ObjectKind& kind) { return name == kind.name; });
+   return found != kinds.end() ? std::optional{found->type} : std::nullopt;
+}
+
+const char* SceneObjectStore::GetObjectTypeName(ObjectType type) {
+   const auto kinds = GetObjectKinds();
+   const auto found = std::ranges::find(kinds, type, &ObjectKind::type);
+   return found != kinds.end() ? found->name : "Unknown";
 }
 
 Object* SceneObjectStore::AdoptObject(std::unique_ptr<Object> object, const std::string& requestedId) {
@@ -191,7 +201,6 @@ ParticleSystem* SceneObjectStore::CreateParticleSystem(
    const std::string& assetId, const std::string& requestedId, const Transform* initialTransform) {
    auto particleSystem = std::make_unique<ParticleSystem>();
    ParticleSystem* rawParticleSystem = particleSystem.get();
-   rawParticleSystem->SetWorld(&world_);
    rawParticleSystem->Create();
    rawParticleSystem->SetName(
       BuildUniqueObjectName(assetId.empty() ? "ParticleSystem" : BuildNameFromAssetId(assetId)));
@@ -210,6 +219,7 @@ ParticleSystem* SceneObjectStore::CreateParticleSystem(
    rawParticleSystem->Play();
 
    const std::string id = AllocateId(requestedId);
+   rawParticleSystem->SetWorld(&world_);
    RegisterParticleSystem(id, rawParticleSystem, assetId);
    particleSystems_.push_back(std::move(particleSystem));
    return rawParticleSystem;
@@ -221,9 +231,12 @@ Object* SceneObjectStore::RestoreObject(const nlohmann::json& objectData) {
    }
 
    const auto& objectType = objectData.at("objectType").get_ref<const std::string&>();
-   const auto factory = objectFactories_.find(objectType);
+   const auto kinds = GetObjectKinds();
+   const auto kind = std::ranges::find_if(kinds, [&objectType](const ObjectKind& entry) {
+      return objectType == entry.name;
+   });
 
-   if (factory == objectFactories_.end()) {
+   if (kind == kinds.end()) {
       return nullptr;
    }
 
@@ -231,7 +244,7 @@ Object* SceneObjectStore::RestoreObject(const nlohmann::json& objectData) {
 
    try {
       // 派生型ごとの必須リソースを先に生成してから、共通コンポーネント状態を上書きする。
-      object = factory->second(*this, objectData);
+      object = kind->create(*this, objectData);
 
       if (object && Contains(object) && ApplyObjectState(object, objectData)) {
          return object;
@@ -249,31 +262,30 @@ Object* SceneObjectStore::RestoreObject(const nlohmann::json& objectData) {
 }
 
 ParticleSystem* SceneObjectStore::RestoreParticleSystem(const nlohmann::json& objectData) {
-   if (!objectData.is_object()) {
+   if (!objectData.is_object() || (objectData.contains("assetId") && !objectData.at("assetId").is_string()) ||
+       (objectData.contains("id") && !objectData.at("id").is_string())) {
       return nullptr;
    }
 
-   const std::string assetId = objectData.value("assetId", "");
-   const std::string id = objectData.value("id", "");
+   const auto assetId = objectData.value("assetId", std::string{});
+   const auto id = objectData.value("id", std::string{});
    const bool hasSnapshot = objectData.contains("data") && objectData.at("data").is_object();
 
    // 完全な保存状態があれば元テンプレートの再読込を省き、ファイルの削除後でもUndo可能にする。
-   ParticleSystem* particleSystem = CreateParticleSystem(hasSnapshot ? std::string{} : assetId, id);
+   auto* particle = CreateParticleSystem(hasSnapshot ? std::string{} : assetId, id);
 
-   if (particleSystem) {
-      particleSystemAssetIds_[particleSystem] = assetId;
+   if (!particle) {
+      return nullptr;
    }
 
    // assetIdはテンプレート生成用、dataは保存時点の完全な編集状態なので後者を最後に適用する。
-   if (particleSystem && objectData.contains("data") && objectData.at("data").is_object()) {
-      particleSystem->FromJson(objectData.at("data"));
+   if (!ApplyParticleSystemState(particle, objectData)) {
+      DeleteParticleSystem(GetId(particle));
+      return nullptr;
    }
 
-   if (particleSystem && objectData.contains("name") && objectData.at("name").is_string()) {
-      particleSystem->SetName(objectData.at("name").get<std::string>());
-   }
-
-   return particleSystem;
+   particleSystemAssetIds_[particle] = assetId;
+   return particle;
 }
 
 bool SceneObjectStore::DeleteObject(const std::string& objectId) {
@@ -314,9 +326,9 @@ bool SceneObjectStore::DeleteParticleSystem(const std::string& objectId) {
       return false;
    }
 
-   // Store内の検索表とグローバル描画レジストリを先に外し、実体はフレーム境界まで保持する。
+   // Store内の検索表とWorldの更新・描画一覧を先に外し、実体はフレーム境界まで保持する。
    UnregisterParticleSystem(target);
-   ParticleSystem::UnregisterParticleSystem(target);
+   target->SetWorld(nullptr);
    deferredDeleteParticleSystems_.push_back(std::move(*vecIt));
    particleSystems_.erase(vecIt);
    return true;
@@ -448,7 +460,7 @@ nlohmann::json SceneObjectStore::SerializeObjectState(const Object* object, cons
    objectData["parentId"] = object->GetParentEntityId();
 
    // 復元前に正しい具象型を生成できるよう、Object共通データとは別に安定した種別名を保存する。
-   objectData["objectType"] = ToObjectTypeName(object->GetObjectType());
+   objectData["objectType"] = GetObjectTypeName(object->GetObjectType());
    objectData["components"] = object->SerializeComponents();
    return objectData;
 }
@@ -460,18 +472,26 @@ bool SceneObjectStore::ApplyObjectState(Object* object, const nlohmann::json& ob
 
    // 異なる具象型へスナップショットを適用すると専用データが欠落するため、先に型整合性を検証する。
    if (!objectData.contains("objectType") || !objectData.at("objectType").is_string() ||
-       objectData.at("objectType") != ToObjectTypeName(object->GetObjectType())) {
+       objectData.at("objectType") != GetObjectTypeName(object->GetObjectType())) {
       return false;
    }
 
-   if (objectData.contains("components") && objectData.at("components").is_array()) {
-      if (!object->DeserializeComponents(objectData.at("components"))) {
-         return false;
-      }
+   if ((objectData.contains("components") && !objectData.at("components").is_array()) ||
+       (objectData.contains("parentId") && !objectData.at("parentId").is_string())) {
+      return false;
    }
 
-   if (objectData.contains("parentId") && objectData.at("parentId").is_string()) {
-      object->SetParentEntityId(objectData.at("parentId").get<std::string>());
+   const auto previousParent = object->GetParentEntityId();
+
+   // 親子関係が成立しない場合にコンポーネントまで変更しないよう、先に確認して適用する。
+   if (objectData.contains("parentId") &&
+       !object->SetParentEntityId(objectData.at("parentId").get_ref<const std::string&>())) {
+      return false;
+   }
+
+   if (objectData.contains("components") && !object->DeserializeComponents(objectData.at("components"))) {
+      object->SetParentEntityId(previousParent);
+      return false;
    }
 
    object->DeserializeObjectData(objectData);
@@ -490,16 +510,32 @@ nlohmann::json SceneObjectStore::SerializeParticleSystemState(
 
 bool SceneObjectStore::ApplyParticleSystemState(
    ParticleSystem* particleSystem, const nlohmann::json& objectData) const {
-   if (!particleSystem || !objectData.is_object()) {
+   if (!particleSystem || !objectData.is_object() ||
+       (objectData.contains("data") && !objectData.at("data").is_object()) ||
+       (objectData.contains("name") && !objectData.at("name").is_string())) {
       return false;
    }
 
-   if (objectData.contains("data") && objectData.at("data").is_object()) {
-      particleSystem->FromJson(objectData.at("data"));
+   if (objectData.contains("data")) {
+      const auto previous = particleSystem->ToJson();
+
+      try {
+         particleSystem->FromJson(objectData.at("data"));
+      } catch (const std::exception& error) {
+         Logger::Warning("Particle snapshot restore failed: " + std::string(error.what()));
+
+         try {
+            particleSystem->FromJson(previous);
+         } catch (const std::exception& restoreError) {
+            Logger::Error("Particle snapshot rollback failed: " + std::string(restoreError.what()));
+         }
+
+         return false;
+      }
    }
 
-   if (objectData.contains("name") && objectData.at("name").is_string()) {
-      particleSystem->SetName(objectData.at("name").get<std::string>());
+   if (objectData.contains("name")) {
+      particleSystem->SetName(objectData.at("name").get_ref<const std::string&>());
    }
 
    return true;
@@ -551,15 +587,15 @@ std::string SceneObjectStore::AllocateId(const std::string& requestedId) {
 std::string SceneObjectStore::BuildUniqueObjectName(const std::string& baseName) const {
    const std::string base = baseName.empty() ? "EditorObject" : baseName;
 
-   auto exists = [](const std::string& name) {
+   auto exists = [this](const std::string& name) {
       // Entity種別に依存せず、ヒエラルキー全体で表示名を一意にする。
-      for (const auto* object : Object::GetRegisteredObjects()) {
+      for (const auto& object : objects_) {
          if (object && object->GetObjectName() == name) {
             return true;
          }
       }
 
-      for (const auto* particleSystem : ParticleSystem::GetRegisteredParticleSystems()) {
+      for (const auto& particleSystem : particleSystems_) {
          if (particleSystem && particleSystem->GetName() == name) {
             return true;
          }
@@ -651,7 +687,7 @@ void SceneObjectStore::UnregisterOwnedRuntimeSystems(Object* object) {
 
    pendingDeletionObjects_.insert(object);
 
-   // 親Objectより長く静的描画リストへ残らないよう、Emitterが所有する実行時システムも先に解除する。
+   // 親Objectより長くWorldの描画一覧へ残らないよう、Emitterが所有する実行時システムも先に解除する。
    if (auto* emitter = object->GetComponent<ParticleEmitterComponent>()) {
       emitter->UnregisterParticleSystemsForRender();
    }

@@ -28,13 +28,11 @@ GameEngine::SceneManager* sSceneManager_ = nullptr;
 #ifdef USE_IMGUI
 GameEngine::EditorSceneSession* sEditorSceneSession_ = nullptr;
 #endif
-float sUIFrameDeltaTime_ = 0.0f;
 bool sGameplayInputBlocked_ = false;
 bool sGameplayMouseInputEnabled_ = true;
 bool sEditorInputAccess_ = false;
 float sGameDeltaTime_ = 0.0f;
 bool sHasGameDeltaTimeOverride_ = false;
-uint64_t sGameFrameNumber_ = 0;
 #ifdef USE_IMGUI
 GameEngine::PlayModeController* sPlayModeController_ = nullptr;
 #endif
@@ -45,16 +43,12 @@ bool CanReadMouseInput() {
 }
 
 namespace GameEngine {
-void EngineContext::SetUIFrameState(float deltaTime, bool gameplayInputBlocked) {
-   sUIFrameDeltaTime_ = deltaTime;
-   sGameplayInputBlocked_ = gameplayInputBlocked;
-   if (sInputActionService_) {
-      sInputActionService_->SetGameplayInputBlocked(gameplayInputBlocked);
-   }
-}
+void EngineContext::SetGameplayInputBlocked(bool blocked) {
+   sGameplayInputBlocked_ = blocked;
 
-float EngineContext::GetUIFrameDeltaTime() {
-   return sUIFrameDeltaTime_;
+   if (sInputActionService_) {
+      sInputActionService_->SetGameplayInputBlocked(blocked);
+   }
 }
 
 void EngineContext::SetEditorInputAccess(bool enabled) {
@@ -113,40 +107,17 @@ void EngineContextInitializer::Initialize(GraphicsDevice* graphicsDevice, Input*
    sGameplayMouseInputEnabled_ = gameplayMouseInputEnabled;
 }
 
-void EngineContextInitializer::SetGraphicsDevice(GraphicsDevice* graphicsDevice) {
-   sGraphicsDevice_ = graphicsDevice;
-}
-
-void EngineContextInitializer::SetInput(Input* input) {
-   sInput_ = input;
-}
-
-void EngineContextInitializer::SetInputActionService(InputActionService* inputActionService) {
-   sInputActionService_ = inputActionService;
-}
-
-void EngineContextInitializer::SetAudio(Audio* audio) {
-   sAudio_ = audio;
-}
-
-void EngineContextInitializer::SetRenderer(Renderer* renderer) {
-   sRenderer_ = renderer;
-}
-
-void EngineContextInitializer::SetAssetManager(AssetManager* assetManager) {
-   sAssetManager_ = assetManager;
-}
-
-void EngineContextInitializer::SetTimeProfiler(TimeProfiler* timeProfiler) {
-   sTimeProfiler_ = timeProfiler;
-}
-
-void EngineContextInitializer::SetCameraManager(CameraManager* cameraManager) {
-   sCameraManager_ = cameraManager;
-}
-
-void EngineContextInitializer::SetLightManager(LightManager* lightManager) {
-   sLightManager_ = lightManager;
+void EngineContextInitializer::Reset() {
+   Initialize(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, true);
+   sSceneManager_ = nullptr;
+   sGameplayInputBlocked_ = false;
+   sEditorInputAccess_ = false;
+   sGameDeltaTime_ = 0.0f;
+   sHasGameDeltaTimeOverride_ = false;
+#ifdef USE_IMGUI
+   sEditorSceneSession_ = nullptr;
+   sPlayModeController_ = nullptr;
+#endif
 }
 
 //================================================================
@@ -221,10 +192,6 @@ bool EngineContext::IsKeyReleased(KeyCode key) {
    }
 
    return sInput_->IsKeyReleased(key);
-}
-
-bool EngineContext::IsGameplayMouseInputEnabled() {
-   return sGameplayMouseInputEnabled_;
 }
 
 bool EngineContext::IsMousePressed(uint8_t button) {
@@ -428,14 +395,8 @@ std::string EngineContext::DescribeInputActionBindings(
    return playerSlot == 0 ? sInputActionService_->DescribeActionBindings(actionMap, actionId, false) : std::string{};
 }
 
-bool EngineContext::ChangeScene(const std::string& name) {
-   return sSceneManager_ && sSceneManager_->RequestSceneChange(name);
-}
-
-void EngineContext::SetSceneTransitionOpacity(float opacity) {
-   if (sRenderer_) {
-      sRenderer_->SetSceneTransitionOpacity(opacity);
-   }
+SceneRequestStatus EngineContext::RequestSceneChange(const std::string& name) {
+   return sSceneManager_ ? sSceneManager_->RequestSceneChange(name) : SceneRequestStatus::Unavailable;
 }
 
 void EngineContext::SetCameraTransition(
@@ -478,14 +439,6 @@ float EngineContext::GetUnscaledDeltaTime() {
 void EngineContext::SetGameDeltaTime(float deltaTime) {
    sGameDeltaTime_ = deltaTime;
    sHasGameDeltaTimeOverride_ = true;
-}
-
-uint64_t EngineContext::GetGameFrameNumber() {
-   return sGameFrameNumber_;
-}
-
-void EngineContext::AdvanceGameFrameNumber() {
-   ++sGameFrameNumber_;
 }
 
 float EngineContext::GetFPS() {
@@ -539,10 +492,6 @@ bool EngineContext::IsPaused() {
 
 bool EngineContext::ShouldRunRuntimeUpdate() {
    return sPlayModeController_ ? sPlayModeController_->ShouldRunRuntimeUpdate() : true;
-}
-
-float EngineContext::GetGameDeltaTime() {
-   return sPlayModeController_ ? sPlayModeController_->GetGameDeltaTime() : GetDeltaTime();
 }
 
 float EngineContext::GetTimeScale() {
@@ -789,26 +738,12 @@ GraphicsDevice* EngineContext::GetGraphicsDevice() {
    return sGraphicsDevice_;
 }
 
-CinemachineBrain* EngineContext::CreateCameraUnit(std::unique_ptr<Camera> outputCamera) {
-   if (!sCameraManager_) {
-      return nullptr;
-   }
-
-   return sCameraManager_->CreateUnit(std::move(outputCamera));
-}
-
 CinemachineBrain* EngineContext::GetActiveBrain() {
    if (!sCameraManager_) {
       return nullptr;
    }
 
    return sCameraManager_->GetActiveBrain();
-}
-
-void EngineContext::ClearCameraUnits() {
-   if (!sCameraManager_) return;
-
-   sCameraManager_->ClearUnits();
 }
 
 //================================================================
@@ -1069,12 +1004,6 @@ Vector2 EngineContext::MeasureText(std::string_view text, const TextStyle& style
    return sRenderer_ ? sRenderer_->MeasureText(text, style) : Vector2{0.0f, 0.0f};
 }
 
-void EngineContext::RequestScreenshot(const std::filesystem::path& outputPath) {
-   if (!sGraphicsDevice_) return;
-
-   sGraphicsDevice_->RequestScreenshot(outputPath);
-}
-
 #ifdef USE_IMGUI
 bool EngineContext::GetIsSceneHovered() {
    if (!sRenderer_) {
@@ -1082,20 +1011,6 @@ bool EngineContext::GetIsSceneHovered() {
    }
 
    return sRenderer_->GetIsSceneHovered();
-}
-
-bool EngineContext::GetIsDockSpaceVisible() {
-   if (!sRenderer_) {
-      return false;
-   }
-
-   return sRenderer_->GetIsDockSpaceVisible();
-}
-
-void EngineContext::SetDockSpaceVisible(bool visible) {
-   if (!sRenderer_) return;
-
-   sRenderer_->SetDockSpaceVisible(visible);
 }
 
 bool EngineContext::GetEditorWindowVisibility(

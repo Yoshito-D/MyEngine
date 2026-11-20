@@ -508,9 +508,12 @@ void RendererEditorController::ShowSceneManagementWindow() {
       ImGui::TextWrapped("%s", context->GetLastStatusMessage().c_str());
    }
 
-   if (auto* manager = EngineContext::GetSceneManager();
-      manager && manager->GetLastResult().status != SceneLoadStatus::Succeeded) {
-      ImGui::TextWrapped("%s", manager->GetLastResult().message.c_str());
+   if (auto* manager = EngineContext::GetSceneManager()) {
+      if (!manager->GetLastRequestError().empty()) {
+         ImGui::TextWrapped("%s", manager->GetLastRequestError().c_str());
+      } else if (manager->GetLastResult().status != SceneLoadStatus::Succeeded) {
+         ImGui::TextWrapped("%s", manager->GetLastResult().message.c_str());
+      }
    }
 
    if (!editorSceneCatalogStatus_.empty()) {
@@ -742,7 +745,7 @@ void RendererEditorController::ShowHierarchyWindow() {
    // コンテキストがある場合は削除墓標で隠されたシーン所有物を除いた編集用一覧を正本にする。
    auto sceneObjects = editorContext ? editorContext->CollectEditableObjects() : CollectSceneObjects();
    auto particleSystems =
-      editorContext ? editorContext->CollectEditableParticleSystems() : ParticleSystem::GetRegisteredParticleSystems();
+      editorContext ? editorContext->CollectEditableParticleSystems() : std::vector<ParticleSystem*>{};
 
    if (editorContext && ImGui::BeginPopupContextWindow("HierarchyCreateContext", ImGuiPopupFlags_MouseButtonRight)) {
       if (ImGui::MenuItem(Tr("選択を複製", "Duplicate Selected"), "Ctrl+D")) {
@@ -2044,7 +2047,7 @@ void RendererEditorController::RequestSceneOpen(const std::string& name, bool re
       editorSceneReloadRequested_ = true;
       editorSceneReloadFilePath_ = context->GetSceneFilePath();
    } else {
-      EngineContext::ChangeScene(name);
+      EngineContext::RequestSceneChange(name);
    }
 }
 
@@ -2064,7 +2067,7 @@ void RendererEditorController::DrawUnsavedSceneDialog(EditorSceneContext& contex
          editorSceneReloadRequested_ = true;
          editorSceneReloadFilePath_ = context.GetSceneFilePath();
       } else {
-         EngineContext::ChangeScene(editorPendingSceneName_);
+         EngineContext::RequestSceneChange(editorPendingSceneName_);
       }
 
       ImGui::CloseCurrentPopup();

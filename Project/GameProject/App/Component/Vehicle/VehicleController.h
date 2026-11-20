@@ -2,11 +2,6 @@
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/Types/Vector3.h"
-#include "GameProject/App/Component/Gravity/GravityBody.h"
-#include "GameProject/App/Component/Character/CharacterJump.h"
-#include "GameProject/App/Component/Camera/GravityFollowCamera.h"
-#include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
-#include "GameProject/App/Component/Vehicle/VehicleMover.h"
 
 namespace App {
 
@@ -27,9 +22,6 @@ public:
    /// @brief 入力取得と各サブコンポーネントへの委譲を行う
    void Update(float deltaTime) override;
 
-   /// @brief GravityFollowCamera 参照を設定する
-   void SetGravityFollowCamera(GravityFollowCamera* cam);
-
    /// @brief 直近の移動方向を取得する
    GameEngine::Vector3 GetLastMoveDirection() const;
 
@@ -44,10 +36,6 @@ public:
 
    /// @brief パラメータをデシリアライズする
    void Deserialize(const nlohmann::json& data) override;
-
-private:
-   /// @brief 選択中カメラの安定ID。削除されたComponentの生ポインターを保持しない
-   std::string gravityFollowCameraId_;
 };
 
 } // namespace App

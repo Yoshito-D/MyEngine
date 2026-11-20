@@ -14,10 +14,9 @@
 #include <algorithm>
 
 namespace GameEngine {
-UIInputFrame Renderer::ReadUIInput(Input& input, InputActionService& actions) {
+UIInputFrame Renderer::ReadUIInput(Input& input, InputActionService& actions, bool mouseEnabled) {
    UIInputFrame frame;
    frame.gamepadConnected = input.GetConnectedGamePadCount() != 0;
-   const bool mouseEnabled = EngineContext::IsGameplayMouseInputEnabled();
    bool standalone = true;
 #ifdef USE_IMGUI
    standalone = !imGuiManager_ || !imGuiManager_->IsDockSpaceVisible();
@@ -79,12 +78,10 @@ UIInputFrame Renderer::ReadUIInput(Input& input, InputActionService& actions) {
    return frame;
 }
 
-void Renderer::DrawManagedUI() {
-   auto* scene = EngineContext::GetCurrentScene();
+void Renderer::DrawManagedUI(SceneWorld& world) {
    auto* textures = assetManager_ ? assetManager_->GetTextureManager() : nullptr;
    auto* fonts = assetManager_ ? assetManager_->GetFontManager() : nullptr;
-   if (!scene || !textures || !fonts || !textRenderer_) return;
-   auto& world = scene->GetSceneWorld();
+   if (!textures || !fonts || !textRenderer_) return;
    auto& ui = world.GetUI();
    bool editing = false;
 #ifdef USE_IMGUI

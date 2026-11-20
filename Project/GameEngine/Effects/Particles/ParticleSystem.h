@@ -56,22 +56,9 @@ public:
       float collisionRestitution = 0.0f;              ///< 衝突時の法線方向速度へ適用する反発係数。
    };
 
-   /// @brief 自動更新・描画対象として登録された全システムを取得する
-   /// @return 生存中の登録システム一覧
-   static const std::vector<ParticleSystem*>& GetRegisteredParticleSystems();
-
-   /// @brief 指定システムを自動更新・描画一覧から外す
-   /// @param particleSystem 解除対象
-   static void UnregisterParticleSystem(ParticleSystem* particleSystem);
-
-   /// @brief 自動更新・描画レジストリを空にする
-   static void ClearRegisteredParticleSystems();
-
-   /// @brief パーティクルを更新元のWorldへ関連付ける。
-   void SetWorld(SceneWorld* world) { world_ = world; }
-
-   /// @brief 更新元のWorldを取得する。描画レジストリは所有権を持たない。
-   SceneWorld* GetWorld() const { return world_; }
+   /// @brief Worldの更新・描画に登録する。nullptrで解除し、粒子データとGPU資源は保持する。
+   /// @param world 所属先。Worldはこのシステムを破棄または解除するまで生存すること。
+   void SetWorld(SceneWorld* world);
 
    /// @brief GPU送信用パーティクルデータ
    struct ParticleForGPU {
@@ -322,14 +309,6 @@ public:
    /// @param name 新しいシステム名
    void SetName(const std::string& name) { name_ = name; }
 
-   /// @brief エディタのヒエラルキーとインスペクターへ公開するか取得する
-   /// @return エディタで編集可能な場合はtrue
-   bool IsEditorInspectable() const { return isEditorInspectable_; }
-
-   /// @brief エディタのヒエラルキーとインスペクターへの公開可否を設定する
-   /// @param inspectable 公開する場合はtrue
-   void SetEditorInspectable(bool inspectable) { isEditorInspectable_ = inspectable; }
-
    /// @brief ブレンドモードを設定（マテリアルに委譲）
    void SetBlendMode(std::optional<BlendMode> mode);
 
@@ -492,7 +471,6 @@ private:
    bool isPlaying_ = false; ///< 再生中かどうか。
    bool isPaused_ = false;  ///< 時間経過による更新を一時停止しているかどうか。
 
-   bool isEditorInspectable_ = true;          ///< エディタのヒエラルキーとインスペクターへ公開するかどうかする。
    bool usePostProcess_ = false;              ///< ポストプロセスを適用するかどうか。
    float emissionTimer_ = 0.0f;               ///< 時間ベースの放出処理に使う経過時間（秒）。
    float emissionAccumulator_ = 0.0f;         ///< 時間ベースの放出で次フレームへ繰り越す粒子数の端数。
@@ -503,10 +481,9 @@ private:
 
    std::unique_ptr<Mesh> quadMesh_ = nullptr; ///< ビルボードなどの粒子描画に使う所有メッシュ。
    bool isCreated_ = false;                   ///< 粒子描画用メッシュを生成済みかどうか。
-   std::string name_;                         ///< エディタとデバッグ表示に使うシステム名。
+   std::string name_ = "ParticleSystem";                         ///< エディタとデバッグ表示に使うシステム名。
 
    /// @brief 描画候補として登録されたParticleSystemの非所有一覧。
-   static std::vector<ParticleSystem*> sRegisteredParticleSystems_;
 
    SubEmitterSettings subEmitterSettings_;  ///< サブエミッター設定。
    uint32_t subEmitterEventsThisFrame_ = 0; ///< このフレームに受理したサブエミッターイベント数。

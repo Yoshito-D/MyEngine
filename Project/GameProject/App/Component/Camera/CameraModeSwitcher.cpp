@@ -2,7 +2,7 @@
 #include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 
-#include "GameProject/App/Component/Camera/GravityFollowCamera.h"
+#include "GameProject/App/Component/Camera/IVehicleCamera.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameEngine/Scene/SceneWorld.h"
@@ -27,13 +27,6 @@ void CameraModeSwitcher::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld)
    }
 
    currentIndex_ = cameras_.empty() ? 0 : std::min(currentIndex_, cameras_.size() - 1);
-
-   if (HasOwner()) {
-      if (auto* controller = GetOwner().GetComponent<VehicleController>()) {
-         auto* selected = GetSelectedCamera();
-         controller->SetGravityFollowCamera(selected ? selected->GetComponent<GravityFollowCamera>() : nullptr);
-      }
-   }
 }
 
 void CameraModeSwitcher::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
@@ -42,14 +35,28 @@ void CameraModeSwitcher::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    ApplyMode();
 }
 
-void CameraModeSwitcher::Update(float) {
+void CameraModeSwitcher::Update(float deltaTime) {
+   const auto* input = HasOwner() ? GetOwner().GetComponent<VehicleInputComponent>() : nullptr;
+
+   if (!input) return;
+
+   // 走行停止中は視点操作も止める。手動切替は従来どおり非Releaseだけで受け付ける。
+   const auto* controller = GetOwner().GetComponent<VehicleController>();
+
+   if (controller && controller->IsEnabled()) {
+      auto* selected = GetSelectedCamera();
+      auto* vehicleCamera = selected ? selected->GetComponent<IVehicleCamera>() : nullptr;
+
+      if (vehicleCamera && vehicleCamera->GetVehicleCameraComponent().IsEnabled()) {
+         vehicleCamera->ApplyVehicleLookInput(input->GetCameraLookInput(), deltaTime);
+      }
+   }
+
 #ifdef MYPROJECT_NON_RELEASE
-   const auto* vehicleInput = HasOwner() ? GetOwner().GetComponent<VehicleInputComponent>() : nullptr;
-
-   if (cameras_.empty() || !vehicleInput || !vehicleInput->IsNextCameraTriggered()) return;
-
-   currentIndex_ = (currentIndex_ + 1) % cameras_.size();
-   ApplyMode();
+   if (!cameras_.empty() && input->IsNextCameraTriggered()) {
+      currentIndex_ = (currentIndex_ + 1) % cameras_.size();
+      ApplyMode();
+   }
 #endif
 }
 
@@ -111,16 +118,6 @@ void CameraModeSwitcher::ApplyMode() {
       if (cameras_[index]) {
          cameras_[index]->SetPriority(index == currentIndex_ ? 0 : -1);
       }
-   }
-
-   if (!HasOwner()) return;
-
-   auto* selectedCamera = GetSelectedCamera();
-   auto* gravityFollow = selectedCamera ? selectedCamera->GetComponent<GravityFollowCamera>() : nullptr;
-
-   // Bridgeは非選択カメラにも入力を供給する。車両の操作基準だけを選択に合わせる。
-   if (auto* controller = GetOwner().GetComponent<VehicleController>()) {
-      controller->SetGravityFollowCamera(gravityFollow);
    }
 }
 

@@ -179,7 +179,7 @@ private:
    std::string nextScene_;                              ///< 進行完了後に読み込む登録シーン名。
    float finishDelay_ = 0.0f;                           ///< ゴールから次シーンへ遷移するまでの待機時間（秒）。
    float finishElapsed_ = 0.0f;                         ///< ゴール後の遷移待機で経過した時間（秒）。
-   bool sceneChangeRequested_ = false;                  ///< この進行状態からシーン切り替えを要求済みかどうか。
+   bool autoSceneChangeAttempted_ = false;              ///< 自動遷移先への予約を試みたかどうか。
    bool restartRequested_ = false;                      ///< リトライのシーン切り替えを要求済みかどうか。
    bool runtimeInitialized_ = false;                    ///< 最初の実行時更新に必要な初期化が完了したかどうか。
    bool restartAfterUpdate_ = false;                    ///< 状態更新中に要求された再開始をコールバック終了後に行うか。

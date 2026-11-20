@@ -1,26 +1,20 @@
 #pragma once
 
-#include <cstdint>
-#include "GameProject/App/Component/Camera/RearFollow/RearCameraMeasurementRecorder.h"
+#ifdef USE_IMGUI
 
 namespace App {
 
-/// @brief 追従計算と独立したカメラ調整・計測表示。
+struct RearCameraSettings;
+
+/// @brief 後方追従カメラの設定をエディターで編集する。
 class RearCameraDebugView {
 public:
-   /// @brief 計測中のフレーム数と回転量をゲーム画面へ重ねて表示する。
-   static void DrawCameraMeasurementOverlay(
-      const RearCameraSettings& settings, const RearCameraMeasurementRecorder& recorder);
-#ifdef USE_IMGUI
-
-   /// @brief 検証用ウィンドウに追従状態と計測結果を表示する。
-   static void DrawCameraEvidenceWindow(
-      RearCameraSettings& settings, const RearCameraFrameView& frame, RearCameraMeasurementRecorder& recorder);
-
-   /// @brief Inspectorから設定変更と計測操作を受け付ける。
-   static void DrawInspector(RearCameraSettings& settings, bool& enabled, const RearCameraFrameView& frame,
-      RearCameraMeasurementRecorder& recorder);
-#endif
+   /// @brief Inspectorに追従設定と有効状態の編集項目を表示する。
+   /// @param settings 編集する追従設定。
+   /// @param enabled カメラ部品の有効状態。
+   static void DrawInspector(RearCameraSettings& settings, bool& enabled);
 };
 
 } // namespace App
+
+#endif

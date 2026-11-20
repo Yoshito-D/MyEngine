@@ -1,6 +1,6 @@
 #include "GameEngine/pch.h"
 #include "GameEngine/UI/UISystem.h"
-#include "GameEngine/Scene/Scene.h"
+#include "GameEngine/Scene/SceneManager.h"
 #include <chrono>
 #include "GameEngine/Framework/Framework.h"
 #include "GameEngine/Utility/ExportDump.h"
@@ -98,9 +98,11 @@ void Framework::InitializeEngine(bool gameplayMouseInputEnabled, const InputActi
    // タイムプロファイラーの初期化
    timeProfiler_ = std::make_unique<TimeProfiler>();
 
-   // EngineContextの初期化
-   std::unique_ptr<EngineContextInitializer> initializer = std::make_unique<EngineContextInitializer>();
-   initializer->Initialize(device_.get(), input_.get(), inputActionService_.get(), audio_.get(), renderer_.get(),
+   gameplayMouseInputEnabled_ = gameplayMouseInputEnabled;
+
+   // EngineContextの参照は所有サービスが全て初期化された後に接続する。
+   EngineContextInitializer initializer;
+   initializer.Initialize(device_.get(), input_.get(), inputActionService_.get(), audio_.get(), renderer_.get(),
       assetManager_.get(), timeProfiler_.get(), cameraManager_.get(), lightManager_.get(), gameplayMouseInputEnabled);
 }
 
@@ -131,22 +133,24 @@ void Framework::BeginFrame() {
 }
 
 void Framework::EndFrame() {
+   RenderFrame(nullptr);
+}
+
+void Framework::RenderFrame(SceneWorld* world) {
    // フレーム終了処理
-   renderer_->EndFrame();
+   renderer_->EndFrame(world);
 
    // 中間リソースの解放
    assetManager_->GetTextureManager()->ReleaseIntermediateResources();
    assetManager_->GetFontManager()->ReleaseIntermediateResources();
 }
 
-void Framework::UpdateUIFrame(bool runtimeUpdate, float uiDeltaTime) {
-   auto* scene = EngineContext::GetCurrentScene();
-   if (!scene) {
-      EngineContext::SetUIFrameState(0.0f, false);
-      return;
-   }
-   auto& ui = scene->GetSceneWorld().GetUI();
-   auto input = renderer_->ReadUIInput(*input_, *inputActionService_);
+std::unique_ptr<SceneManager> Framework::CreateSceneManager(SceneCatalog& catalog) {
+   return std::make_unique<SceneManager>(catalog, *assetManager_, *audio_, *cameraManager_, *renderer_);
+}
+
+void Framework::UpdateUIFrame(UISystem& ui, bool runtimeUpdate, float uiDeltaTime) {
+   auto input = renderer_->ReadUIInput(*input_, *inputActionService_, gameplayMouseInputEnabled_);
    input.active = input.active && runtimeUpdate;
    ui.BeginFrame(renderer_->GetUIViewportSize(), input, uiDeltaTime, runtimeUpdate);
    if (ui.BlocksGameplayInput()) {
@@ -158,7 +162,7 @@ void Framework::UpdateUIFrame(bool runtimeUpdate, float uiDeltaTime) {
          held = held || input_->IsKeyPressed(static_cast<std::uint8_t>(key));
       }
 
-      if (EngineContext::IsGameplayMouseInputEnabled()) {
+      if (gameplayMouseInputEnabled_) {
          for (const auto button : {MouseButton::Left, MouseButton::Right, MouseButton::Middle}) {
             held = held || input_->IsMousePressed(button);
          }
@@ -166,11 +170,7 @@ void Framework::UpdateUIFrame(bool runtimeUpdate, float uiDeltaTime) {
 
       waitForGameplayInputRelease_ = held;
    }
-   EngineContext::SetUIFrameState(
-      runtimeUpdate ? uiDeltaTime : 0.0f, ui.BlocksGameplayInput() || waitForGameplayInputRelease_);
-   if (ui.PausesGameplay()) {
-      EngineContext::SetGameDeltaTime(0.0f);
-   }
+   EngineContext::SetGameplayInputBlocked(ui.BlocksGameplayInput() || waitForGameplayInputRelease_);
 }
 
 void Framework::Update() {
@@ -180,19 +180,21 @@ void Framework::Draw() {
 }
 
 void Framework::Finalize() {
-   inputActionService_.reset();
-   input_.reset();
-
    if (renderer_) {
       renderer_->Finalize();
-      renderer_.reset();
    }
 
-   if (assetManager_) {
-      assetManager_.reset();
-      EngineContextInitializer initializer;
-      initializer.SetAssetManager(nullptr);
-   }
+   // 借用ポインターをすべて解除してから、参照元より長く必要な資源を最後に解放する。
+   EngineContextInitializer initializer;
+   initializer.Reset();
+   inputActionService_.reset();
+   input_.reset();
+   renderer_.reset();
+   lightManager_.reset();
+   cameraManager_.reset();
+   assetManager_.reset();
+   timeProfiler_.reset();
+   ParticleSystem::Initialize(nullptr);
 
    if (device_) {
       device_->Finalize();
@@ -202,8 +204,6 @@ void Framework::Finalize() {
    if (audio_) {
       audio_->Finalize();
       audio_.reset();
-      EngineContextInitializer initializer;
-      initializer.SetAudio(nullptr);
    }
 
    if (window_) {

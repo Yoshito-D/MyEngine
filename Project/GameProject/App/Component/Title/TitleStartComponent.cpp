@@ -135,7 +135,7 @@ void TitleStartComponent::UpdateStartSelection() {
    // 空の遷移先や、演出対象を失った項目は決定できない状態として扱う。
    if (selectedScene.empty() || !ConfirmSelection(*animation)) return;
 
-   if (GameEngine::EngineContext::ChangeScene(selectedScene)) {
+   if (GameEngine::EngineContext::RequestSceneChange(selectedScene) == GameEngine::SceneRequestStatus::Accepted) {
       stateMachine_.RequestState(State::StartingScene);
    } else {
       RevealMenu(*animation);

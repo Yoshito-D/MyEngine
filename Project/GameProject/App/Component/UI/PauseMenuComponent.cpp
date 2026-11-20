@@ -122,7 +122,7 @@ void PauseMenuComponent::OnSceneLoaded(GameEngine::SceneWorld& world) {
    selectedElementId_.clear();
 }
 
-void PauseMenuComponent::Update(float) {
+void PauseMenuComponent::Update(float deltaTime) {
    if (!world_) return;
 
    auto& ui = world_->GetUI();
@@ -135,10 +135,10 @@ void PauseMenuComponent::Update(float) {
 
    if (showingSettings) {
       UpdateSelectionVisuals(
-         settingsScreenId_, {"master", "bgm", "se", "back"}, GameEngine::EngineContext::GetUIFrameDeltaTime());
+         settingsScreenId_, {"master", "bgm", "se", "back"}, deltaTime);
    } else if (showingPause) {
       UpdateSelectionVisuals(
-         pauseScreenId_, {"restart", "title", "settings", "resume"}, GameEngine::EngineContext::GetUIFrameDeltaTime());
+         pauseScreenId_, {"restart", "title", "settings", "resume"}, deltaTime);
    }
 
    // ポーズ固有の適用条件と演出値はゲーム側で決め、エンジンへは汎用の描画・音量操作だけを渡す。
@@ -313,7 +313,9 @@ void PauseMenuComponent::RequestSceneChange(bool restart) {
    if (!manager || manager->IsSceneTransitioning()) return;
 
    // シーンの切替完了までポーズ画面を残し、暗転中にゲームが再開することを防ぐ。
-   if (restart ? manager->RequestReload() : manager->RequestSceneChange(titleScene_)) {
+   const auto request = restart ? manager->RequestReload() : manager->RequestSceneChange(titleScene_);
+
+   if (request == GameEngine::SceneRequestStatus::Accepted) {
       PlayUISound(kDecisionSoundAsset);
    }
 }

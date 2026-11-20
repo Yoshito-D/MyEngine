@@ -1,9 +1,9 @@
 #include "GameProject/App/Component/Vehicle/VehicleController.h"
 #include "GameEngine/Object/Object.h"
-#include "GameEngine/Scene/SceneWorld.h"
-#include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
-
-#include <cmath>
+#include "GameProject/App/Component/Character/CharacterJump.h"
+#include "GameProject/App/Component/Gravity/GravityBody.h"
+#include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
+#include "GameProject/App/Component/Vehicle/VehicleMover.h"
 
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/ImGui/ImGuiManager.h"
@@ -12,11 +12,6 @@
 using namespace GameEngine;
 
 namespace App {
-
-void VehicleController::SetGravityFollowCamera(GravityFollowCamera* camera) {
-   const auto* ownerCamera = camera ? camera->GetOwnerCamera() : nullptr;
-   gravityFollowCameraId_ = ownerCamera ? ownerCamera->GetId() : std::string{};
-}
 
 Vector3 VehicleController::GetLastMoveDirection() const {
    const auto* mover = HasOwner() ? GetOwner().GetComponent<VehicleMover>() : nullptr;
@@ -37,22 +32,6 @@ void VehicleController::Update(float deltaTime) {
 
    if (gravityBody && gravityBody->IsEnabled()) {
       gravityUp = gravityBody->GetTargetUpVector();
-   }
-
-   // 制御側は物理キーを知らず、意味付け済みの入力だけを消費する。
-   // カメラやその部品をInspectorで削除しても、次の入力で旧メモリへアクセスしない。
-   auto* world = GetOwner().GetWorld();
-   auto* camera = world ? world->FindVirtualCamera(gravityFollowCameraId_) : nullptr;
-   auto* gravityFollowCamera = camera ? camera->GetComponent<GravityFollowCamera>() : nullptr;
-
-   if (gravityFollowCamera && input) {
-      const Vector2 camInput = input->GetCameraLookInput();
-
-      if (camInput.x != 0.0f || camInput.y != 0.0f) {
-         constexpr float kCamRotateScale = 150.0f;
-         Vector2 delta = {camInput.x * kCamRotateScale * deltaTime, camInput.y * kCamRotateScale * deltaTime};
-         gravityFollowCamera->ProcessInput(delta, 0, true);
-      }
    }
 
    // 接地判定（ジャンプ中でなければ接地扱い）

@@ -9,7 +9,7 @@ namespace App {
 class RearCameraAimSolver {
 public:
    /// @brief 特異点付近で視線追従速度を回復させるBezier曲線の値を返す。
-   float EvaluateLookAtRecoveryCurve(const RearCameraSettings& settings, float input) const;
+   static float EvaluateLookAtRecoveryCurve(const RearCameraSettings& settings, float input);
 
    /// @brief LookAt 行列を構築してカメラ状態へ書き込み、キャッシュ軸を更新する
    /// @details LookAt の up には補間済み重力Upを使用する。

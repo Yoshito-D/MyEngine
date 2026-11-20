@@ -63,8 +63,6 @@ template <class Module> bool ParticleSystem::ApplyModuleConfiguration(Module& ta
    return true;
 }
 
-std::vector<ParticleSystem*> ParticleSystem::sRegisteredParticleSystems_{};
-
 static_assert(
    sizeof(ParticleSystem::GpuParticleState) == 48, "GpuParticleState must match the particle compute shaders.");
 static_assert(sizeof(ParticleSystem::GpuParticleMotion) == 64, "GpuParticleMotion must match ParticleUpdate.CS.hlsl.");
@@ -75,43 +73,13 @@ static_assert(sizeof(ParticleSystem::GpuRibbonSegment) == 80, "GpuRibbonSegment 
 
 namespace {
 GraphicsDevice* sDevice_ = nullptr;
-bool sIsInitialized_ = false;
 
 constexpr uint32_t kInvalidGpuParticleIndex = UINT_MAX;
 constexpr std::int32_t kJsonIndentSize = 4;
-
-std::string BuildDefaultParticleSystemName(const std::vector<ParticleSystem*>& registeredParticleSystems) {
-   auto exists = [&registeredParticleSystems](const std::string& name) {
-      for (const auto* particleSystem : registeredParticleSystems) {
-         if (particleSystem && particleSystem->GetName() == name) {
-            return true;
-         }
-      }
-
-      return false;
-   };
-
-   uint32_t index = 1;
-
-   while (true) {
-      const std::string candidate = "ParticleSystem_" + std::to_string(index++);
-
-      if (!exists(candidate)) {
-         return candidate;
-      }
-   }
-}
 }
 
 void ParticleSystem::Initialize(GraphicsDevice* device) {
-   if (sIsInitialized_) return;
-
    sDevice_ = device;
-   sIsInitialized_ = true;
-}
-
-const std::vector<ParticleSystem*>& ParticleSystem::GetRegisteredParticleSystems() {
-   return sRegisteredParticleSystems_;
 }
 
 void ParticleSystem::CreateQuadMesh() {
@@ -173,23 +141,24 @@ ParticleSystem::ParticleSystem() {
    uvTransformModule_->SetEnabled(false);
    textureSheetAnimationModule_->SetEnabled(false);
    trailModule_->SetEnabled(false);
-
-   name_ = BuildDefaultParticleSystemName(sRegisteredParticleSystems_);
-   sRegisteredParticleSystems_.push_back(this);
 }
 
 ParticleSystem::~ParticleSystem() {
-   UnregisterParticleSystem(this);
+   SetWorld(nullptr);
 }
 
-void ParticleSystem::UnregisterParticleSystem(ParticleSystem* particleSystem) {
-   if (!particleSystem) return;
+void ParticleSystem::SetWorld(SceneWorld* world) {
+   if (world_ == world) return;
 
-   auto it = std::find(sRegisteredParticleSystems_.begin(), sRegisteredParticleSystems_.end(), particleSystem);
-
-   if (it != sRegisteredParticleSystems_.end()) {
-      sRegisteredParticleSystems_.erase(it);
+   if (world) {
+      world->RegisterParticle(*this);
    }
+
+   if (world_) {
+      world_->UnregisterParticle(*this);
+   }
+
+   world_ = world;
 }
 
 void ParticleSystem::Create() {
@@ -243,21 +212,6 @@ void ParticleSystem::Create() {
    if (mainModule_->GetPlayOnAwake()) {
       Play();
    }
-}
-
-void ParticleSystem::ClearRegisteredParticleSystems() {
-   // 子を解除すると登録配列が変わるため、所有ワールドを先に収集する。
-   std::vector<SceneWorld*> worlds;
-   for (const auto* particle : sRegisteredParticleSystems_) {
-      if (particle && particle->GetWorld() &&
-          std::find(worlds.begin(), worlds.end(), particle->GetWorld()) == worlds.end()) {
-         worlds.push_back(particle->GetWorld());
-      }
-   }
-   for (auto* world : worlds) {
-      world->GetParticleSubEmitterRuntime().Clear();
-   }
-   sRegisteredParticleSystems_.clear();
 }
 
 void ParticleSystem::QueueSubEmitter(const std::string& effectPath, const Vector3& position) {

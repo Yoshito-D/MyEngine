@@ -51,35 +51,67 @@ void ParameterComponent::WriteParameters(nlohmann::json& entry) const {
    }
 }
 
-bool ParameterComponent::RestoreParameters(const nlohmann::json& entry, ParameterAssetStore& store) {
-   parameterAssetId_.clear();
-   parameterStore_ = &store;
-   parameterRevision_ = 0;
-   const auto local = entry.value("data", nlohmann::json::object());
-   const auto id = entry.value("parameterAssetId", std::string{});
-   if (id.empty()) {
-      Deserialize(local);
-      return true;
+ParameterComponent::PreparedParameters ParameterComponent::CaptureParameters() const {
+   PreparedParameters state;
+   state.store_ = parameterStore_;
+   state.assetId_ = parameterAssetId_;
+   state.revision_ = parameterRevision_;
+   state.sharedValues_ = parameterValues_;
+   state.values_ = Serialize();
+   return state;
+}
+
+std::optional<ParameterComponent::PreparedParameters> ParameterComponent::PrepareParameters(
+   const nlohmann::json& entry, ParameterAssetStore& store) {
+   PreparedParameters prepared;
+   prepared.store_ = &store;
+   prepared.values_ = entry.value("data", nlohmann::json::object());
+   prepared.assetId_ = entry.value("parameterAssetId", std::string{});
+
+   if (prepared.assetId_.empty()) {
+      return prepared;
    }
-   const auto* asset = store.Load(id, GetParameterDomain(), GetParameterType());
+
+   const auto* asset = store.Load(prepared.assetId_, GetParameterDomain(), GetParameterType());
+
    if (!asset || !ParameterAssetStore::Validate(GetSharedParameters(), asset->data)) {
-      parameterError_ = asset ? "Invalid shared parameter schema: " + id : store.GetLastError();
+      parameterError_ = asset ? "Invalid shared parameter schema: " + prepared.assetId_ : store.GetLastError();
       Logger::Error(parameterError_);
+      return std::nullopt;
+   }
+
+   for (auto it = asset->data.begin(); it != asset->data.end(); ++it) {
+      if (prepared.values_.contains(it.key())) {
+         parameterError_ = "Shared parameter duplicated in scene: " + prepared.assetId_ + "/" + it.key();
+         Logger::Error(parameterError_);
+         return std::nullopt;
+      }
+
+      prepared.values_[it.key()] = it.value();
+   }
+
+   prepared.revision_ = asset->revision;
+   prepared.sharedValues_ = asset->data;
+   return prepared;
+}
+
+void ParameterComponent::ApplyParameters(PreparedParameters prepared) {
+   Deserialize(prepared.values_);
+   parameterStore_ = prepared.store_;
+   parameterAssetId_ = std::move(prepared.assetId_);
+   parameterRevision_ = prepared.revision_;
+   parameterValues_ = std::move(prepared.sharedValues_);
+   parameterError_.clear();
+}
+
+bool ParameterComponent::RestoreParameters(const nlohmann::json& entry, ParameterAssetStore& store) {
+   auto prepared = PrepareParameters(entry, store);
+
+   if (!prepared) {
       return false;
    }
-   auto data = asset->data;
-   for (auto it = local.begin(); it != local.end(); ++it) {
-      if (data.contains(it.key())) {
-         parameterError_ = "Shared parameter duplicated in scene: " + id + "/" + it.key();
-         return false;
-      }
-      data[it.key()] = it.value();
-   }
-   Deserialize(data);
-   parameterAssetId_ = id;
-   parameterRevision_ = asset->revision;
-   parameterValues_ = asset->data;
-   parameterError_.clear();
+
+   ApplyParameters(std::move(*prepared));
    return true;
 }
 

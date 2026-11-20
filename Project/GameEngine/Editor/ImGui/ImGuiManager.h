@@ -71,10 +71,6 @@ public:
    /// @return ドッキングスペース表示状態
    bool IsDockSpaceVisible() const { return isDockSpaceVisible_; }
 
-   /// @brief ドッキングスペースの表示状態を設定
-   /// @param visible 表示状態
-   void SetDockSpaceVisible(bool visible) { isDockSpaceVisible_ = visible; }
-
    /// @brief マルチビューポートが有効かを取得
    /// @return マルチビューポート有効状態
    bool IsMultiViewportEnabled() const { return multiViewportEnabled_; }

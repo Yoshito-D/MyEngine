@@ -41,6 +41,9 @@
 #endif
 
 namespace GameEngine {
+
+class SceneWorld;
+class UISystem;
 class Input;
 class InputActionService;
 struct UIInputFrame;
@@ -76,7 +79,8 @@ public:
    Vector2 GetUIViewportSize() const { return uiViewportSize_; }
 
    /// @brief ゲーム内のマウス設定を適用してUI入力を作る。モーダル画面によるゲーム入力の遮断は迂回する。
-   UIInputFrame ReadUIInput(Input& input, InputActionService& actions);
+   /// @param mouseEnabled ゲーム内でUIのポインター操作を受け付けるかどうか。
+   UIInputFrame ReadUIInput(Input& input, InputActionService& actions, bool mouseEnabled);
 
    /// @brief フレームの開始時の処理
    void BeginFrame();
@@ -85,7 +89,8 @@ public:
    void SyncRenderTargetSizeToDevice();
 
    /// @brief フレームの終了時の処理
-   void EndFrame();
+   /// @param world 描画する現在のWorld。シーンがない場合はnullptr。
+   void EndFrame(SceneWorld* world);
 
    /// @brief 今フレームのプレイヤー影の対象を専用パスへ渡す。
    /// @param frameData EndFrameの描画完了まで有効なモデル・カメラとワールド座標情報
@@ -173,10 +178,6 @@ public:
    void SetEditorSceneSession(EditorSceneSession* session);
 
    bool GetIsSceneHovered() const { return isSceneHovered_; }
-
-   bool GetIsDockSpaceVisible() const { return imGuiManager_->IsDockSpaceVisible(); }
-
-   void SetDockSpaceVisible(bool visible) { imGuiManager_->SetDockSpaceVisible(visible); }
 
    /// @brief エディタの共通メニューと閉じるボタンで共有する表示状態を取得する。
    /// @param stableId ウィンドウの固定ID。
@@ -383,7 +384,7 @@ private:
    Vector2 previousUIPointer_{};
    bool gameUIActive_ = false;
    bool gameUIWasPlaying_ = false; ///< Play開始時にGameタブへフォーカスを移すための前状態。
-   void DrawManagedUI();
+   void DrawManagedUI(SceneWorld& world);
    void DrawCameraLetterbox();
    Vector2 uiViewportSize_ = {
       static_cast<float>(Window::kUiReferenceWidth), static_cast<float>(Window::kUiReferenceHeight)};
@@ -461,11 +462,10 @@ private:
 
 private:
    void DrawAutoRegisteredModels();
-   void DrawAutoRegisteredSprites();
+   void DrawAutoRegisteredSprites(const UISystem* ui);
    void DrawAutoRegisteredSkyboxes();
-   void DrawAutoRegisteredParticles();
-   void DrawSceneTrails();
-   void DrawAutoRegisteredTexts();
+   void DrawSceneTrails(SceneWorld& world);
+   void DrawAutoRegisteredTexts(const UISystem* ui);
 
    /// @brief 指定カメラでモデル描画コマンドを登録する
    void DrawModelWithCamera(

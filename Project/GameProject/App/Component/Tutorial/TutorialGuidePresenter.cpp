@@ -208,12 +208,19 @@ std::string TutorialGuidePresenter::BuildGuideText(const TutorialGuideState& sta
          return "地上では自動で前進し、徐々に最高速度へ近づきます。\n"
                 "練習中は、左下の速度メーターを確認しましょう。" +
                 next;
-      case Phase::DriftIntro:
-         return "同じ方向へ曲がり続けると、ドリフトします。\n" + asLine(controls.SteeringPrompt()) +
-                "ターボがたまったら旋回入力を戻すと発動！　最高速度へ早く到達できます。" + next;
-      case Phase::DriftPractice:
-         return "ドリフトを続けてから旋回入力を戻し、ミニターボを3回発動しましょう。\n" +
-                asLine(controls.SteeringPrompt()) + "ミニターボ " + std::to_string(state.miniTurboCount) + " / 3";
+      case Phase::DriftIntro: {
+         const std::string intro = controls.usesDriftButton
+                                      ? "ドリフト操作を押しながら曲がると、ドリフトします。\n"
+                                      : "同じ方向へ曲がり続けると、ドリフトします。\n";
+         const std::string release = controls.usesDriftButton ? "ドリフト操作を離す" : "旋回入力を戻す";
+         return intro + asLine(controls.DriftPrompt()) +
+                "ターボがたまったら" + release + "と発動！　最高速度へ早く到達できます。" + next;
+      }
+      case Phase::DriftPractice: {
+         const std::string release = controls.usesDriftButton ? "ドリフト操作を離し" : "旋回入力を戻し";
+         return "ドリフトを続けてから" + release + "、ミニターボを3回発動しましょう。\n" +
+                asLine(controls.DriftPrompt()) + "ミニターボ " + std::to_string(state.miniTurboCount) + " / 3";
+      }
       case Phase::JumpIntro:
          return "次はジャンプを練習します。\n" + asLine(controls.JumpPrompt()) +
                 "速度が速いほど遠くへ飛べます。" + next;

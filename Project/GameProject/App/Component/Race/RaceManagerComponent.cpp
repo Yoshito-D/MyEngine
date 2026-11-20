@@ -145,12 +145,14 @@ void RaceManagerComponent::UpdateIntro(float deltaTime) {
 
 void RaceManagerComponent::UpdateFinished(float deltaTime) {
    // リスタートを選んだ場合は自動遷移より優先し、二重のシーン要求を防ぐ。
-   if (!restartRequested_ && !nextScene_.empty() && !sceneChangeRequested_) {
+   restartRequested_ = restartRequested_ && GameEngine::EngineContext::IsSceneTransitioning();
+   if (!restartRequested_ && !nextScene_.empty() && !autoSceneChangeAttempted_) {
       finishElapsed_ += deltaTime;
 
-      if (finishElapsed_ >= finishDelay_) {
-         GameEngine::EngineContext::ChangeScene(nextScene_);
-         sceneChangeRequested_ = true;
+      if (finishElapsed_ >= finishDelay_ && !GameEngine::EngineContext::IsSceneTransitioning()) {
+         GameEngine::EngineContext::RequestSceneChange(nextScene_);
+         // 遷移先の設定が不正な場合も、入力による再開は許可しつつ毎フレームの再試行は避ける。
+         autoSceneChangeAttempted_ = true;
       }
    }
 }
@@ -245,7 +247,7 @@ void RaceManagerComponent::Restart() {
    nextCheckpointIndex_ = 0;
    startGateExited_ = false;
    finishElapsed_ = 0.0f;
-   sceneChangeRequested_ = false;
+   autoSceneChangeAttempted_ = false;
    restartRequested_ = false;
    restartAfterUpdate_ = false;
    showStartBannerOnEntry_ = startMode_ != StartMode::Immediate;
@@ -274,9 +276,9 @@ bool RaceManagerComponent::RequestRestart() {
       return false;
    }
 
-   restartRequested_ = true;
-   GameEngine::EngineContext::ChangeScene(restartScene_);
-   return true;
+   restartRequested_ =
+      GameEngine::EngineContext::RequestSceneChange(restartScene_) == GameEngine::SceneRequestStatus::Accepted;
+   return restartRequested_;
 }
 
 nlohmann::json RaceManagerComponent::Serialize() const {

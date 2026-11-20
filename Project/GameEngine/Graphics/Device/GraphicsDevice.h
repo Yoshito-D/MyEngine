@@ -7,8 +7,6 @@
 #include <vector>
 #include <memory>
 #include <chrono>
-#include <filesystem>
-#include <optional>
 #include <queue>
 
 namespace GameEngine {
@@ -73,10 +71,6 @@ public:
 
    /// @brief ループ終了時の処理
    void PostDraw();
-
-   /// @brief 次に完成するバックバッファをPNGへ保存する
-   /// @param outputPath 保存先PNGパス
-   void RequestScreenshot(const std::filesystem::path& outputPath);
 
    /// @brief 終了処理
    void Finalize();
@@ -201,8 +195,6 @@ private:
    /// @brief 深度バッファの現在のリソース遷移状態。
    D3D12_RESOURCE_STATES depthBufferState_ = D3D12_RESOURCE_STATE_DEPTH_WRITE;
    std::queue<UINT> freeSrvIndices_; ///< 解放済みで再利用できるディスクリプタ番号のキュー。
-   /// @brief フレーム描画後に保存するスクリーンショットの出力先キュー。
-   std::queue<std::filesystem::path> screenshotRequests_;
 
    UINT rtvCount_ = 4;                                  ///< RTVヒープに確保するビュー数。
    DXGI_FORMAT rtvFormat_ = DXGI_FORMAT_R8G8B8A8_UNORM; ///< RTVフォーマット。

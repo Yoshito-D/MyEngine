@@ -46,7 +46,7 @@ GameEngine::Vector3 RearCameraAimSolver::ComputeLookTarget(const RearCameraInput
    return lookTarget;
 }
 
-float RearCameraAimSolver::EvaluateLookAtRecoveryCurve(const RearCameraSettings& settings, float input) const {
+float RearCameraAimSolver::EvaluateLookAtRecoveryCurve(const RearCameraSettings& settings, float input) {
    const float t = std::clamp(input, 0.0f, 1.0f);
    const float inverse = 1.0f - t;
    const float control1 = std::clamp(settings.lookAtRecoveryCurveControl1, 0.0f, 1.0f);
@@ -93,10 +93,9 @@ void RearCameraAimSolver::ApplyLookAt(const RearCameraInput& input, const RearCa
    // これにより、垂直落下から着地してcrossが復活した瞬間の180度ロールを防ぐ。
    Vector3 candidateRight = requestedUp.Cross(zaxis);
    float candidateRightLen = candidateRight.Length();
-   state_.lastLookAtCandidateRightLength = candidateRightLen;
-   state_.lastLookAtRecoveryInput =
+   const float recoveryInput =
       std::clamp(candidateRightLen / std::max(settings.lookAtRecoveryRange, 1e-4f), 0.0f, 1.0f);
-   state_.lastLookAtRecoveryBlend = EvaluateLookAtRecoveryCurve(settings, state_.lastLookAtRecoveryInput);
+   const float recoveryBlend = EvaluateLookAtRecoveryCurve(settings, recoveryInput);
 
    if (candidateRightLen > 1e-6f) {
       candidateRight = candidateRight * (1.0f / candidateRightLen);
@@ -106,7 +105,7 @@ void RearCameraAimSolver::ApplyLookAt(const RearCameraInput& input, const RearCa
 
    if (candidateRightLen > 1e-6f) {
       float signedRoll = SignedAngleAroundAxis(previousRight, candidateRight, zaxis, 1.0f);
-      targetRight = RotateAroundAxisUnit(previousRight, zaxis, signedRoll * state_.lastLookAtRecoveryBlend);
+      targetRight = RotateAroundAxisUnit(previousRight, zaxis, signedRoll * recoveryBlend);
    }
 
    targetRight = NormalizeOrFallback(targetRight - zaxis * zaxis.Dot(targetRight), previousRight);
@@ -161,9 +160,6 @@ void RearCameraAimSolver::Reset(const RearCameraSettings& settings) {
    state_.cachedRight = {1.0f, 0.0f, 0.0f};
    state_.cachedUp = {0.0f, 1.0f, 0.0f};
    state_.cachedForward = {0.0f, 0.0f, 1.0f};
-   state_.lastLookAtCandidateRightLength = 1.0f;
-   state_.lastLookAtRecoveryInput = 1.0f;
-   state_.lastLookAtRecoveryBlend = 1.0f;
    state_.currentViewRotation = GameEngine::Quaternion::Identity();
    state_.isViewRotationInitialized = false;
 }
