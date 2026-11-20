@@ -158,13 +158,6 @@ SceneLoadResult SceneManager::RestoreSnapshot(const SceneSnapshot& snapshot) {
    if (replacing_) {
       return Report(SceneLoadStatus::Rejected, "Scene replacement is already running");
    }
-   try {
-      if (!SceneWorld::IsValidSnapshot(snapshot.data)) {
-         return Report(SceneLoadStatus::Rejected, "Invalid restoration snapshot");
-      }
-   } catch (const std::exception& error) {
-      return Report(SceneLoadStatus::Rejected, error.what());
-   }
    return Replace(snapshot);
 }
 
@@ -172,9 +165,15 @@ SceneLoadResult SceneManager::Replace(const SceneSnapshot& snapshot) {
    if (replacing_) {
       return Report(SceneLoadStatus::Rejected, "Reentrant scene replacement");
    }
+   // アセット準備に失敗した場合は現在のWorldと実行中の状態を維持する。
+   const bool hadScene = currentScene_ != nullptr;
+   if (!Scene::PrepareAssets(snapshot.data)) {
+      return Report(hadScene ? SceneLoadStatus::Rejected : SceneLoadStatus::Fatal,
+         "Could not prepare scene assets: " + snapshot.definition.name);
+   }
+
    // モード変更や資源の解放より先に復旧元を確保し、復旧時はシーンファイルを読み直さない。
    SceneSnapshot recovery;
-   const bool hadScene = currentScene_ != nullptr;
    try {
       if (hadScene) {
          recovery = captureRecovery_ ? captureRecovery_()
@@ -230,6 +229,9 @@ SceneLoadResult SceneManager::Replace(const SceneSnapshot& snapshot) {
          return Report(SceneLoadStatus::Fatal, failure);
       }
       try {
+         if (!Scene::PrepareAssets(recovery.data)) {
+            throw std::runtime_error("Could not prepare assets for the previous snapshot");
+         }
          currentScene_ = std::make_unique<Scene>(recovery.definition);
 
          if (!currentScene_->Initialize(recovery.data)) {

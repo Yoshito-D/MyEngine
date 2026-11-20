@@ -23,8 +23,9 @@ public:
    /// @brief 再生開始時の選択・編集履歴を保持し、再生中の操作用コンテキストへ切り替える。
    void BeginPlay();
 
-   /// @brief 次回接続時に、再生開始時の編集コンテキストを安定IDで再接続する。
-   void RestoreEditingStateOnAttach();
+   /// @brief 次回接続時に再生開始前の編集コンテキストを復元するか設定する。
+   /// @param restore trueで復元を予約し、falseで予約を取り消す。
+   void SetRestoreEditingStateOnAttach(bool restore);
 
    /// @brief デバッグ入力と、ゲーム停止中の描画用データを更新する。
    void Update();

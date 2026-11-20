@@ -11,21 +11,21 @@ Scene::~Scene() {
    Finalize();
 }
 
-bool Scene::Initialize(const nlohmann::json& data) {
-   // 初回描画やイベント発火で読込が発生しないよう、保存状態の参照を先に準備する。
-   if (!SceneWorld::IsValidSnapshot(data)) {
-      return false;
-   }
+bool Scene::PrepareAssets(const nlohmann::json& data) {
    try {
-      const auto resolved = EngineContext::GetParameterAssetStore().ResolveScene(data);
-      if (!EngineContext::PreloadSceneTextures(resolved)) {
+      if (!SceneWorld::IsValidSnapshot(data)) {
          return false;
       }
+
+      const auto resolved = EngineContext::GetParameterAssetStore().ResolveScene(data);
+      return EngineContext::PreloadSceneTextures(resolved);
    } catch (const std::exception& error) {
-      Logger::Error(std::string("Shared parameter resolution failed: ") + error.what());
+      Logger::Error(std::string("Scene asset preparation failed: ") + error.what());
       return false;
    }
+}
 
+bool Scene::Initialize(const nlohmann::json& data) {
    auto camera = std::make_unique<Camera>();
    camera->Initialize();
    camera->SetFarClip(10000.0f);

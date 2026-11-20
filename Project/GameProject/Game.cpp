@@ -10,8 +10,29 @@
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
+#endif
 
 namespace {
+GameEngine::InputActionConfiguration GetGameInputConfiguration() {
+   using namespace GameEngine;
+
+   // 設定が欠けた場合に画面を操作して戻れるよう、復旧に使う操作だけを持つ。
+   static const InputActionDefinition fallback[] = {
+      {"Gameplay", "Gameplay.Pause", InputActionType::Button,
+         {{KeyInputBinding{KeyCode::Escape}}, {GamePadButtonInputBinding{GamePadButton::Start}}}},
+      {"UI", "UI.Navigate", InputActionType::Axis1D,
+         {{KeyAxis1DInputBinding{KeyCode::W, KeyCode::S}}, {GamePadButtonInputBinding{GamePadButton::DPadUp}, -1.0f},
+            {GamePadButtonInputBinding{GamePadButton::DPadDown}}, {LeftStickInputBinding{InputBindingAxis::Y}, -1.0f}}},
+      {"UI", "UI.Confirm", InputActionType::Button,
+         {{KeyInputBinding{KeyCode::Space}}, {GamePadButtonInputBinding{GamePadButton::A}}}},
+      {"UI", "UI.Cancel", InputActionType::Button,
+         {{KeyInputBinding{KeyCode::Escape}}, {GamePadButtonInputBinding{GamePadButton::B}},
+            {GamePadButtonInputBinding{GamePadButton::Start}}}},
+   };
+   return {"Resources/game/config/input_actions.json", "Saved/input_actions.json", fallback};
+}
+
+#ifdef USE_IMGUI
 constexpr std::int32_t kEditorSessionStateFormatVersion = 1;
 constexpr std::int32_t kEditorSessionStateJsonIndentSize = 3;
 
@@ -74,12 +95,12 @@ void SaveLastEditorSceneName(const std::string& sceneName) {
    };
    file << sessionState.dump(kEditorSessionStateJsonIndentSize);
 }
-}
 #endif
+}
 
 void Game::Initialize() {
    // ランタイムの操作はキーボードとゲームパッドで受け付ける。
-   InitializeEngine(false);
+   InitializeEngine(false, GetGameInputConfiguration());
 
    // シーンの音声を開始する前に、前回保存したユーザー音量を復元する。
    if (auto* audio = GameEngine::EngineContext::GetAudio()) {
@@ -106,7 +127,7 @@ void Game::Initialize() {
       },
       [this](const GameEngine::SceneSnapshot& snapshot, bool recovered) {
          if (recovered && recoveryFromPlay_) {
-            editorSession_->RestoreEditingStateOnAttach();
+            editorSession_->SetRestoreEditingStateOnAttach(true);
          }
          editorSession_->Attach(*sceneManager_->GetCurrentScene(), snapshot.data, recovered && !recoveryFromPlay_);
          if (recovered) {

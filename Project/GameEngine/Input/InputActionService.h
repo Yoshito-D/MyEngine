@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <optional>
+#include <span>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -17,6 +18,22 @@ enum class InputActionType {
    Button,
    Axis1D,
    Axis2D
+};
+
+/// @brief アクションの値の種類と、評価に使う物理入力の割り当て。
+struct InputActionDefinition {
+   std::string map;                               ///< 入力マップ名。
+   std::string id;                                ///< マップ内のアクションID。
+   InputActionType type = InputActionType::Button; ///< 合成するアクション値の種類。
+   std::vector<InputBinding> bindings;            ///< 物理入力の割り当て。
+   float deadZone = 0.24f;                        ///< スティックを中立とみなす範囲。
+};
+
+/// @brief ファイル設定と、設定ファイルを用意できない場合にも使う既定アクション。
+struct InputActionConfiguration {
+   std::filesystem::path defaultPath;               ///< 既定アクション設定ファイル。空なら読み込まない。
+   std::filesystem::path overridePath;              ///< ユーザー設定ファイル。空なら読み書きしない。
+   std::span<const InputActionDefinition> fallback; ///< 初期化中にコピーする既定アクション。
 };
 
 /// @brief 一フレーム分の入力アクション状態。
@@ -33,12 +50,10 @@ class InputActionService final {
 public:
    static constexpr std::uint32_t kMaxPlayers = 4; ///< 入力状態を独立して保持するプレイヤースロット数。
 
-   /// @brief バックエンド・設定ファイルを指定し、既定値とユーザー設定を読み込む。
+   /// @brief ゲームから渡された既定値にファイル設定とユーザー設定を順に適用する。
    /// @param backend 低レベル入力バックエンド。サービスの利用中は生存させる。
-   /// @param defaultPath 既定アクション設定。
-   /// @param overridePath ユーザー上書き設定。
-   void Initialize(
-      IInputBackend& backend, const std::filesystem::path& defaultPath, const std::filesystem::path& overridePath);
+   /// @param configuration ファイルの場所と既定アクション。初期化中に必要な設定をコピーする。
+   void Initialize(IInputBackend& backend, const InputActionConfiguration& configuration);
 
    /// @brief アクションのスナップショットを確定した後、描画から独立して再割り当てを進める。
    void Update();
@@ -99,16 +114,10 @@ public:
 #endif
 
 private:
-   struct ActionDefinition {
-      std::string map;                                    ///< 入力マップ名。
-      std::string id;                                     ///< マップ内のアクションID。
-      InputActionType type = InputActionType::Button;     ///< 合成するアクション値の種類。
-      float deadZone = 0.24f;                             ///< スティックを中立とみなす範囲。
-      std::vector<InputBinding> bindings;                 ///< 物理入力の割り当て。
+   struct ActionDefinition : InputActionDefinition {
       std::array<InputActionState, kMaxPlayers> states{}; ///< プレイヤーごとの評価済み状態。
    };
 
-   void BuildFallbackDefaults();
    bool LoadDefinitions(const std::filesystem::path& path, bool replaceAll);
    ActionDefinition* FindAction(const std::string& actionMap, const std::string& actionId);
    const ActionDefinition* FindAction(const std::string& actionMap, const std::string& actionId) const;
@@ -121,7 +130,6 @@ private:
 
    bool gameplayInputBlocked_ = false;
    IInputBackend* backend_ = nullptr;                           ///< 非所有の物理入力バックエンド。
-   std::filesystem::path defaultPath_;                          ///< 既定入力定義の読み込み元。
    std::filesystem::path overridePath_;                         ///< ユーザー入力定義の読み書き先。
    std::unordered_map<std::string, ActionDefinition> actions_;  ///< 現在の入力定義。
    std::unordered_map<std::string, ActionDefinition> defaults_; ///< リセット先となる既定入力定義。

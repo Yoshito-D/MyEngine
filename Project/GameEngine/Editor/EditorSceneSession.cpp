@@ -121,8 +121,8 @@ void EditorSceneSession::BeginPlay() {
    }
 }
 
-void EditorSceneSession::RestoreEditingStateOnAttach() {
-   restoreEditingState_ = editingContext_ != nullptr;
+void EditorSceneSession::SetRestoreEditingStateOnAttach(bool restore) {
+   restoreEditingState_ = restore && editingContext_ != nullptr;
 }
 
 void EditorSceneSession::Update() {

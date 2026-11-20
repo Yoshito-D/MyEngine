@@ -849,10 +849,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="AGENTS.md">
-      <SubType>
-      </SubType>
-    </None>
     <None Include="Resources\game\config\input_actions.json" />
   </ItemGroup>
   <ItemGroup>

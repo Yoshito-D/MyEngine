@@ -335,24 +335,27 @@ void PlayModeController::StartPlaying(SceneManager& sceneManager) {
 }
 
 void PlayModeController::StopPlaying(SceneManager& sceneManager) {
-   sceneManager.CancelTransition();
-
    if (mode_ == PlayMode::Edit && !hasPlaySession_) return;
-
-   // 復元処理がRuntime更新を誘発しないよう、シーンを戻す前にEditへ確定する。
-   mode_ = PlayMode::Edit;
-
-   if (auto* audio = EngineContext::GetAudio()) {
-      audio->StopGameAudio();
-      audio->StopPreviews();
-   }
 
 #ifdef USE_IMGUI
    if (!playStartDefinition_.name.empty() && hasEditorSceneSnapshot_) {
-      if (auto* session = EngineContext::GetEditorSceneSession()) {
-         session->RestoreEditingStateOnAttach();
+      // 復元時のライフサイクル通知に再生の再開を要求させない。準備が失敗した場合は元のモードへ戻す。
+      const auto previousMode = mode_;
+      mode_ = PlayMode::Edit;
+      auto* session = EngineContext::GetEditorSceneSession();
+      if (session) {
+         session->SetRestoreEditingStateOnAttach(true);
       }
+
       const auto result = sceneManager.RestoreSnapshot({playStartDefinition_, editorSceneSnapshot_});
+      if (result.status == SceneLoadStatus::Rejected) {
+         if (session) {
+            session->SetRestoreEditingStateOnAttach(false);
+         }
+         mode_ = previousMode;
+         return;
+      }
+
       if (result) {
          if (auto* context = EngineContext::GetEditorSceneContext()) {
             if (playStartSceneWasDirty_) {
@@ -362,9 +365,17 @@ void PlayModeController::StopPlaying(SceneManager& sceneManager) {
             }
          }
       }
-   }
+   } else
 #endif
+   {
+      sceneManager.CancelTransition();
+      mode_ = PlayMode::Edit;
+   }
 
+   if (auto* audio = EngineContext::GetAudio()) {
+      audio->StopGameAudio();
+      audio->StopPreviews();
+   }
    ClearPlaySessionState();
 }
 

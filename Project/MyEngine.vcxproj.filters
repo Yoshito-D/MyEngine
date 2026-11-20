@@ -1927,7 +1927,6 @@
     <None Include="..\Tools\RunFilterAdjust.bat">
       <Filter>Tools</Filter>
     </None>
-    <None Include="AGENTS.md" />
     <None Include="Resources\game\config\input_actions.json">
       <Filter>Resources\game\config</Filter>
     </None>

@@ -53,10 +53,11 @@ void TitleStartComponent::ConfigureStates() {
          stateMachine_.RequestState(State::Exiting);
       }
    }});
-   stateMachine_.AddState(State::StartingScene, {.onEnter = [this]() {
-      // 決定演出は演出コンポーネントが共通暗転中も更新する。
-      const auto& scene = navigation_.GetSelectedIndex() == 0 ? tutorialScene_ : stageScene_;
-      GameEngine::EngineContext::ChangeScene(scene);
+   stateMachine_.AddState(State::StartingScene, {.onUpdate = [this](float) {
+      // 暗転後もタイトルが残っていれば、表示が戻ってから選択を再開する。
+      if (!GameEngine::EngineContext::IsSceneTransitioning()) {
+         stateMachine_.RequestState(State::StartSelection);
+      }
    }});
    stateMachine_.AddState(State::Exiting, {.onEnter = [this]() { ExitApplication(); }});
    stateMachine_.SetTransitionRule(State::Main, {State::OpeningStartMenu, State::OpeningSettings, State::Quitting});
@@ -65,7 +66,7 @@ void TitleStartComponent::ConfigureStates() {
    stateMachine_.SetTransitionRule(State::OpeningSettings, {State::Settings, State::Main});
    stateMachine_.SetTransitionRule(State::Settings, {State::Main});
    stateMachine_.SetTransitionRule(State::Quitting, {State::Exiting});
-   stateMachine_.SetTransitionRule(State::StartingScene, {});
+   stateMachine_.SetTransitionRule(State::StartingScene, {State::StartSelection});
    stateMachine_.SetTransitionRule(State::Exiting, {});
    stateMachine_.SetTransitionCallback([this](State previous, State next) {
       // 初期Startでは表示を変更せず、メニュー間の移動時だけ表示演出を開始する。
@@ -134,7 +135,11 @@ void TitleStartComponent::UpdateStartSelection() {
    // 空の遷移先や、演出対象を失った項目は決定できない状態として扱う。
    if (selectedScene.empty() || !ConfirmSelection(*animation)) return;
 
-   stateMachine_.RequestState(State::StartingScene);
+   if (GameEngine::EngineContext::ChangeScene(selectedScene)) {
+      stateMachine_.RequestState(State::StartingScene);
+   } else {
+      RevealMenu(*animation);
+   }
 }
 
 void TitleStartComponent::OpenSettings() {
