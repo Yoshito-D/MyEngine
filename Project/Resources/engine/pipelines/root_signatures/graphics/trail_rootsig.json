@@ -1,0 +1,32 @@
+{
+  "name": "Trail",
+  "reflectionSources": {
+    "vertexShader": "Trail",
+    "pixelShader": "Trail"
+  },
+  "parameters": [
+    {
+      "type": "32BitConstants",
+      "visibility": "Vertex",
+      "descriptorCount": 16,
+      "shaderRegister": 0,
+      "semantic": "transform"
+    },
+    {
+      "type": "32BitConstants",
+      "visibility": "Pixel",
+      "descriptorCount": 4,
+      "shaderRegister": 1,
+      "semantic": "depthprojection"
+    },
+    {
+      "type": "DescriptorTable",
+      "visibility": "Pixel",
+      "descriptorCount": 1,
+      "rangeType": "SRV",
+      "shaderRegister": 0,
+      "semantic": "scenedepth"
+    }
+  ],
+  "samplers": []
+}

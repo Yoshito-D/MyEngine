@@ -32,6 +32,7 @@ enum class ObjectUpdatePhase {
    Control,
    Default,
    Presentation,
+   Effects,
 };
 
 /// @brief ゲーム進行と実時間UIを分ける更新区分。

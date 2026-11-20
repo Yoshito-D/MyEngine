@@ -30,6 +30,10 @@ DrawSortData DescribeSortData(const ParticleDrawData& data) {
    return {std::nullopt, data.camera, DrawSortPriority::Particle};
 }
 
+DrawSortData DescribeSortData(const TrailDrawData& data) {
+   return {data.sortPosition, data.camera, DrawSortPriority::Particle};
+}
+
 DrawSortData DescribeSortData(const LineDrawData& data) {
    return {data.sortPosition, data.camera, DrawSortPriority::Line};
 }

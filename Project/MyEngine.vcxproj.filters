@@ -755,6 +755,9 @@
     <ClCompile Include="GameEngine\Object\Component\Effects\ParticleEmitterComponent.cpp">
       <Filter>GameEngine\Object\Component\Effects</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Object\Component\Effects\TrailComponent.cpp">
+      <Filter>GameEngine\Object\Component\Effects</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Object\Component\Rendering\LightComponent.cpp">
       <Filter>GameEngine\Object\Component\Rendering</Filter>
     </ClCompile>
@@ -1592,6 +1595,9 @@
     <ClInclude Include="GameEngine\Object\Component\Effects\ParticleEmitterComponent.h">
       <Filter>GameEngine\Object\Component\Effects</Filter>
     </ClInclude>
+    <ClInclude Include="GameEngine\Object\Component\Effects\TrailComponent.h">
+      <Filter>GameEngine\Object\Component\Effects</Filter>
+    </ClInclude>
     <ClInclude Include="GameEngine\Object\Component\Rendering\LightComponent.h">
       <Filter>GameEngine\Object\Component\Rendering</Filter>
     </ClInclude>
@@ -1978,6 +1984,9 @@
     <None Include="Resources\engine\pipelines\root_signatures\graphics\line3d_rootsig.json">
       <Filter>Resources\engine\pipelines\root_signatures</Filter>
     </None>
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\trail_rootsig.json">
+      <Filter>Resources\engine\pipelines\root_signatures</Filter>
+    </None>
     <None Include="Resources\engine\pipelines\root_signatures\graphics\object3d_rootsig.json">
       <Filter>Resources\engine\pipelines\root_signatures</Filter>
     </None>
@@ -2059,6 +2068,9 @@
     <None Include="Resources\engine\pipelines\pso\graphics\text_pipeline.json">
       <Filter>Resources\engine\pipelines\pso</Filter>
     </None>
+    <None Include="Resources\engine\pipelines\pso\graphics\trail_pipeline.json">
+      <Filter>Resources\engine\pipelines\pso</Filter>
+    </None>
     <None Include="Resources\engine\pipelines\pso\postprocess\anti_aliasing_pipeline.json">
       <Filter>Resources\engine\pipelines\pso</Filter>
     </None>
@@ -2132,6 +2144,15 @@
       <Filter>Resources\engine\shaders</Filter>
     </None>
     <None Include="Resources\engine\shaders\graphics\line3d\Line3D.VS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\trail\Trail.PS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\trail\Trail.VS.hlsl">
+      <Filter>Resources\engine\shaders</Filter>
+    </None>
+    <None Include="Resources\engine\shaders\graphics\trail\Trail.hlsli">
       <Filter>Resources\engine\shaders</Filter>
     </None>
     <None Include="Resources\engine\shaders\graphics\object3d\Object3D.PS.hlsl">

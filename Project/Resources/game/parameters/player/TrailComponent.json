@@ -1,0 +1,16 @@
+{
+   "version": 1,
+   "domain": "Object",
+   "componentType": "TrailComponent",
+   "data": {
+      "emitOnAwake": false,
+      "width": 0.22,
+      "lifetime": 0.36,
+      "minDistance": 0.12,
+      "breakDistance": 25.0,
+      "offsets": [
+         [0.0, 0.0, 0.0]
+      ],
+      "color": [0.78, 0.9, 1.0, 0.45]
+   }
+}

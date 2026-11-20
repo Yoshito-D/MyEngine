@@ -36,6 +36,7 @@
 #include "GameEngine/Assets/Font/FontManager.h"
 #include "GameEngine/Object/Component/Animation/AnimationComponent.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
+#include "GameEngine/Object/Component/Effects/TrailComponent.h"
 #include "GameEngine/Object/Component/Rendering/RenderComponent.h"
 #include "GameEngine/Object/Component/Rendering/MaterialComponent.h"
 #include "GameEngine/Object/Component/Rendering/MeshComponent.h"
@@ -609,6 +610,7 @@ void Renderer::EndFrame() {
    DrawAutoRegisteredModels();
    DrawAutoRegisteredSprites();
    DrawAutoRegisteredParticles();
+   DrawSceneTrails();
    DrawAutoRegisteredTexts();
 
    // ポストエフェクト対象のラインと対象外ラインを別キューへ送り、合成前後の位置を固定する。
@@ -841,6 +843,27 @@ void Renderer::DrawAutoRegisteredParticles() {
       }
 
       Draw(particleSystem);
+   }
+}
+
+void Renderer::DrawSceneTrails() {
+   auto* scene = EngineContext::GetCurrentScene();
+   auto* camera = cameraManager_ ? cameraManager_->GetActiveCamera() : nullptr;
+
+   if (!scene || !camera) return;
+
+   auto& objects = scene->GetSceneWorld().GetObjectStore();
+
+   for (auto* object : objects.GetObjects()) {
+      auto* trail = object->GetComponent<TrailComponent>();
+
+      if (!trail) {
+         continue;
+      }
+
+      if (const auto position = trail->GetSortPosition()) {
+         renderQueue_.Enqueue(DrawCommand(RenderPass::Transparent, TrailDrawData{trail, camera, *position}));
+      }
    }
 }
 

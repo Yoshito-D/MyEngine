@@ -1268,6 +1268,12 @@
             {
                "data": {},
                "enabled": true,
+               "parameterAssetId": "game/parameters/player/TrailComponent.json",
+               "typeName": "TrailComponent"
+            },
+            {
+               "data": {},
+               "enabled": true,
                "typeName": "PlayerShadowComponent"
             },
             {

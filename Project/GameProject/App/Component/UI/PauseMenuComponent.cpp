@@ -54,6 +54,12 @@ float ReadVolume(const nlohmann::json& settings, const char* key) {
 
    return volume;
 }
+
+void SetSoundEffectVolume(GameEngine::Audio& audio, float volume) {
+   // メニュー操作音はポーズ中も再生できるUIバスを使い、音量はゲーム内SEと共有する。
+   audio.SetBusVolume(GameEngine::AudioBus::Se, volume);
+   audio.SetBusVolume(GameEngine::AudioBus::Ui, volume);
+}
 }
 
 namespace App {
@@ -86,7 +92,7 @@ bool PauseMenuComponent::LoadAudioSettings(GameEngine::Audio& audio) {
       const float se = ReadVolume(settings, "se");
       audio.SetMasterVolume(master);
       audio.SetBusVolume(GameEngine::AudioBus::Bgm, bgm);
-      audio.SetBusVolume(GameEngine::AudioBus::Se, se);
+      SetSoundEffectVolume(audio, se);
       return true;
    } catch (const std::exception& exception) {
       Logger::Warning("Audio settings could not be loaded: " + file.generic_string() + " (" + exception.what() + ")",
@@ -248,7 +254,7 @@ bool PauseMenuComponent::OpenSettings() {
       BindVolumeSlider("bgm", audio->GetBusVolume(GameEngine::AudioBus::Bgm),
          [audio](float value) { audio->SetBusVolume(GameEngine::AudioBus::Bgm, value); });
       BindVolumeSlider("se", audio->GetBusVolume(GameEngine::AudioBus::Se),
-         [audio](float value) { audio->SetBusVolume(GameEngine::AudioBus::Se, value); });
+         [audio](float value) { SetSoundEffectVolume(*audio, value); });
    }
 
    return ui.Push(settingsScreenId_);

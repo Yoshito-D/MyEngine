@@ -1,0 +1,31 @@
+{
+  "name": "Trail",
+  "vertexShader": "Trail",
+  "pixelShader": "Trail",
+  "rootSignature": "Trail",
+  "supportBlendModes": false,
+  "defaultBlendMode": "Normal",
+  "cullMode": "None",
+  "fillMode": "Solid",
+  "depthEnable": true,
+  "depthWriteMask": "Zero",
+  "depthFunc": "LessEqual",
+  "topologyType": "Triangle",
+  "inputLayout": [
+    {
+      "semanticName": "POSITION",
+      "format": "R32G32B32_FLOAT",
+      "alignedByteOffset": 0
+    },
+    {
+      "semanticName": "COLOR",
+      "format": "R32G32B32A32_FLOAT",
+      "alignedByteOffset": 12
+    },
+    {
+      "semanticName": "TEXCOORD",
+      "format": "R32_FLOAT",
+      "alignedByteOffset": 28
+    }
+  ]
+}

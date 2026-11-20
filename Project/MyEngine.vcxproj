@@ -303,6 +303,7 @@
     <ClCompile Include="GameEngine\Object\Component\UI\UITransformTweenComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\Base\IObjectComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\Effects\ParticleEmitterComponent.cpp" />
+    <ClCompile Include="GameEngine\Object\Component\Effects\TrailComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\Audio\AudioSourceComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\Audio\BgmComponent.cpp" />
     <ClCompile Include="GameEngine\Object\Component\Audio\AudioSceneLifecycle.cpp" />
@@ -639,6 +640,7 @@
     <ClInclude Include="GameEngine\Effects\Particles\Modules\UVTransformModule.h" />
     <ClInclude Include="GameEngine\Effects\Particles\Modules\VelocityOverLifetimeModule.h" />
     <ClInclude Include="GameEngine\Object\Component\Effects\ParticleEmitterComponent.h" />
+    <ClInclude Include="GameEngine\Object\Component\Effects\TrailComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\Audio\AudioSourceComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\Audio\BgmComponent.h" />
     <ClInclude Include="GameEngine\Object\Component\Audio\AudioSceneLifecycle.h" />
@@ -923,6 +925,7 @@
     <None Include="Resources\engine\pipelines\root_signatures\compute\particle_update_compute_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\compute\skinning_compute_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\line3d_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\trail_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\object3d_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\object3d_triplanar_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\particle_rootsig.json" />
@@ -950,6 +953,7 @@
     <None Include="Resources\engine\pipelines\pso\graphics\skybox_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\sprite_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\text_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\graphics\trail_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\postprocess\anti_aliasing_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\postprocess\bloom_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\postprocess\boxfilter_pipeline.json" />
@@ -975,6 +979,9 @@
     <None Include="Resources\engine\shaders\compute\skinning\Skinning.CS.hlsl" />
     <None Include="Resources\engine\shaders\graphics\line3d\Line3D.PS.hlsl" />
     <None Include="Resources\engine\shaders\graphics\line3d\Line3D.VS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\trail\Trail.PS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\trail\Trail.VS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\trail\Trail.hlsli" />
     <None Include="Resources\engine\shaders\graphics\object3d\Object3D.PS.hlsl" />
     <None Include="Resources\engine\shaders\graphics\object3d\Object3D.VS.hlsl" />
     <None Include="Resources\engine\shaders\graphics\object3d\Object3DTriplanar.PS.hlsl" />

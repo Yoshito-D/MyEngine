@@ -1,9 +1,17 @@
 #pragma once
 
+#include "GameEngine/Collision/Collider.h"
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameProject/App/Component/Vehicle/VehicleEvents.h"
 #include <cstdint>
+#include <memory>
+#include <optional>
 #include <vector>
+
+namespace GameEngine {
+class ModelAsset;
+class ParticleEmitterComponent;
+}
 
 namespace App {
 
@@ -19,7 +27,8 @@ enum class VehicleEffectRole {
    LandingDebris,
    JumpDebris,
    DriveDust,
-   DriveDebris
+   DriveDebris,
+   FlightSmoke
 };
 
 /// @brief アセット名から独立した、車両演出の命令とエミッタースロットの対応。
@@ -31,7 +40,7 @@ struct VehicleEffectBinding {
    bool operator==(const VehicleEffectBinding&) const = default;
 };
 
-/// @brief 車両イベントに対応する明示的な命令を、設定されたパーティクルスロットへ実行する。
+/// @brief 車両イベントに応じてパーティクルを操作し、飛行中に煙またはトレイルを放出する。
 class VehicleEffectController final : public GameEngine::IObjectComponent {
 public:
    /// @brief 車両の操作とイベント状態が確定した後に演出を適用する。
@@ -47,31 +56,42 @@ public:
    /// @brief 接続前の通知を既読にして、実行開始前の演出を再生しない。
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
 
+   /// @brief 制御停止時は飛行演出の新規放出を止め、着地失敗の煙の再生を停止する。
+   void OnDisable() override;
+
    /// @brief 各購読者と通知を奪い合わず、継続演出と単発演出を更新する。経過秒数は使用しない。
    void Update(float deltaTime) override;
 
-   /// @brief 役割名とスロット番号の対応をJSONへ保存する。
+   /// @brief 役割名とスロット番号の対応、飛行演出の選択をJSONへ保存する。
    nlohmann::json Serialize() const override;
 
-   /// @brief 対応表を検証して一括適用する。不正な表では現在の設定を維持する。
+   /// @brief 飛行演出の選択を読み込み、対応表は検証に成功した場合に一括適用する。
    void Deserialize(const nlohmann::json& data) override;
 
    /// @brief シーンに依存しない演出の対応表を共通設定として返す。
-   nlohmann::json GetSharedParameters() const override { return Serialize(); }
+   nlohmann::json GetSharedParameters() const override { return ExtractSharedParameters({"useFlightTrail"}); }
 
    /// @brief 共通設定の対応表を検証して適用する。
-   void ApplySharedParameters(const nlohmann::json& data) override { Deserialize(data); }
+   void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
-   /// @brief 明示した演出の役割とスロットの対応を編集する。
+   /// @brief 演出の役割とスロットの対応、飛行演出の選択を編集する。
    void DrawInspector() override;
 #endif
 
 private:
+   void UpdateFlightTrail(bool isAirborne);
+   void UpdateFlightSmoke(GameEngine::ParticleEmitterComponent* emitter, bool isAirborne);
+   std::optional<GameEngine::Transform> CalculateFlightSmokePose();
+
    std::vector<VehicleEffectBinding> bindings_; ///< アセットパスやファイル名を参照しない演出命令。
    VehicleEventCursor eventCursor_;             ///< この演出が独立して保持する通知の既読位置。
    bool wasDriftDustActive_ = false;            ///< 前フレームに接地したドリフトの煙を放出していたか。
    bool wasDriveEffectsActive_ = false;         ///< 前フレームに通常走行の砂埃と小石を放出していたか。
+   bool useFlightTrail_ = false;                ///< 飛行煙とトレイルのどちらを使用するかを切り替える。
+   std::vector<std::int32_t> activeFlightSmokeSlots_;             ///< 発生中の飛行煙のスロット番号。
+   std::weak_ptr<const GameEngine::ModelAsset> flightSmokeModel_; ///< 境界を計算済みの車体モデル。
+   GameEngine::Collider::AABB flightSmokeModelBounds_{};          ///< 車体全体のモデル空間での境界。
 };
 
 } // namespace App

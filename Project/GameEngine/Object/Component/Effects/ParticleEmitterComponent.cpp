@@ -447,6 +447,12 @@ void ParticleEmitterComponent::SetSlotWorldTransform(
    }
 }
 
+void ParticleEmitterComponent::ApplySlotEmitterPose(std::int32_t slotIndex, const Transform& pose) {
+   if (auto* slot = GetSlot(slotIndex); slot && slot->particleSystem) {
+      slot->particleSystem->ApplyEmitterPose(pose);
+   }
+}
+
 // ============================================================
 // エミッター行列の計算
 // ============================================================

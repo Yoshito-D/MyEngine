@@ -178,6 +178,11 @@ public:
    void SetSlotWorldTransform(std::int32_t slotIndex, const Vector3& position, const Quaternion& rotation,
       const Vector3& scale = {1.0f, 1.0f, 1.0f});
 
+   /// @brief 保存済みの追従設定を維持したまま、次の追従更新まで放出姿勢を上書きする。
+   /// @param slotIndex 対象スロット番号。
+   /// @param pose エミッターのワールド空間での姿勢。
+   void ApplySlotEmitterPose(std::int32_t slotIndex, const Transform& pose);
+
    // ── シリアライズ ──────────────────────────────────
 
    /// @brief パーティクルエミッターの保存対象設定をJSONへ変換する。

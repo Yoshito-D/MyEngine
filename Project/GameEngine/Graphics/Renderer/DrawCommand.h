@@ -12,6 +12,7 @@
 namespace GameEngine {
 class Model;
 class ParticleSystem;
+class TrailComponent;
 class Texture;
 class Camera;
 class RenderQueue;
@@ -75,6 +76,13 @@ struct ParticleDrawData {
    Camera* camera = nullptr;                 ///< 描画時のカメラへの非所有参照。
 };
 
+/// @brief 透明パスで描画するオブジェクトの軌跡と、登録時点の位置（m）。
+struct TrailDrawData {
+   TrailComponent* trail = nullptr; ///< フレーム中の描画対象への非所有参照。
+   Camera* camera = nullptr;         ///< 描画時の視点への非所有参照。
+   Vector3 sortPosition{};
+};
+
 /// @brief 線の描画関数と、登録時点で確定した視点。
 struct LineDrawData {
    std::function<void(ID3D12GraphicsCommandList*, const Matrix4x4&)> drawFunc; ///< 行列を受け取る描画関数。
@@ -85,7 +93,8 @@ struct LineDrawData {
 
 /// @brief 一つのコマンドが保持する型付きデータ。種別タグと実データの不一致を防ぐ。
 using DrawPayload =
-   std::variant<ModelDrawData, SpriteDrawData, UISpriteDrawData, TextDrawData, ParticleDrawData, LineDrawData>;
+   std::variant<ModelDrawData, SpriteDrawData, UISpriteDrawData, TextDrawData, ParticleDrawData, TrailDrawData,
+      LineDrawData>;
 
 /// @brief コマンドの型に依存せず比較できる透明ソート情報。
 struct DrawSortData {

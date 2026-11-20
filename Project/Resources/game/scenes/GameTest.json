@@ -3921,10 +3921,18 @@
                "typeName": "CameraModeSwitcher"
             },
             {
-               "data": {},
+               "data": {
+                  "useFlightTrail": false
+               },
                "enabled": true,
                "parameterAssetId": "game/parameters/player/VehicleEffectController.json",
                "typeName": "VehicleEffectController"
+            },
+            {
+               "data": {},
+               "enabled": true,
+               "parameterAssetId": "game/parameters/player/TrailComponent.json",
+               "typeName": "TrailComponent"
             },
             {
                "data": {},
