@@ -90,64 +90,26 @@ bool InputActionService::FindSingleChangedControl(const InputBinding& previous, 
    return true;
 }
 
-void InputActionService::Initialize(
-   IInputBackend& backend, const std::filesystem::path& defaultPath, const std::filesystem::path& overridePath) {
+void InputActionService::Initialize(IInputBackend& backend, const InputActionConfiguration& configuration) {
    rebindSession_ = {};
    frameNumber_ = 0;
    backend_ = &backend;
-   defaultPath_ = defaultPath;
-   overridePath_ = overridePath;
+   overridePath_ = configuration.overridePath;
 
-   // 組み込み定義を土台に外部定義を重ねる。ファイルが欠けても最低限の操作を失わず、
-   // 正常に読めた定義だけを「リセット先」として確定してからユーザー設定を適用する。
-   BuildFallbackDefaults();
+   // ファイル定義を読み込めない場合にも、アプリケーションが指定した操作を利用できるようにする。
+   actions_.clear();
+   for (const auto& definition : configuration.fallback) {
+      actions_.insert_or_assign(MakeKey(definition.map, definition.id), ActionDefinition{definition});
+   }
 
-   if (!LoadDefinitions(defaultPath_, true)) {
+   const auto& defaultPath = configuration.defaultPath;
+   if (!defaultPath.empty() && !LoadDefinitions(defaultPath, true)) {
       Logger::Warning("Input actions default file is missing or invalid; built-in defaults are active: " +
-                      defaultPath_.generic_string());
+                      defaultPath.generic_string());
    }
 
    defaults_ = actions_;
    LoadOverrides();
-}
-
-void InputActionService::BuildFallbackDefaults() {
-   // 起動不能を避けるための最小構成。外部定義が壊れていても、同じ意味の操作を維持する。
-   actions_.clear();
-   const auto addAction = [this](const char* map, const char* id, InputActionType type,
-                             std::initializer_list<InputBinding> bindings) {
-      ActionDefinition action;
-      action.map = map;
-      action.id = id;
-      action.type = type;
-      action.bindings.assign(bindings.begin(), bindings.end());
-      actions_[MakeKey(map, id)] = std::move(action);
-   };
-
-   addAction("Gameplay", "Vehicle.Steer", InputActionType::Axis1D,
-      {{KeyAxis1DInputBinding{KeyCode::A, KeyCode::D}}, {LeftStickInputBinding{InputBindingAxis::X}}});
-   addAction("Gameplay", "Vehicle.Pitch", InputActionType::Axis1D,
-      {{KeyAxis1DInputBinding{KeyCode::S, KeyCode::W}}, {LeftStickInputBinding{InputBindingAxis::Y}}});
-
-   // 左右ショルダーは逆符号で加算し、同時押しなら相殺する。
-   addAction("Gameplay", "Vehicle.Roll", InputActionType::Axis1D,
-      {{KeyAxis1DInputBinding{KeyCode::Q, KeyCode::E}}, {GamePadButtonInputBinding{GamePadButton::LeftShoulder}, -1.0f},
-         {GamePadButtonInputBinding{GamePadButton::RightShoulder}, 1.0f}});
-   addAction("Gameplay", "Vehicle.Jump", InputActionType::Button,
-      {{KeyInputBinding{KeyCode::Space}}, {GamePadButtonInputBinding{GamePadButton::A}}});
-   addAction("Gameplay", "Vehicle.Drift", InputActionType::Button,
-      {{KeyInputBinding{KeyCode::Q}}, {GamePadButtonInputBinding{GamePadButton::LeftShoulder}}});
-   addAction("Gameplay", "Camera.Look", InputActionType::Axis2D,
-      {{KeyAxis2DInputBinding{}}, {RightStickInputBinding{InputBindingAxis::Both}}});
-   addAction("Gameplay", "Camera.Next", InputActionType::Button, {{KeyInputBinding{KeyCode::Tab}}});
-   addAction("UI", "UI.Navigate", InputActionType::Axis1D,
-      {{KeyAxis1DInputBinding{KeyCode::W, KeyCode::S}}, {GamePadButtonInputBinding{GamePadButton::DPadUp}, -1.0f},
-         {GamePadButtonInputBinding{GamePadButton::DPadDown}}, {LeftStickInputBinding{InputBindingAxis::Y}, -1.0f}});
-   addAction("UI", "UI.Confirm", InputActionType::Button,
-      {{KeyInputBinding{KeyCode::Space}}, {GamePadButtonInputBinding{GamePadButton::A}}});
-   addAction("UI", "UI.Cancel", InputActionType::Button,
-      {{KeyInputBinding{KeyCode::Escape}}, {GamePadButtonInputBinding{GamePadButton::B}},
-         {GamePadButtonInputBinding{GamePadButton::Start}}});
 }
 
 bool InputActionService::LoadDefinitions(const std::filesystem::path& path, bool replaceAll) {
@@ -485,6 +447,8 @@ bool InputActionService::ApplyBinding(const std::string& actionMap, const std::s
 }
 
 bool InputActionService::LoadOverrides() {
+   if (overridePath_.empty()) return false;
+
    if (!std::filesystem::exists(overridePath_)) {
       Logger::Info("Input override file is missing; defaults are active: " + overridePath_.generic_string());
       return false;
@@ -500,6 +464,8 @@ bool InputActionService::LoadOverrides() {
 }
 
 bool InputActionService::SaveOverrides() const {
+   if (overridePath_.empty()) return false;
+
    // 現在の完全な割り当てを保存し、既定定義の変更でユーザー設定を変化させない。
    json root;
    root["version"] = kInputActionFormatVersion;

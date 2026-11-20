@@ -14,7 +14,12 @@ public:
    /// @brief エンジンの各機能を破棄する前にWorldの資源を解放する。
    ~Scene();
 
-   /// @brief 出力カメラを作成し、検証済みの完全スナップショットを復元する。
+   /// @brief スナップショットを検証し、現在のシーンを切り離す前に参照アセットを準備する。
+   /// @param data 構築予定のシーンスナップショット。
+   /// @return 検証とテクスチャの先読みが完了した場合にtrue。
+   static bool PrepareAssets(const nlohmann::json& data);
+
+   /// @brief 出力カメラを作成し、アセットを準備済みのスナップショットを復元する。
    bool Initialize(const nlohmann::json& data);
 
    /// @brief このシーンに所属する資源だけを解放する。

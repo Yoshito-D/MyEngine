@@ -310,7 +310,8 @@ public:
 
    /// @brief シーンを変更する
    /// @param name シーン名
-   static void ChangeScene(const std::string& name);
+   /// @return 遷移先を検証し、切替を予約できた場合にtrue。
+   static bool ChangeScene(const std::string& name);
 
    /// @brief シーン遷移用の全画面暗転率を設定する
    /// @param opacity 0で通常表示、1で完全な黒

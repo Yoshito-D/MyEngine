@@ -164,6 +164,8 @@ PublishScripts/
 csx/
 *.build.csdef
 
+**/AGENTS.md
+
 # Microsoft Azure Emulator
 ecf/
 rcf/
@@ -328,5 +330,3 @@ Project/Resources/game/editor/session_state.json
 *.ini
 
 *.exe
-
-**/AGENTS.md

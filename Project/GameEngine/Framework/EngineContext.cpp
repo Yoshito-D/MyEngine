@@ -428,10 +428,8 @@ std::string EngineContext::DescribeInputActionBindings(
    return playerSlot == 0 ? sInputActionService_->DescribeActionBindings(actionMap, actionId, false) : std::string{};
 }
 
-void EngineContext::ChangeScene(const std::string& name) {
-   if (sSceneManager_) {
-      sSceneManager_->RequestSceneChange(name);
-   }
+bool EngineContext::ChangeScene(const std::string& name) {
+   return sSceneManager_ && sSceneManager_->RequestSceneChange(name);
 }
 
 void EngineContext::SetSceneTransitionOpacity(float opacity) {

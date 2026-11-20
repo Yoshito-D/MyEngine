@@ -22,10 +22,10 @@
 
 namespace GameEngine {
 void Framework::Initialize() {
-   InitializeEngine(true);
+   InitializeEngine(true, {});
 }
 
-void Framework::InitializeEngine(bool gameplayMouseInputEnabled) {
+void Framework::InitializeEngine(bool gameplayMouseInputEnabled, const InputActionConfiguration& inputConfiguration) {
    // 例外発生時にダンプを出力するハンドラを設定
    SetUnhandledExceptionFilter(ExportDump);
 
@@ -93,7 +93,7 @@ void Framework::InitializeEngine(bool gameplayMouseInputEnabled) {
 
    // 物理入力とゲームロジックの間にアクション層を置き、キー割り当てを一元管理する。
    inputActionService_ = std::make_unique<InputActionService>();
-   inputActionService_->Initialize(*input_, "Resources/game/config/input_actions.json", "Saved/input_actions.json");
+   inputActionService_->Initialize(*input_, inputConfiguration);
 
    // タイムプロファイラーの初期化
    timeProfiler_ = std::make_unique<TimeProfiler>();
