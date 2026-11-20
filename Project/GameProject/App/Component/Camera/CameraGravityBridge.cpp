@@ -25,6 +25,10 @@
 #endif
 
 namespace App {
+namespace {
+constexpr float kVehicleFramingPadding = 0.1f; ///< 接地判定の境界からはみ出す車体やタイヤに確保する余白（m）。
+}
+
 void CameraGravityBridge::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
    cameras_.clear();
    playerRearFollowCamera_ = nullptr;
@@ -96,9 +100,11 @@ void CameraGravityBridge::Update(float deltaTime) {
    float speed = 0.0f;
    float autoSpeed = 13.0f;
 
-   if (const auto* mover = GetOwner().GetComponent<VehicleGroundMover>()) {
-      speed = mover->GetCurrentSpeed();
-      autoSpeed = mover->DescribeSettings().autoSpeed;
+   const auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
+
+   if (groundMover) {
+      speed = groundMover->GetCurrentSpeed();
+      autoSpeed = groundMover->DescribeSettings().autoSpeed;
    }
 
    const VehicleCameraFollowInput followInput{.gravityUp = gravityUp,
@@ -111,6 +117,8 @@ void CameraGravityBridge::Update(float deltaTime) {
    for (auto* camera : cameras_) {
       camera->ApplyVehicleFollowInput(followInput);
    }
+
+   const auto* events = GetOwner().GetComponent<VehicleEvents>();
 
    // PlayerRearFollowCamera 側へ重力Up・注視対象・近傍惑星・前方・空中状態を同期
    if (playerRearFollowCamera_) {
@@ -145,6 +153,16 @@ void CameraGravityBridge::Update(float deltaTime) {
       playerRearFollowCamera_->SetAirborne(isAirborne);
       playerRearFollowCamera_->SetPlayerVelocity(playerVelocity);
 
+      // 加速禁止はジャンプ中も続くため、失敗した着地の接地中だけ見切れを補正する。
+      const bool groundedAfterFailure = landing && events && events->IsEnabled() && events->GetSnapshot().isGrounded &&
+                                        events->GetSnapshot().landingResult == LandingResult::Failure;
+      const bool failedLandingPenalty =
+         groundedAfterFailure && groundMover && groundMover->IsEnabled() && groundMover->IsAccelerationBlocked();
+      const float framingRadius =
+         failedLandingPenalty ? landing->DescribeSettings().obbHalfExtents.Length() + kVehicleFramingPadding : 0.0f;
+      playerRearFollowCamera_->SetLandingFailureFraming(
+         groundedAfterFailure, framingRadius, settings_.landingShakeAmplitude);
+
       // 条件を満たさないフレームでは前回値を残さず、カメラ側の予測補間を確実に解除する。
       playerRearFollowCamera_->ClearLandingPrediction();
       LandingPrediction prediction{};
@@ -168,14 +186,12 @@ void CameraGravityBridge::Update(float deltaTime) {
          }
       }
 
-      const auto* events = GetOwner().GetComponent<VehicleEvents>();
       presentation_.Update(settings_, deltaTime, rearCameraSelected, *playerRearFollowCamera_, jump,
          events ? events->GetSnapshot() : VehicleEventSnapshot{}, hasLandingPrediction ? &prediction : nullptr);
    }
 
    const bool grounded = (!landing || landing->IsGrounded()) && (!jump || !jump->IsJumping());
    const bool steering = grounded && drift && drift->IsEnabled() && input && input->GetSteerInput() != 0.0f;
-   const auto* events = GetOwner().GetComponent<VehicleEvents>();
    effects_.Update(settings_, deltaTime, steering, events ? events->GetSnapshot() : VehicleEventSnapshot{}, gravityUp,
       cameras_, selectedCamera);
 }

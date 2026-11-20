@@ -94,6 +94,12 @@ public:
    /// @param velocity ワールド空間の速度
    void SetPlayerVelocity(const GameEngine::Vector3& velocity) { input_.playerVelocity = velocity; }
 
+   /// @brief 着地失敗後の見切れ補正に使う接地状態、車体の半径、着地シェイクの振幅を設定する。
+   /// @param groundedAfterFailure 直近の着地に失敗し、現在も接地しているか。偽の場合は補正を解除する。
+   /// @param vehicleRadius 加速禁止中に画面内へ収める車体の半径（m）。0の場合は通常の構図へ補間する。
+   /// @param shakeAmplitude 着地シェイクで動く距離の上限（m）。
+   void SetLandingFailureFraming(bool groundedAfterFailure, float vehicleRadius, float shakeAmplitude);
+
    /// @brief 予測した着地情報を設定する
    /// @param up 予測接触地点の外向き法線
    /// @param backward 着地後に進む接線方向の反対方向
@@ -168,6 +174,12 @@ protected:
    void OnAttach() override;
 
 private:
+   void KeepFailedLandingInFrame(GameEngine::CameraState& state, float deltaTime);
+
+   float landingFailureFramingRadius_ = 0.0f; ///< 着地失敗中に枠内へ収める車体の半径（m）。
+   float landingShakeAmplitude_ = 0.0f;       ///< 着地シェイクで動く距離の上限（m）。
+   float framingRetreat_ = 0.0f;              ///< 車体を画面内に収めるための追加の後退距離（m）。
+
    // 既定の実行順序（0）より先に追従状態を確定し、後続のBody補正の入力にする。
    static constexpr std::int32_t kExecutionOrder = -1000;
 

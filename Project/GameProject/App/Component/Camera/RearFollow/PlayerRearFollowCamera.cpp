@@ -4,7 +4,10 @@
 #include "GameProject/App/Component/Camera/RearFollow/PlayerRearFollowCamera.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraDebugView.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraMath.h"
+#include "GameEngine/Scene/Camera/Camera.h"
+#include "GameEngine/Scene/Camera/Components/PerlinNoise.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
+#include "GameEngine/Window/Window.h"
 #ifdef USE_IMGUI
 #include "imgui.h"
 #endif
@@ -17,6 +20,7 @@ constexpr float kMinimumSpeedBoostRange = 0.001f;
 constexpr float kMinimumGravityDirectionBoostRange = 0.001f;
 constexpr float kMinimumLookAtRecoveryRange = 1e-4f;
 constexpr float kMinimumDriftDistanceScale = 0.5f;
+constexpr float kVehicleFramingScreenFraction = 0.95f; ///< 画面端に余白を残すために使用する幅と高さの割合。
 }
 
 const bool kRegistered = GameEngine::VirtualCamera::RegisterComponentFactory(
@@ -233,6 +237,9 @@ void PlayerRearFollowCamera::ResetRuntimeState() {
    input_.driftCameraHeightOffset = 0.0f;
    input_.driftLookTargetHeightOffset = 0.0f;
    input_.playerVelocity = {0.0f, 0.0f, 0.0f};
+   landingFailureFramingRadius_ = 0.0f;
+   landingShakeAmplitude_ = 0.0f;
+   framingRetreat_ = 0.0f;
 
    transition_.Reset(*this);
    gravity_.Reset(*this);
@@ -290,6 +297,8 @@ void PlayerRearFollowCamera::MutateCameraState(GameEngine::CameraState& state, f
       aim_.GetState(), state, up, boostAlpha, deltaTime);
    aim_.ApplyLookAt(input_, *this, transition_.GetState(), transition_.ComputePreLandingGuideBlend(input_),
       direction_.GetState(), state, eye, up, deltaTime);
+   KeepFailedLandingInFrame(state, deltaTime);
+
    // 計測はカメラ補間用dtではなくゲーム更新時刻を使用し、同じフレームの重複を避ける。
    recorder_.RecordCameraMeasurementSample(GameEngine::EngineContext::GetDeltaTime(),
       GameEngine::EngineContext::GetGameFrameNumber(), *this, GetFrameView());
@@ -301,6 +310,62 @@ void PlayerRearFollowCamera::MutateCameraState(GameEngine::CameraState& state, f
    Configure(settings);
    CommitParameterEdit(sharedBefore, ImGui::IsAnyItemActive());
 #endif
+}
+
+void PlayerRearFollowCamera::SetLandingFailureFraming(
+   bool groundedAfterFailure, float vehicleRadius, float shakeAmplitude) {
+   landingFailureFramingRadius_ = groundedAfterFailure ? vehicleRadius : 0.0f;
+   landingShakeAmplitude_ = shakeAmplitude;
+
+   if (!groundedAfterFailure) {
+      // このカメラが選択されていない間の離陸でも、補正を次の着地へ持ち越さない。
+      framingRetreat_ = 0.0f;
+   }
+}
+
+void PlayerRearFollowCamera::KeepFailedLandingInFrame(GameEngine::CameraState& state, float deltaTime) {
+   using namespace GameEngine;
+
+   if (input_.isAirborne) {
+      framingRetreat_ = 0.0f;
+      return;
+   }
+
+   if (landingFailureFramingRadius_ <= 0.0f && framingRetreat_ <= 0.0f) return;
+
+   float requiredRetreat = 0.0f;
+   auto view = state.GetViewMatrix();
+
+   if (landingFailureFramingRadius_ > 0.0f) {
+      const auto* output = EngineContext::GetActiveCamera();
+      constexpr float defaultAspect = static_cast<float>(Window::kResolutionWidth) / Window::kResolutionHeight;
+      const float aspect = output ? output->GetAspectRatio() : defaultAspect;
+      const auto* owner = GetOwnerCamera();
+      const auto* noise = owner ? owner->GetComponent<PerlinNoise>() : nullptr;
+
+      // 後段でシェイクが加わっても収まるよう、揺れている間は移動量の分だけ境界を広げる。
+      const float shakePadding = noise && noise->IsEnabled() && noise->IsShaking() ? landingShakeAmplitude_ : 0.0f;
+      const float radius = landingFailureFramingRadius_ + shakePadding;
+      const Vector3 center = TransformCoordinate(input_.pivotTarget, view);
+      const float slopeY = std::tan(state.fov * 0.5f) * kVehicleFramingScreenFraction;
+      const float slopeX = slopeY * aspect;
+
+      // 視錐台の各面から車体を囲む球の半径分の距離を確保するために必要な奥行き。
+      const float depthX = (std::abs(center.x) + radius * std::hypot(1.0f, slopeX)) / slopeX;
+      const float depthY = (std::abs(center.y) + radius * std::hypot(1.0f, slopeY)) / slopeY;
+      const float minimumDepth = std::max({depthX, depthY, state.nearClip + radius});
+      requiredRetreat = std::max(0.0f, minimumDepth - center.z);
+   }
+
+   // 同じ失敗の接地中は、必要な後退距離が減ったときも通常の追従速度で距離を戻す。
+   const float blend = ExpSmoothingFactor(positionLerpSpeed, deltaTime);
+   framingRetreat_ = std::max(requiredRetreat, std::lerp(framingRetreat_, requiredRetreat, blend));
+
+   if (framingRetreat_ <= 0.0f) return;
+
+   state.transform.translation -= aim_.GetState().cachedForward * framingRetreat_;
+   view.m[3][2] += framingRetreat_;
+   state.SetViewMatrix(view);
 }
 
 GameEngine::Vector3 PlayerRearFollowCamera::GetCameraUp() const {

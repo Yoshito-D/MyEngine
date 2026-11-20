@@ -21,6 +21,7 @@ private:
    static void ExecuteData(const UISpriteDrawData& data, FrameContext& context);
    static void ExecuteData(const TextDrawData& data, FrameContext& context);
    static void ExecuteData(const ParticleDrawData& data, FrameContext& context);
+   static void ExecuteData(const TrailDrawData& data, FrameContext& context);
    static void ExecuteData(const LineDrawData& data, FrameContext& context);
 };
 } // namespace GameEngine

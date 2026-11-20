@@ -464,6 +464,7 @@ private:
    void DrawAutoRegisteredSprites();
    void DrawAutoRegisteredSkyboxes();
    void DrawAutoRegisteredParticles();
+   void DrawSceneTrails();
    void DrawAutoRegisteredTexts();
 
    /// @brief 指定カメラでモデル描画コマンドを登録する

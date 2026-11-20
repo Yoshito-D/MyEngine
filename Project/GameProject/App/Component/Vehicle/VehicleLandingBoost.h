@@ -73,7 +73,7 @@ private:
    float penaltySpeed = 0.0f;
 
    /// @brief 着地失敗後にミニターボと自動加速を禁止する時間（秒）
-   float penaltyDuration = 1.0f;
+   float penaltyDuration = 3.5f;
 
 private:
    /// @brief 直近の着地判定結果（エフェクトなどの後続処理で参照する）

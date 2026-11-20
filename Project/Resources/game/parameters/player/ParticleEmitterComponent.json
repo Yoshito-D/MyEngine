@@ -395,7 +395,7 @@
             },
             "autoPlay": false,
             "jsonPath": "resources/game/particles/landing_failure.json",
-            "loop": false,
+            "loop": true,
             "playOnceAndDestroy": false
          },
          {
@@ -703,6 +703,34 @@
             },
             "autoPlay": false,
             "jsonPath": "resources/game/particles/drive_debris.json",
+            "loop": true,
+            "playOnceAndDestroy": false
+         },
+         {
+            "attachConfig": {
+               "boneName": "",
+               "followPosition": true,
+               "followRotation": true,
+               "followScale": false,
+               "positionOffset": [
+                  0,
+                  0,
+                  0
+               ],
+               "rotationOffset": [
+                  0,
+                  0,
+                  0
+               ],
+               "scaleOffset": [
+                  1,
+                  1,
+                  1
+               ],
+               "simulationSpace": "World"
+            },
+            "autoPlay": false,
+            "jsonPath": "resources/game/particles/flight_smoke.json",
             "loop": true,
             "playOnceAndDestroy": false
          }

@@ -10,6 +10,9 @@
 #include "GameEngine/Graphics/Pipeline/PSOManager.h"
 #include "GameEngine/Graphics/Device/OffscreenRenderTarget.h"
 #include "GameEngine/Effects/Particles/ParticleSystem.h"
+#include "GameEngine/Object/Component/Effects/TrailComponent.h"
+#include "GameEngine/Scene/Camera/Camera.h"
+#include <array>
 #include <cmath>
 
 namespace GameEngine {
@@ -70,6 +73,29 @@ void DrawCommandExecutor::ExecuteData(const ParticleDrawData& data, FrameContext
                                     : D3D12_GPU_DESCRIPTOR_HANDLE{},
       context.offscreenRenderTarget ? context.offscreenRenderTarget->GetSceneDepthSRVHandleGPU()
                                     : D3D12_GPU_DESCRIPTOR_HANDLE{});
+}
+
+void DrawCommandExecutor::ExecuteData(const TrailDrawData& data, FrameContext& context) {
+   if (!data.trail || !data.camera || !context.device || !context.psoManager || !context.setPipelineFunc ||
+       !context.offscreenRenderTarget) {
+      return;
+   }
+
+   const auto transformSlot = context.psoManager->ResolvePipelineRootParameter("Trail", "transform");
+   const auto depthProjectionSlot = context.psoManager->ResolvePipelineRootParameter("Trail", "depthprojection");
+   const auto sceneDepthSlot = context.psoManager->ResolvePipelineRootParameter("Trail", "scenedepth");
+   const auto sceneDepth = context.offscreenRenderTarget->GetSceneDepthSRVHandleGPU();
+
+   if (!transformSlot || !depthProjectionSlot || !sceneDepthSlot || sceneDepth.ptr == 0) return;
+
+   context.setPipelineFunc("Trail", BlendMode::kBlendModeNormal);
+   const auto projection = data.camera->GetProjectionMatrix();
+   const std::array depthProjection{projection.m[2][2], projection.m[2][3], projection.m[3][2], projection.m[3][3]};
+   auto* commandList = context.device->GetCommandList();
+   commandList->SetGraphicsRoot32BitConstants(
+      *depthProjectionSlot, static_cast<UINT>(depthProjection.size()), depthProjection.data(), 0);
+   commandList->SetGraphicsRootDescriptorTable(*sceneDepthSlot, sceneDepth);
+   data.trail->Draw(*context.device, *data.camera, *transformSlot);
 }
 
 void DrawCommandExecutor::ExecuteData(const LineDrawData& data, FrameContext& context) {

@@ -99,6 +99,10 @@
          {
             "role": "DriveDebris",
             "slot": 24
+         },
+         {
+            "role": "FlightSmoke",
+            "slot": 25
          }
       ]
    }
