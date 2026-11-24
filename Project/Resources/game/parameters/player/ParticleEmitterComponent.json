@@ -733,6 +733,34 @@
             "jsonPath": "resources/game/particles/flight_smoke.json",
             "loop": true,
             "playOnceAndDestroy": false
+         },
+         {
+            "attachConfig": {
+               "boneName": "",
+               "followPosition": true,
+               "followRotation": true,
+               "followScale": false,
+               "positionOffset": [
+                  0,
+                  4,
+                  27
+               ],
+               "rotationOffset": [
+                  0,
+                  0,
+                  0
+               ],
+               "scaleOffset": [
+                  1,
+                  1,
+                  1
+               ],
+               "simulationSpace": "World"
+            },
+            "autoPlay": true,
+            "jsonPath": "resources/game/particles/space_debris.json",
+            "loop": true,
+            "playOnceAndDestroy": false
          }
       ]
    }
