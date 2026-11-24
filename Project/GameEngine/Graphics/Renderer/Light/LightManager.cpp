@@ -563,7 +563,7 @@ bool LightManager::ApplySceneState(const nlohmann::json& state) {
 
 bool LightManager::DebugDraw() {
 #ifdef USE_IMGUI
-   bool visible = EngineContext::GetEditorWindowVisibility("LightManager", {"ライト", "Light Manager"});
+   bool visible = EngineContext::GetEditorWindowVisibility("LightManager", {"ライト", "Light Manager"}, false);
 
    if (!visible) {
       return false;

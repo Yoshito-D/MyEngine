@@ -1,5 +1,6 @@
 #ifdef USE_IMGUI
 #include "GameEngine/pch.h"
+#include "GameEngine/Utility/Logger.h"
 #include "GameEngine/Editor/ImGui/ImGuiManager.h"
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
 #include "GameEngine/Graphics/Device/OffscreenRenderTarget.h"
@@ -15,6 +16,69 @@ namespace fs = std::filesystem;
 
 namespace GameEngine {
 namespace {
+
+constexpr float kEditorFontSize = 14.0f;
+constexpr float kMaxToolbarDockFraction = 0.25f;
+constexpr float kProjectDockFraction = 0.32f;
+constexpr float kHierarchyDockFraction = 0.18f;
+constexpr float kInspectorDockFraction = 0.28f;
+
+void ApplyEditorStyle(ImGuiStyle& style) {
+   constexpr ImVec4 workspace{0.07f, 0.08f, 0.09f, 1.0f};
+   constexpr ImVec4 panel{0.10f, 0.11f, 0.12f, 1.0f};
+   constexpr ImVec4 control{0.16f, 0.17f, 0.19f, 1.0f};
+   constexpr ImVec4 hovered{0.22f, 0.24f, 0.27f, 1.0f};
+   constexpr ImVec4 pressed{0.28f, 0.30f, 0.33f, 1.0f};
+   constexpr ImVec4 border{0.21f, 0.22f, 0.24f, 1.0f};
+   constexpr ImVec4 text{0.93f, 0.94f, 0.96f, 1.0f};
+   constexpr ImVec4 secondaryText{0.70f, 0.73f, 0.77f, 1.0f};
+   constexpr ImVec4 accent{0.46f, 0.79f, 0.87f, 1.0f};
+   constexpr ImVec4 selected{0.16f, 0.31f, 0.36f, 1.0f};
+
+   style.WindowPadding = ImVec2(8.0f, 8.0f);
+   style.FramePadding = ImVec2(8.0f, 4.0f);
+   style.ItemSpacing = ImVec2(8.0f, 4.0f);
+   style.CellPadding = ImVec2(8.0f, 4.0f);
+   style.WindowMinSize = ImVec2(120.0f, 48.0f);
+   style.FrameRounding = 4.0f;
+   style.TabRounding = 4.0f;
+
+   auto& colors = style.Colors;
+   colors[ImGuiCol_Text] = text;
+   colors[ImGuiCol_TextDisabled] = secondaryText;
+   colors[ImGuiCol_WindowBg] = panel;
+   colors[ImGuiCol_PopupBg] = control;
+   colors[ImGuiCol_Border] = border;
+   colors[ImGuiCol_TitleBg] = workspace;
+   colors[ImGuiCol_TitleBgActive] = control;
+   colors[ImGuiCol_MenuBarBg] = workspace;
+   colors[ImGuiCol_DockingEmptyBg] = workspace;
+   colors[ImGuiCol_FrameBg] = control;
+   colors[ImGuiCol_FrameBgHovered] = hovered;
+   colors[ImGuiCol_FrameBgActive] = pressed;
+   colors[ImGuiCol_Button] = control;
+   colors[ImGuiCol_ButtonHovered] = hovered;
+   colors[ImGuiCol_ButtonActive] = pressed;
+   colors[ImGuiCol_Header] = selected;
+   colors[ImGuiCol_HeaderHovered] = hovered;
+   colors[ImGuiCol_HeaderActive] = pressed;
+   colors[ImGuiCol_Tab] = workspace;
+   colors[ImGuiCol_TabHovered] = hovered;
+   colors[ImGuiCol_TabSelected] = control;
+   colors[ImGuiCol_TabSelectedOverline] = accent;
+   colors[ImGuiCol_TabDimmed] = workspace;
+   colors[ImGuiCol_TabDimmedSelected] = control;
+   colors[ImGuiCol_TabDimmedSelectedOverline] = secondaryText;
+   colors[ImGuiCol_Separator] = border;
+   colors[ImGuiCol_SeparatorHovered] = accent;
+   colors[ImGuiCol_SeparatorActive] = accent;
+   colors[ImGuiCol_CheckMark] = accent;
+   colors[ImGuiCol_SliderGrab] = secondaryText;
+   colors[ImGuiCol_SliderGrabActive] = accent;
+   colors[ImGuiCol_NavCursor] = accent;
+   colors[ImGuiCol_DragDropTarget] = accent;
+   colors[ImGuiCol_DockingPreview] = selected;
+}
 
 const char* Tr(const char* japanese, const char* english) {
    return ImGuiHelper::Localize({japanese, english});
@@ -35,6 +99,7 @@ void ImGuiManager::Initialize(HWND hwnd, GraphicsDevice* device) {
    IMGUI_CHECKVERSION();
    ImGui::CreateContext();
    ImGui::StyleColorsDark();
+   ApplyEditorStyle(ImGui::GetStyle());
    ImGuiIO& io = ImGui::GetIO();
    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
    SetLanguage(language_);
@@ -52,42 +117,35 @@ void ImGuiManager::Initialize(HWND hwnd, GraphicsDevice* device) {
 
    auto& style = ImGui::GetStyle();
 
-   style.WindowPadding = ImVec2(8, 8);
-   style.FramePadding = ImVec2(6, 4);
-   style.ItemSpacing = ImVec2(8, 4);
-   style.WindowMinSize = ImVec2(120, 100);
-   style.FrameRounding = 3;
-   style.TabRounding = 3;
-   style.Colors[ImGuiCol_WindowBg] = ImVec4(0.16f, 0.16f, 0.16f, 1);
-   style.Colors[ImGuiCol_Header] = ImVec4(0.20f, 0.38f, 0.56f, 1);
-   style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.25f, 0.45f, 0.64f, 1);
-   style.Colors[ImGuiCol_DragDropTarget] = ImVec4(0.35f, 0.70f, 1.0f, 1);
-
    // マルチビューポート有効時のスタイル調整
    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
       style.WindowRounding = 0.0f;
       style.Colors[ImGuiCol_WindowBg].w = 1.0f;
    }
 
+   unscaledStyle_ = style;
+
    ImFontConfig config = {};
-   config.SizePixels = 12.0f;
+   config.SizePixels = kEditorFontSize;
 
    const char* fontPath = "C:/Windows/Fonts/YuGothB.ttc";
 
-   if (fs::exists(fontPath)) {
-      ImFont* font =
-         io.Fonts->AddFontFromFileTTF(fontPath, config.SizePixels, &config, io.Fonts->GetGlyphRangesJapanese());
-
-      if (font) {
-         io.FontDefault = font;
-         io.FontGlobalScale = 1.0f;
-         io.Fonts->Build();
-      }
-   } else {
-      OutputDebugStringA("フォントファイルが存在しません: YuGothB.ttc\n");
+   if (!fs::exists(fontPath)) {
+      Logger::Fail(std::string("Editor font file is missing: ") + fontPath, Logger::LogChannel::Editor);
    }
 
-   ImGui_ImplWin32_Init(hwnd);
+   ImFont* font =
+      io.Fonts->AddFontFromFileTTF(fontPath, config.SizePixels, &config, io.Fonts->GetGlyphRangesJapanese());
+
+   if (!font || !io.Fonts->Build()) {
+      Logger::Fail(std::string("Cannot load editor font: ") + fontPath, Logger::LogChannel::Editor);
+   }
+
+   io.FontDefault = font;
+
+   if (!ImGui_ImplWin32_Init(hwnd)) {
+      Logger::Fail("Cannot initialize editor Win32 backend", Logger::LogChannel::Editor);
+   }
 
    // ImGuiのフォントアトラス用SRVを共有ヒープから1枠確保し、バックエンドの寿命中固定する。
    const UINT imguiSrvIndex = device->GetNextSrvIndex();
@@ -96,8 +154,10 @@ void ImGuiManager::Initialize(HWND hwnd, GraphicsDevice* device) {
    const D3D12_GPU_DESCRIPTOR_HANDLE imguiSrvHandleGPU = CD3DX12_GPU_DESCRIPTOR_HANDLE(
       device->GetSRVHeap()->GetGPUDescriptorHandleForHeapStart(), imguiSrvIndex, device->GetDescriptorSizeCBVSRVUAV());
 
-   ImGui_ImplDX12_Init(device->GetDevice(), swapChainDesc.BufferCount, DXGI_FORMAT_R8G8B8A8_UNORM, device->GetSRVHeap(),
-      imguiSrvHandleCPU, imguiSrvHandleGPU);
+   if (!ImGui_ImplDX12_Init(device->GetDevice(), swapChainDesc.BufferCount, DXGI_FORMAT_R8G8B8A8_UNORM,
+          device->GetSRVHeap(), imguiSrvHandleCPU, imguiSrvHandleGPU)) {
+      Logger::Fail("Cannot initialize editor D3D12 backend", Logger::LogChannel::Editor);
+   }
 
    device->IncrementSrvIndex();
 }
@@ -111,11 +171,23 @@ void ImGuiManager::BeginFrame() {
    // 両バックエンドの入力・GPU状態を更新してからImGui本体とGizmoのフレームを開始する。
    ImGui_ImplDX12_NewFrame();
    ImGui_ImplWin32_NewFrame();
+   auto& io = ImGui::GetIO();
+
+   // 再生中はゲーム操作と同じキーでエディターのフォーカスが移動しないようにする。
+   if (EngineContext::IsPlaying()) {
+      io.ConfigFlags &= ~ImGuiConfigFlags_NavEnableKeyboard;
+   } else {
+      io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+   }
+
    const float scale = std::max(1.0f, static_cast<float>(GetDpiForWindow(windowHandle_)) / 96.0f);
 
    if (scale != uiScale_) {
-      ImGui::GetStyle().ScaleAllSizes(scale / uiScale_);
-      ImGui::GetIO().FontGlobalScale = scale;
+      auto& style = ImGui::GetStyle();
+      // 丸め済みの寸法を再拡大せず、モニター間を移動しても同じDPIで同じ余白に戻す。
+      style = unscaledStyle_;
+      style.ScaleAllSizes(scale);
+      style.FontScaleDpi = scale;
       uiScale_ = scale;
    }
 
@@ -156,6 +228,13 @@ void ImGuiManager::ShowMainMenuBar(const std::function<void()>& menuCallback) {
          ImGui::PopID();
       }
 
+      ImGui::Separator();
+
+      if (ImGui::MenuItem(Tr("初期配置に戻す", "Reset Layout"))) {
+         isDockSpaceVisible_ = true;
+         resetLayoutRequested_ = true;
+      }
+
       ImGui::EndMenu();
    }
 
@@ -186,8 +265,16 @@ void ImGuiManager::PresentPlatformWindows() {
 }
 
 void ImGuiManager::Finalize() {
-   ImGui_ImplDX12_Shutdown();
-   ImGui_ImplWin32_Shutdown();
+   if (!ImGui::GetCurrentContext()) return;
+
+   if (ImGui::GetIO().BackendRendererUserData) {
+      ImGui_ImplDX12_Shutdown();
+   }
+
+   if (ImGui::GetIO().BackendPlatformUserData) {
+      ImGui_ImplWin32_Shutdown();
+   }
+
    ImGui::DestroyContext();
 }
 
@@ -223,12 +310,19 @@ void ImGuiManager::ShowDockSpace() {
       resetLayoutRequested_ = false;
       ImGui::DockBuilderRemoveNode(dockspace_id);
       ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
-      ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->WorkSize);
+      const ImVec2 workSize = ImGui::GetMainViewport()->WorkSize;
+      ImGui::DockBuilderSetNodeSize(dockspace_id, workSize);
       ImGuiID center = dockspace_id;
-      const auto toolbar = ImGui::DockBuilderSplitNode(center, ImGuiDir_Up, 0.14f, nullptr, &center);
-      const auto project = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.35f, nullptr, &center);
-      const auto hierarchy = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, 0.20f, nullptr, &center);
-      const auto inspector = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.28f, nullptr, &center);
+      // タブとコントロール一行分の高さをDPIに合わせ、残りをシーンの表示領域へ割り当てる。
+      const auto& style = ImGui::GetStyle();
+      const float toolbarHeight = ImGui::GetFrameHeight() * 2.0f + style.WindowPadding.y * 2.0f + style.ItemSpacing.y;
+      const float toolbarFraction = std::min(kMaxToolbarDockFraction, toolbarHeight / std::max(1.0f, workSize.y));
+      const auto toolbar = ImGui::DockBuilderSplitNode(center, ImGuiDir_Up, toolbarFraction, nullptr, &center);
+      const auto project = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, kProjectDockFraction, nullptr, &center);
+      const auto hierarchy =
+         ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, kHierarchyDockFraction, nullptr, &center);
+      const auto inspector =
+         ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, kInspectorDockFraction, nullptr, &center);
       ImGui::DockBuilderDockWindow("Toolbar###PlayModeToolbar", toolbar);
       ImGui::DockBuilderDockWindow("Hierarchy###Hierarchy", hierarchy);
       ImGui::DockBuilderDockWindow("Project###Assets", project);
@@ -316,7 +410,7 @@ void ImGuiManager::ShowViewport(OffscreenRenderTarget* renderTarget, bool& isSce
 }
 
 void ImGuiManager::ShowEngineSettings(bool& isDockSpaceVisible) {
-   bool visible = GetEditorWindowVisibility("EngineSettings", {"エンジン設定", "Engine Settings"});
+   bool visible = GetEditorWindowVisibility("EngineSettings", {"エンジン設定", "Engine Settings"}, false);
 
    if (!visible) return;
 

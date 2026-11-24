@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Utility/Logger.h"
 #include "GameEngine/UI/UIAnimationComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
 #include "GameEngine/Object/Object.h"
@@ -24,8 +25,12 @@ const bool kRegistered = ComponentRegistry::GetInstance().RegisterFactory(
    [](Object& object) -> IObjectComponent* { return object.AddComponent<UIAnimationComponent>(); },
    UIAnimationComponent::kDisplayName, ObjectType::Generic | ObjectType::Sprite | ObjectType::UIText);
 
-float FiniteOr(float value, float fallback) {
-   return std::isfinite(value) ? value : fallback;
+float RequireFinite(float value, const char* name) {
+   if (!std::isfinite(value)) {
+      Logger::Fail(std::string("Non-finite UI animation value: ") + name);
+   }
+
+   return value;
 }
 
 UIAnimationPose Blend(const UIAnimationPose& from, const UIAnimationPose& to, float t) {
@@ -59,8 +64,8 @@ void UIAnimationComponent::Configure(const Settings& settings) {
 
    for (size_t index = 0; index < settings_.clips.size(); ++index) {
       auto& clip = settings_.clips[index];
-      clip.duration = std::max(FiniteOr(clip.duration, 0.2f), kMinimumDurationSeconds);
-      clip.delay = std::max(FiniteOr(clip.delay, 0.0f), 0.0f);
+      clip.duration = std::max(RequireFinite(clip.duration, "clip.duration"), kMinimumDurationSeconds);
+      clip.delay = std::max(RequireFinite(clip.delay, "clip.delay"), 0.0f);
 
       if (clip.easing < UIEasingType::Linear || clip.easing > UIEasingType::EaseOutBack) {
          clip.easing = UIEasingType::Linear;
@@ -72,11 +77,11 @@ void UIAnimationComponent::Configure(const Settings& settings) {
       }
 
       for (auto& key : clip.keys) {
-         key.time = std::clamp(FiniteOr(key.time, 0.0f), 0.0f, 1.0f);
-         key.pose.offset = {FiniteOr(key.pose.offset.x, 0.0f), FiniteOr(key.pose.offset.y, 0.0f)};
-         key.pose.scale = {FiniteOr(key.pose.scale.x, 1.0f), FiniteOr(key.pose.scale.y, 1.0f)};
-         key.pose.rotation = FiniteOr(key.pose.rotation, 0.0f);
-         key.pose.opacity = std::clamp(FiniteOr(key.pose.opacity, 1.0f), 0.0f, 1.0f);
+         key.time = std::clamp(RequireFinite(key.time, "key.time"), 0.0f, 1.0f);
+         key.pose.offset = {RequireFinite(key.pose.offset.x, "key.pose.offset.x"), RequireFinite(key.pose.offset.y, "key.pose.offset.y")};
+         key.pose.scale = {RequireFinite(key.pose.scale.x, "key.pose.scale.x"), RequireFinite(key.pose.scale.y, "key.pose.scale.y")};
+         key.pose.rotation = RequireFinite(key.pose.rotation, "key.pose.rotation");
+         key.pose.opacity = std::clamp(RequireFinite(key.pose.opacity, "key.pose.opacity"), 0.0f, 1.0f);
       }
 
       std::stable_sort(
@@ -235,7 +240,7 @@ UIAnimationPose UIAnimationComponent::Sample(const UIAnimationClip& clip, float 
 void UIAnimationComponent::Advance(Player& player, float deltaTime) {
    if (!player.playing) return;
 
-   player.elapsed += std::max(FiniteOr(deltaTime, 0.0f), 0.0f);
+   player.elapsed += std::max(RequireFinite(deltaTime, "deltaTime"), 0.0f);
    player.pose = Sample(player.clip, player.elapsed);
 
    // 切替時の差だけを最初の片道で解消し、途中の再選択・閉じ直しでも見た目を連続させる。
@@ -374,7 +379,7 @@ void UIAnimationComponent::Preview(UIAnimationEvent event, float seconds, bool p
    if (static_cast<size_t>(event) >= settings_.clips.size()) return;
 
    previewEvent_ = event;
-   previewTime_ = std::max(FiniteOr(seconds, 0.0f), 0.0f);
+   previewTime_ = std::max(RequireFinite(seconds, "seconds"), 0.0f);
    previewActive_ = settings_.clips[static_cast<size_t>(event)].enabled;
    previewPlaying_ = playing && previewActive_;
 }
@@ -382,7 +387,7 @@ void UIAnimationComponent::Preview(UIAnimationEvent event, float seconds, bool p
 void UIAnimationComponent::UpdatePreview(float deltaTime) {
    if (!previewActive_ || !previewPlaying_) return;
 
-   previewTime_ += std::max(FiniteOr(deltaTime, 0.0f), 0.0f);
+   previewTime_ += std::max(RequireFinite(deltaTime, "deltaTime"), 0.0f);
    const auto& clip = settings_.clips[static_cast<size_t>(previewEvent_)];
 
    if (EvaluateUIPlayback(previewTime_, clip.delay, clip.duration, clip.playback).finished) {

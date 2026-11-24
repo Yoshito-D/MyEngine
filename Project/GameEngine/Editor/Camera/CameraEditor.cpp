@@ -164,7 +164,7 @@ void CameraEditor::ShowEditorWindow() {
       }
    }
 
-   bool visible = EngineContext::GetEditorWindowVisibility("CameraEditor", {"カメラエディタ", "Camera Editor"});
+   bool visible = EngineContext::GetEditorWindowVisibility("CameraEditor", {"カメラエディタ", "Camera Editor"}, false);
 
    if (!visible) {
       FinishEditsIfIdle();

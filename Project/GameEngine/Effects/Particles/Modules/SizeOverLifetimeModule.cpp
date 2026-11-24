@@ -41,11 +41,11 @@ void SizeOverLifetimeModule::FromJson(const nlohmann::json& j) {
    }
 
    if (j.contains("startSize")) {
-      startSize_ = JsonValue::ReadVector3(j.at("startSize"), startSize_);
+      startSize_ = JsonValue::ReadVector3(j.at("startSize"));
    }
 
    if (j.contains("endSize")) {
-      endSize_ = JsonValue::ReadVector3(j.at("endSize"), endSize_);
+      endSize_ = JsonValue::ReadVector3(j.at("endSize"));
    }
 }
 }

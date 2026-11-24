@@ -1,5 +1,6 @@
 #include "GameEngine/pch.h"
 #include "GameProject/App/Component/Camera/RearFollow/RearCameraMath.h"
+#include "GameEngine/Utility/JsonValue.h"
 
 namespace App::RearCameraMath {
 
@@ -18,11 +19,11 @@ float ExpSmoothingFactor(float speed, float deltaTime) {
 }
 
 float ReadFloat(const nlohmann::json& data, const char* key, float fallback) {
-   return data.contains(key) && data.at(key).is_number() ? data.at(key).get<float>() : fallback;
+   return GameEngine::JsonValue::ReadFloat(data, key, fallback);
 }
 
 bool ReadBool(const nlohmann::json& data, const char* key, bool fallback) {
-   return data.contains(key) && data.at(key).is_boolean() ? data.at(key).get<bool>() : fallback;
+   return GameEngine::JsonValue::ReadBool(data, key, fallback);
 }
 
 GameEngine::Vector3 NormalizeOrFallback(const GameEngine::Vector3& value, const GameEngine::Vector3& fallback) {

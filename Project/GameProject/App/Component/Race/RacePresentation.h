@@ -35,10 +35,11 @@ public:
    void RestoreEffects();
 
    /// @brief 専用カメラと通常カメラを確認し、操作を停止して俯瞰導入を開始する。
-   /// @return 設定と参照が有効で、再生を開始した場合はtrue。
-   bool BeginIntro(GameEngine::CinemachineBrain* brain, const StageIntroSettings& settings);
+   /// @param brain 導入カメラを適用するカメラブレイン。
+   /// @param settings 導入カメラと演出の設定。不正な設定や参照はログを記録して例外にする。
+   void BeginIntro(GameEngine::CinemachineBrain* brain, const StageIntroSettings& settings);
 
-   /// @brief 導入を更新し、黒画面内で通常カメラへ戻す。参照消失時は中止して完了を返す。
+   /// @brief 導入を更新し、黒画面内で通常カメラへ戻す。必要な参照が失われた場合はログを記録して例外にする。
    StageIntroSequence::Frame UpdateIntro(
       GameEngine::CinemachineBrain* brain, float deltaTime, bool inputTriggered, bool skipTriggered,
       bool sceneTransitioning);

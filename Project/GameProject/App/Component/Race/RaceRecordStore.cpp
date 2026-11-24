@@ -44,7 +44,7 @@ bool RaceRecordStore::LoadBestTimes(const std::string& file, const std::string& 
       std::ifstream input(recordPath);
 
       if (!input.is_open()) {
-         LogRecordWarning(file, "could not open record file");
+         LogRecordError(file, "could not open record file");
          return false;
       }
 
@@ -52,32 +52,34 @@ bool RaceRecordStore::LoadBestTimes(const std::string& file, const std::string& 
       input >> root;
 
       if (!root.is_object() || !root.contains("races") || !root.at("races").is_object()) {
-         LogRecordWarning(file, "record file schema is invalid");
+         LogRecordError(file, "record file schema is invalid");
          return false;
       }
 
       const auto& races = root.at("races");
 
       // 1ファイルを複数コースで共有するため、現在のrecordKeyだけを取り出す。
-      if (!races.contains(key) || !races.at(key).is_object()) {
+      if (!races.contains(key)) {
          return true;
       }
 
       const auto& raceData = races.at(key);
 
-      if (!raceData.contains("bestTimes") || !raceData.at("bestTimes").is_array()) {
-         return true;
+      if (!raceData.is_object() || !raceData.contains("bestTimes") || !raceData.at("bestTimes").is_array()) {
+         throw std::runtime_error("invalid bestTimes for " + key);
       }
 
       for (const auto& value : raceData.at("bestTimes")) {
-         if (value.is_number()) {
-            AddBestTime(value.get<float>());
+         if (!value.is_number() || !std::isfinite(value.get<float>()) || value.get<float>() <= 0.0f) {
+            throw std::runtime_error("invalid race time for " + key);
          }
+
+         AddBestTime(value.get<float>());
       }
 
       return true;
    } catch (const std::exception& exception) {
-      LogRecordWarning(file, std::string("failed to load records: ") + exception.what());
+      LogRecordError(file, std::string("failed to load records: ") + exception.what());
       bestTimes_.clear();
       return false;
    }
@@ -85,7 +87,7 @@ bool RaceRecordStore::LoadBestTimes(const std::string& file, const std::string& 
 
 bool RaceRecordStore::SaveBestTimes(const std::string& file, const std::string& key) const {
    if (file.empty() || key.empty()) {
-      LogRecordWarning(file, "recordFile or recordKey is empty");
+      LogRecordError(file, "recordFile or recordKey is empty");
       return false;
    }
 
@@ -97,22 +99,24 @@ bool RaceRecordStore::SaveBestTimes(const std::string& file, const std::string& 
       try {
          std::ifstream input(recordPath);
 
-         if (input.is_open()) {
-            input >> root;
+         if (!input.is_open()) {
+            throw std::runtime_error("could not open existing record file");
+         }
+
+         input >> root;
+
+         if (!root.is_object() || !root.contains("races") || !root.at("races").is_object()) {
+            throw std::runtime_error("invalid existing record schema");
          }
       } catch (const std::exception& exception) {
-         LogRecordWarning(file, std::string("existing record file will be replaced: ") + exception.what());
-         root = nlohmann::json::object();
+         LogRecordError(file, std::string("could not update existing records: ") + exception.what());
+         return false;
       }
-   }
-
-   if (!root.is_object()) {
-      root = nlohmann::json::object();
    }
 
    root["version"] = kRecordFormatVersion;
 
-   if (!root.contains("races") || !root.at("races").is_object()) {
+   if (!root.contains("races")) {
       root["races"] = nlohmann::json::object();
    }
 
@@ -120,14 +124,14 @@ bool RaceRecordStore::SaveBestTimes(const std::string& file, const std::string& 
 
    // 書き込み途中の本番ファイルを残さないよう、一時ファイルを完成させてから置換する。
    if (!GameEngine::SaveJsonFileAtomically(recordPath, root, kJsonIndentSize)) {
-      LogRecordWarning(file, "could not save records");
+      LogRecordError(file, "could not save records");
       return false;
    }
 
    return true;
 }
 
-void RaceRecordStore::LogRecordWarning(const std::string& file, const std::string& message) {
-   Logger::Warning("Race record: " + message + " [" + file + "]", Logger::LogChannel::Game);
+void RaceRecordStore::LogRecordError(const std::string& file, const std::string& message) {
+   Logger::Error("Race record: " + message + " [" + file + "]", Logger::LogChannel::Game);
 }
 }

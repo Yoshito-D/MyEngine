@@ -696,6 +696,8 @@ bool PSOManager::CreatePipelineFromDefinition(const PipelineDefinition& definiti
       RegisterPipelineSemanticSlots(pipelineName, definition.rootSignature);
 
       if (config.cullMode == D3D12_CULL_MODE_NONE) {
+         // カリングしない場合は表裏で同じPSOを使うことを生成時に確定する。
+         unculledReversedNames_[reversedPipelineName] = pipelineName;
          return true;
       }
 
@@ -713,6 +715,9 @@ bool PSOManager::CreatePipelineFromDefinition(const PipelineDefinition& definiti
    };
 
    if (definition.supportBlendModes) {
+      blendVariantNames_.insert(definition.name);
+      blendVariantNames_.insert(MakeReversedFacePipelineName(definition.name));
+
       // ブレンド状態はPSOへ焼き込まれるため実行時変更できない。
       // 同一シェーダー／ルート定義から全BlendMode派生を先に生成する。
       for (int32_t i = 0; i < static_cast<int32_t>(BlendMode::kCount); ++i) {
@@ -949,32 +954,9 @@ bool PSOManager::CreateComputePipeline(
 }
 
 const PipelineState* PSOManager::GetPipeline(const std::string& name, BlendMode blendMode) const {
-   // 派生名を先に検索し、BlendModeを持たない単一PSO定義へ名前だけでフォールバックする。
-   std::string key = CreatePipelineKey(name, blendMode);
-
-   if (auto* pipeline = pipelineLibrary_.GetGraphicsPipeline(key)) {
-      return pipeline;
-   }
-
-   // ブレンドモードが指定されていても見つからない場合は、名前のみで検索
-   if (auto* pipeline = pipelineLibrary_.GetGraphicsPipeline(name)) {
-      return pipeline;
-   }
-
-   // カリングなしのPSOは反転版を複製しないため、反転名から通常版へフォールバックする。
-   const std::string suffix = kReversedFacePipelineSuffix;
-
-   if (name.size() > suffix.size() && name.compare(name.size() - suffix.size(), suffix.size(), suffix) == 0) {
-      const std::string baseName = name.substr(0, name.size() - suffix.size());
-
-      if (auto* pipeline = pipelineLibrary_.GetGraphicsPipeline(CreatePipelineKey(baseName, blendMode))) {
-         return pipeline;
-      }
-
-      return pipelineLibrary_.GetGraphicsPipeline(baseName);
-   }
-
-   return nullptr;
+   const std::string key = blendVariantNames_.contains(name) ? CreatePipelineKey(name, blendMode) : name;
+   const auto shared = unculledReversedNames_.find(key);
+   return pipelineLibrary_.GetGraphicsPipeline(shared != unculledReversedNames_.end() ? shared->second : key);
 }
 
 std::string PSOManager::MakeReversedFacePipelineName(const std::string& name) {
@@ -1104,6 +1086,8 @@ void PSOManager::Clear() {
    fixedModelBlendModes_.clear();
    rootDefinitions_.clear();
    pipelineLibrary_.Clear();
+   blendVariantNames_.clear();
+   unculledReversedNames_.clear();
    rootSignatures_.clear();
    pipelineReflectionMetadata_.clear();
    rootSignatureParameterCounts_.clear();

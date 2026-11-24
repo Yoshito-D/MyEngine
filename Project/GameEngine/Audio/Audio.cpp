@@ -33,17 +33,15 @@ void Audio::Initialize() {
    if (xAudio2_ || mfStarted_) return;
 
    if (FAILED(MFStartup(MF_VERSION))) {
-      Logger::Warning("Media Foundation audio initialization failed; audio is disabled");
-      return;
+      Logger::Fail("Media Foundation audio initialization failed");
    }
 
    mfStarted_ = true;
 
    if (FAILED(XAudio2Create(xAudio2_.GetAddressOf(), 0, XAUDIO2_DEFAULT_PROCESSOR)) ||
        FAILED(xAudio2_->CreateMasteringVoice(&masteringVoice_))) {
-      Logger::Warning("XAudio2 initialization failed; audio is disabled");
       Finalize();
-      return;
+      Logger::Fail("XAudio2 or mastering voice initialization failed");
    }
 }
 

@@ -43,9 +43,6 @@ public:
    /// @brief GPU読み込みを発生させずにキューブマップ画像名一覧を取得する。
    std::vector<std::string> GetCubemapTextureNames() const;
 
-   /// @brief 最後に準備したキューブマップを取得する。未読込ならnullptr。
-   Texture* GetLastCubemapTexture() const;
-
    /// @brief 現在GPUへ準備済みのテクスチャ件数を取得する。
    size_t GetLoadedTextureCount() const { return textures_.size(); }
 
@@ -62,6 +59,5 @@ private:
    std::unordered_map<std::string, std::unique_ptr<Texture>> textures_;     ///< 準備済みGPUテクスチャ。
    std::unordered_set<std::string> failedTextureNames_;                     ///< 明示再試行まで失敗を記憶する画像名。
    std::list<Microsoft::WRL::ComPtr<ID3D12Resource>> intermediateResource_; ///< コピー完了までの所有参照。
-   std::string lastCubemapName_; ///< 最後に読み込んだキューブマップの画像名。
 };
 }

@@ -63,11 +63,11 @@ void FollowBody::ReadParameters(const nlohmann::json& data, [[maybe_unused]] boo
    if (!data.is_object()) return;
 
    if (data.contains("offset")) {
-      offset_ = GameEngine::JsonValue::ReadVector3(data.at("offset"), offset_);
+      offset_ = GameEngine::JsonValue::ReadVector3(data.at("offset"));
    }
 
    if (data.contains("damping")) {
-      damping_ = GameEngine::JsonValue::ReadVector3(data.at("damping"), damping_);
+      damping_ = GameEngine::JsonValue::ReadVector3(data.at("damping"));
    }
 }
 

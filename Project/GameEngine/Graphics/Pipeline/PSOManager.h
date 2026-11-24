@@ -150,6 +150,8 @@ private:
    ShaderManager* shaderManager_ = nullptr; ///< シェーダーマネージャー。
 
    PipelineLibrary pipelineLibrary_; ///< 生成した描画・Computeパイプラインを所有する保管先。
+   std::unordered_set<std::string> blendVariantNames_; ///< ブレンドモード別に生成する描画パイプライン名。
+   std::unordered_map<std::string, std::string> unculledReversedNames_; ///< 両面描画で通常版を共有する反転名。
    /// @brief ルートシグネチャ名ごとの読み込み済み定義。
    std::unordered_map<std::string, RootSignatureDefinition> rootDefinitions_;
    /// @brief モデルパイプライン名ごとのバインド・マテリアル契約。

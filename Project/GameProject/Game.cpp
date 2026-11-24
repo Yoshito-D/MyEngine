@@ -15,22 +15,7 @@
 
 namespace {
 GameEngine::InputActionConfiguration GetGameInputConfiguration() {
-   using namespace GameEngine;
-
-   // 設定が欠けた場合に画面を操作して戻れるよう、復旧に使う操作だけを持つ。
-   static const InputActionDefinition fallback[] = {
-      {"Gameplay", "Gameplay.Pause", InputActionType::Button,
-         {{KeyInputBinding{KeyCode::Escape}}, {GamePadButtonInputBinding{GamePadButton::Start}}}},
-      {"UI", "UI.Navigate", InputActionType::Axis1D,
-         {{KeyAxis1DInputBinding{KeyCode::W, KeyCode::S}}, {GamePadButtonInputBinding{GamePadButton::DPadUp}, -1.0f},
-            {GamePadButtonInputBinding{GamePadButton::DPadDown}}, {LeftStickInputBinding{InputBindingAxis::Y}, -1.0f}}},
-      {"UI", "UI.Confirm", InputActionType::Button,
-         {{KeyInputBinding{KeyCode::Space}}, {GamePadButtonInputBinding{GamePadButton::A}}}},
-      {"UI", "UI.Cancel", InputActionType::Button,
-         {{KeyInputBinding{KeyCode::Escape}}, {GamePadButtonInputBinding{GamePadButton::B}},
-            {GamePadButtonInputBinding{GamePadButton::Start}}}},
-   };
-   return {"Resources/game/config/input_actions.json", "Saved/input_actions.json", fallback};
+   return {"Resources/game/config/input_actions.json", "Saved/input_actions.json"};
 }
 
 #ifdef USE_IMGUI
@@ -46,28 +31,33 @@ std::string LoadLastEditorSceneName(const GameEngine::SceneCatalog& sceneCatalog
    std::ifstream file(filePath);
 
    if (!file.is_open()) {
+      if (std::filesystem::exists(filePath)) {
+         Logger::Fail("Cannot open editor session state: " + filePath.generic_string(), Logger::LogChannel::Editor);
+      }
+
       return {};
    }
-
-   // セッションファイルの破損は起動失敗にせず、カタログ既定シーンへフォールバックする。
    nlohmann::json sessionState;
    try {
       file >> sessionState;
    } catch (const nlohmann::json::exception& exception) {
-      Logger::Warning(
-         "Editor session state contains invalid JSON: " + std::string(exception.what()), Logger::LogChannel::Editor);
-      return {};
+      Logger::Fail("Invalid editor session JSON: " + filePath.generic_string() + ": " + exception.what(),
+         Logger::LogChannel::Editor);
    }
 
    if (!sessionState.is_object() || !sessionState.contains("lastSceneName") ||
        !sessionState.at("lastSceneName").is_string()) {
-      return {};
+      Logger::Fail("Missing or invalid lastSceneName: " + filePath.generic_string(), Logger::LogChannel::Editor);
    }
 
    const auto& sceneName = sessionState.at("lastSceneName").get_ref<const std::string&>();
 
-   // 削除・改名済みのシーンで起動不能にならないよう、現在のカタログを正とする。
-   return sceneCatalog.Contains(sceneName) ? sceneName : std::string();
+   if (!sceneCatalog.Contains(sceneName)) {
+      Logger::Fail("Unknown editor session scene: " + sceneName + " in " + filePath.generic_string(),
+         Logger::LogChannel::Editor);
+   }
+
+   return sceneName;
 }
 
 void SaveLastEditorSceneName(const std::string& sceneName) {
@@ -95,10 +85,7 @@ void Game::Initialize() {
    App::PauseMenuComponent::LoadAudioSettings(GetAudioService());
 
    if (!sceneCatalog_.Load()) {
-      Logger::Critical(sceneCatalog_.GetLastError());
-      MessageBoxA(nullptr, sceneCatalog_.GetLastError().c_str(), "Scene catalog failed", MB_OK | MB_ICONERROR);
-      PostQuitMessage(1);
-      return;
+      Logger::Fail(sceneCatalog_.GetLastError(), Logger::LogChannel::Game);
    }
    sceneManager_ = CreateSceneManager(sceneCatalog_);
    GameEngine::EngineContext::SetSceneManager(sceneManager_.get());
@@ -153,13 +140,11 @@ void Game::Initialize() {
 }
 
 void Game::CheckSceneFailure() {
-   if (fatalSceneFailureReported_ || !sceneManager_ ||
+   if (!sceneManager_ ||
        sceneManager_->GetLastResult().status != GameEngine::SceneLoadStatus::Fatal) {
       return;
    }
-   fatalSceneFailureReported_ = true;
-   MessageBoxA(nullptr, sceneManager_->GetLastResult().message.c_str(), "Scene loading failed", MB_OK | MB_ICONERROR);
-   PostQuitMessage(1);
+   Logger::Fail(sceneManager_->GetLastResult().message, Logger::LogChannel::Game);
 }
 
 void Game::Update() {

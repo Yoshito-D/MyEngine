@@ -78,7 +78,6 @@ void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld
    completionElapsed_ = 0.0f;
    phaseSettings_ = {};
    frameInput_ = {};
-   referencesUnavailable_ = false;
    guidePresenter_.Reset(
       guideText_ ? guideText_->GetStyle().color.w : 1.0f, feedbackText_ ? feedbackText_->GetStyle().color.w : 1.0f);
    SetTargetPlanetEnabled(false);
@@ -223,28 +222,13 @@ void TutorialProgressComponent::ApplyPhaseSettings() {
 }
 
 void TutorialProgressComponent::Update(float deltaTime) {
+   if (!HasRequiredReferences()) {
+      Logger::Fail("Tutorial player, planet, goal, or HUD references are missing.", Logger::LogChannel::Game);
+   }
+
    if (!phaseMachine_.GetCurrentState()) {
       // 編集用のシーンに実行時の有効状態の変更を混入させない。
       phaseMachine_.Start(Phase::DrivingIntro);
-   }
-
-   if (!HasRequiredReferences()) {
-      referencesUnavailable_ = true;
-      SetPlayerPaused(true);
-      SetGoalGuidanceEnabled(false);
-
-      if (guideText_) {
-         guideText_->SetText(
-            "チュートリアルの参照設定が不足しています。プレイヤー・惑星・ゴール・UIを確認してください。");
-      }
-
-      return;
-   }
-
-   if (referencesUnavailable_) {
-      // 参照の復旧は同じ課題の再開なので、Enterを再実行して達成回数や時計をリセットしない。
-      referencesUnavailable_ = false;
-      ApplyPhaseSettings();
    }
 
    const auto& snapshot = vehicleEvents_->GetSnapshot();

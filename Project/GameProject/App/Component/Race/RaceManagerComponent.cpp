@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "GameEngine/Utility/JsonValue.h"
+#include "GameEngine/Utility/Logger.h"
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Object/Component/Audio/AudioSourceComponent.h"
 #include "GameEngine/Object/Component/Audio/BgmComponent.h"
@@ -40,10 +41,7 @@ void RaceManagerComponent::ConfigureStates() {
    stateMachine_.AddState(State::Intro,
       {.onEnter =
             [this]() {
-               if (!presentation_.BeginIntro(GameEngine::EngineContext::GetActiveBrain(), introSettings_)) {
-                  stateMachine_.RequestState(State::Countdown);
-                  return;
-               }
+               presentation_.BeginIntro(GameEngine::EngineContext::GetActiveBrain(), introSettings_);
 
                if (HasOwner()) {
                   if (auto* source = GetOwner().GetComponent<GameEngine::AudioSourceComponent>()) {
@@ -165,7 +163,9 @@ void RaceManagerComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    OnReferencesChanged(sceneWorld);
    runtimeInitialized_ = false;
    presentation_.CaptureInitialState();
-   records_.LoadBestTimes(recordFile_, recordKey_);
+   if (!records_.LoadBestTimes(recordFile_, recordKey_)) {
+      Logger::Fail("Cannot load race records for " + recordKey_ + ": " + recordFile_, Logger::LogChannel::Game);
+   }
    Restart();
 }
 
@@ -267,7 +267,6 @@ void RaceManagerComponent::Restart() {
                             : State::Waiting;
    stateMachine_.Start(initial);
 
-   // 導入カメラの不足時も同じフレームでCountdownへフォールバックする。
    stateMachine_.ResolveRequests();
 }
 
@@ -325,13 +324,11 @@ void RaceManagerComponent::ReadParameters(const nlohmann::json& data, [[maybe_un
    useCountdownCameraPose_ = GameEngine::JsonValue::ReadBool(data, "useCountdownCameraPose", useCountdownCameraPose_);
 
    if (data.contains("countdownCameraPosition")) {
-      countdownCameraPosition_ =
-         GameEngine::JsonValue::ReadVector3(data.at("countdownCameraPosition"), countdownCameraPosition_);
+      countdownCameraPosition_ = GameEngine::JsonValue::ReadVector3(data.at("countdownCameraPosition"));
    }
 
    if (data.contains("countdownCameraRotation")) {
-      countdownCameraRotation_ =
-         GameEngine::JsonValue::ReadVector3(data.at("countdownCameraRotation"), countdownCameraRotation_);
+      countdownCameraRotation_ = GameEngine::JsonValue::ReadVector3(data.at("countdownCameraRotation"));
    }
 
    countdownCameraFov_ = std::clamp(
@@ -339,24 +336,28 @@ void RaceManagerComponent::ReadParameters(const nlohmann::json& data, [[maybe_un
    startCameraBlendSeconds_ =
       std::max(GameEngine::JsonValue::ReadFloat(data, "startCameraBlendSeconds", startCameraBlendSeconds_), 0.0f);
 
-   if (data.contains("startCameraBlendEasing") && data.at("startCameraBlendEasing").is_string()) {
-      for (size_t index = 0; index < kCameraBlendEasingNames.size(); ++index) {
-         if (data.at("startCameraBlendEasing") == kCameraBlendEasingNames[index]) {
-            startCameraBlendEasing_ = static_cast<GameEngine::CinemachineBrain::BlendEasing>(index);
-            break;
-         }
+   if (data.contains("startCameraBlendEasing")) {
+      const auto name = GameEngine::JsonValue::ReadString(data, "startCameraBlendEasing", "");
+      const auto easing = std::find(kCameraBlendEasingNames.begin(), kCameraBlendEasingNames.end(), name);
+
+      if (easing == kCameraBlendEasingNames.end()) {
+         Logger::Fail("Invalid race camera blend easing: " + name, Logger::LogChannel::Game);
       }
+
+      startCameraBlendEasing_ = static_cast<GameEngine::CinemachineBrain::BlendEasing>(easing - kCameraBlendEasingNames.begin());
    }
 
-   if (data.contains("startMode") && data.at("startMode").is_string()) {
-      const std::string startMode = data.at("startMode").get<std::string>();
+   if (data.contains("startMode")) {
+      const auto startMode = GameEngine::JsonValue::ReadString(data, "startMode", "");
 
       if (startMode == "Immediate") {
          startMode_ = StartMode::Immediate;
       } else if (startMode == "Gate") {
          startMode_ = StartMode::Gate;
-      } else {
+      } else if (startMode == "Countdown") {
          startMode_ = StartMode::Countdown;
+      } else {
+         Logger::Fail("Invalid race start mode: " + startMode, Logger::LogChannel::Game);
       }
    }
 

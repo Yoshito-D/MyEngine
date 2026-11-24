@@ -96,7 +96,7 @@ void LightComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]]
    }
 
    auto settings = DescribeSettings();
-   settings.color = data.contains("color") ? JsonValue::ReadVector4(data.at("color"), settings.color) : settings.color;
+   settings.color = data.contains("color") ? JsonValue::ReadVector4(data.at("color")) : settings.color;
    settings.intensity = JsonValue::ReadFloat(data, "intensity", settings.intensity);
    settings.radius = JsonValue::ReadFloat(data, "radius", settings.radius);
    settings.decay = JsonValue::ReadFloat(data, "decay", settings.decay);
@@ -105,7 +105,7 @@ void LightComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]]
    settings.cosFalloffStart = JsonValue::ReadFloat(data, "cosFalloffStart", settings.cosFalloffStart);
 
    settings.areaSize =
-      data.contains("areaSize") ? JsonValue::ReadVector2(data.at("areaSize"), settings.areaSize) : settings.areaSize;
+      data.contains("areaSize") ? JsonValue::ReadVector2(data.at("areaSize")) : settings.areaSize;
    Configure(settings);
 }
 

@@ -109,7 +109,7 @@ void OrbitalBody::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bo
    SetDistance(GameEngine::JsonValue::ReadFloat(data, "distance", distance_));
 
    if (data.contains("pivotTarget")) {
-      pivotTarget_ = GameEngine::JsonValue::ReadVector3(data.at("pivotTarget"), pivotTarget_);
+      pivotTarget_ = GameEngine::JsonValue::ReadVector3(data.at("pivotTarget"));
    }
 
    rotateSpeed_ = GameEngine::JsonValue::ReadFloat(data, "rotateSpeed", rotateSpeed_);

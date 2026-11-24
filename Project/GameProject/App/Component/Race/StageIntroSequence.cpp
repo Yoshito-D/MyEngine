@@ -39,8 +39,8 @@ std::optional<GameEngine::CameraState> ReadPose(const nlohmann::json& data) {
 
    const float invalid = std::numeric_limits<float>::quiet_NaN();
    GameEngine::CameraState pose;
-   pose.transform.translation = GameEngine::JsonValue::ReadVector3(data.at("position"), {invalid, invalid, invalid});
-   const auto rotation = GameEngine::JsonValue::ReadVector4(data.at("rotation"), {invalid, invalid, invalid, invalid});
+   pose.transform.translation = GameEngine::JsonValue::ReadVector3(data.at("position"));
+   const auto rotation = GameEngine::JsonValue::ReadVector4(data.at("rotation"));
    const float length =
       std::sqrt(rotation.x * rotation.x + rotation.y * rotation.y + rotation.z * rotation.z + rotation.w * rotation.w);
 

@@ -1,5 +1,6 @@
 #include "GameEngine/pch.h"
 #include "GameEngine/Utility/JsonValue.h"
+#include "GameEngine/Utility/Logger.h"
 #include "GameEngine/Graphics/PostProcess/AntiAliasing.h"
 #include "GameEngine/Graphics/PostProcess/Bloom.h"
 #include "GameEngine/Graphics/PostProcess/BoxFilter.h"
@@ -14,75 +15,43 @@
 #include "GameEngine/Graphics/PostProcess/Vignette.h"
 #include "GameEngine/Graphics/PostProcess/WhiteNoise.h"
 #include <cmath>
+#include <limits>
 #include <nlohmann/json.hpp>
 
 namespace {
 using json = nlohmann::json;
 
-// Component設定は手編集された部分設定も読み込むため、
-// 各値は「キーが有効なら採用し、それ以外は現在値を維持する」という規則で統一する。
-// 例外をこの境界で吸収しておくことで、1 項目の不正値がエフェクトスタック全体の復元を妨げない。
-
-int32_t ReadInt32(const json& settings, const char* key, int32_t fallback) {
+// 省略した項目は現在値を使い、指定した値の形式や範囲は読み込み時に検証する。
+int32_t ReadInt32(const json& settings, const char* key, int32_t defaultValue) {
    const auto it = settings.find(key);
 
-   if (it == settings.end() || !it->is_number_integer()) {
-      return fallback;
+   if (it == settings.end()) {
+      return defaultValue;
    }
 
-   try {
-      // JSON の整数が int32_t の表現範囲を超える場合も、既存設定を壊さずに維持する。
-      return it->get<int32_t>();
-   } catch (const json::exception&) {
-      return fallback;
+   if (!it->is_number_integer() || it->get<double>() < std::numeric_limits<int32_t>::min() ||
+       it->get<double>() > std::numeric_limits<int32_t>::max()) {
+      Logger::Fail(std::string("Invalid post-process integer: ") + key);
    }
+
+   return it->get<int32_t>();
 }
 
-std::string ReadString(const json& settings, const char* key, const std::string& fallback) {
+GameEngine::Vector2 ReadVector2(const json& settings, const char* key, const GameEngine::Vector2& defaultValue) {
    const auto it = settings.find(key);
-   return (it != settings.end() && it->is_string()) ? it->get<std::string>() : fallback;
-}
-
-GameEngine::Vector2 ReadVector2(const json& settings, const char* key, const GameEngine::Vector2& fallback) {
-   const auto it = settings.find(key);
-
-   if (it == settings.end() || !it->is_array() || it->size() != 2 || !(*it)[0].is_number() || !(*it)[1].is_number()) {
-      return fallback;
-   }
-
-   try {
-      const GameEngine::Vector2 value((*it)[0].get<float>(), (*it)[1].get<float>());
-      return (std::isfinite(value.x) && std::isfinite(value.y)) ? value : fallback;
-   } catch (const json::exception&) {
-      return fallback;
-   }
+   return it == settings.end() ? defaultValue : GameEngine::JsonValue::ReadVector2(*it);
 }
 
 void ReadFloat4(const json& settings, const char* key, float (&values)[4]) {
    const auto it = settings.find(key);
 
-   if (it == settings.end() || !it->is_array() || it->size() != 4) return;
+   if (it == settings.end()) return;
 
-   for (size_t index = 0; index < 4; ++index) {
-      if (!(*it)[index].is_number()) return;
-   }
-
-   // 4要素を一時配列へすべて検証してから反映し、途中要素だけ更新された色を作らない。
-   try {
-      float parsedValues[4]{};
-
-      for (size_t index = 0; index < 4; ++index) {
-         parsedValues[index] = (*it)[index].get<float>();
-
-         if (!std::isfinite(parsedValues[index])) return;
-      }
-
-      for (size_t index = 0; index < 4; ++index) {
-         values[index] = parsedValues[index];
-      }
-   } catch (const json::exception&) {
-      return;
-   }
+   const auto parsed = GameEngine::JsonValue::ReadVector4(*it);
+   values[0] = parsed.x;
+   values[1] = parsed.y;
+   values[2] = parsed.z;
+   values[3] = parsed.w;
 }
 } // namespace
 
@@ -190,7 +159,7 @@ bool Dissolve::DeserializeSettings(const nlohmann::json& settings) {
    ReadFloat4(settings, "edgeColor", params.edgeColor);
    ReadFloat4(settings, "dissolveColor", params.dissolveColor);
    SetParams(params);
-   SetMaskTextureName(ReadString(settings, "maskTexture", maskTextureName_));
+   SetMaskTextureName(GameEngine::JsonValue::ReadString(settings, "maskTexture", maskTextureName_));
    return true;
 }
 

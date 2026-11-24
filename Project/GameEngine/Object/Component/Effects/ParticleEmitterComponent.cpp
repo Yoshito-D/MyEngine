@@ -38,8 +38,8 @@ const char* ParticleEmitterComponent::GetTypeName() const {
 
 void ParticleEmitterComponent::OnAttach() {
    for (auto& slot : slots_) {
-      if (slot.particleSystem == nullptr && !slot.jsonPath.empty()) {
-         LoadSlot(slot);
+      if (slot.particleSystem == nullptr && !slot.jsonPath.empty() && !LoadSlot(slot)) {
+         Logger::Fail("[ParticleEmitterComponent] Cannot attach emitter: " + slot.jsonPath);
       }
    }
 }
@@ -205,15 +205,14 @@ std::int32_t ParticleEmitterComponent::AddSlot(const std::string& jsonPath, cons
    EmitterSlot slot;
    slot.jsonPath = jsonPath;
    slot.attachConfig = ValidateConfiguration(SlotConfiguration{jsonPath, config}).attachConfig;
-   const std::int32_t idx = static_cast<std::int32_t>(slots_.size());
-   slots_.push_back(std::move(slot));
-
-   // アタッチ済みなら即 ParticleSystem を生成する
-   if (HasOwner()) {
-      LoadSlot(slots_.back());
+   // アタッチ済みならロードを完了してからスロットを登録する。
+   if (HasOwner() && !LoadSlot(slot)) {
+      Logger::Fail("[ParticleEmitterComponent] Cannot add emitter: " + jsonPath);
    }
 
-   return idx;
+   const auto slotIndex = static_cast<std::int32_t>(slots_.size());
+   slots_.push_back(std::move(slot));
+   return slotIndex;
 }
 
 void ParticleEmitterComponent::RemoveSlot(std::int32_t slotIndex) {
@@ -637,14 +636,16 @@ void ParticleEmitterComponent::DrawDebugAttachments() const {
 
 ParticleEmitterComponent::SlotConfiguration ParticleEmitterComponent::ValidateConfiguration(
    SlotConfiguration configuration) {
-   auto finiteVector = [](const Vector3& requested, const Vector3& fallback) {
-      return Vector3{std::isfinite(requested.x) ? requested.x : fallback.x,
-         std::isfinite(requested.y) ? requested.y : fallback.y, std::isfinite(requested.z) ? requested.z : fallback.z};
+   const auto isFinite = [](const Vector3& value) {
+      return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
    };
-   auto& attachment = configuration.attachConfig;
-   attachment.positionOffset = finiteVector(attachment.positionOffset, {});
-   attachment.rotationOffset = finiteVector(attachment.rotationOffset, {});
-   attachment.scaleOffset = finiteVector(attachment.scaleOffset, {1, 1, 1});
+   const auto& attachment = configuration.attachConfig;
+
+   if (!isFinite(attachment.positionOffset) || !isFinite(attachment.rotationOffset) ||
+       !isFinite(attachment.scaleOffset)) {
+      Logger::Fail("[ParticleEmitterComponent] Attachment offsets must be finite");
+   }
+
    return configuration;
 }
 
@@ -663,7 +664,7 @@ bool ParticleEmitterComponent::LoadSlot(EmitterSlot& slot) {
 
    if (!slot.jsonPath.empty()) {
       if (!ps->LoadFromJson(slot.jsonPath)) {
-         Logger::Warning("[ParticleEmitterComponent] Failed to load: " + slot.jsonPath);
+         Logger::Error("[ParticleEmitterComponent] Failed to load: " + slot.jsonPath);
          ps->Stop();
          slot.particleSystem = std::move(ps);
          return false;

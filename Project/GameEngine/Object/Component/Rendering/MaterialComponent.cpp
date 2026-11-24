@@ -943,8 +943,8 @@ void MaterialComponent::DrawInspector() {
       const auto* definition = pipelineManager_->GetModelPipeline(material->GetPipelineName());
 
       if (!definition) {
-         ImGui::TextWrapped("%s", Tr("利用できない設定です。Object3Dへフォールバックします。",
-                                     "Unavailable setting; drawing falls back to Object3D."));
+         ImGui::TextWrapped("%s", Tr("利用できない設定です。描画時にエラーになります。",
+                                     "Unavailable setting. Drawing will report an error."));
       }
 
       if (definition && !definition->parameters.empty()) {

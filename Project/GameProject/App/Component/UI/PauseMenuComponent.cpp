@@ -63,14 +63,12 @@ void SetSoundEffectVolume(GameEngine::Audio& audio, float volume) {
 }
 
 namespace App {
-bool PauseMenuComponent::LoadAudioSettings(GameEngine::Audio& audio) {
+void PauseMenuComponent::LoadAudioSettings(GameEngine::Audio& audio) {
    const std::filesystem::path file(kAudioSettingsFile);
 
    try {
       // 初回起動では既定の音量を使い、設定を変更するまでは保存ファイルを作らない。
-      if (!std::filesystem::exists(file)) {
-         return true;
-      }
+      if (!std::filesystem::exists(file)) return;
 
       std::ifstream input(file);
 
@@ -93,11 +91,9 @@ bool PauseMenuComponent::LoadAudioSettings(GameEngine::Audio& audio) {
       audio.SetMasterVolume(master);
       audio.SetBusVolume(GameEngine::AudioBus::Bgm, bgm);
       SetSoundEffectVolume(audio, se);
-      return true;
    } catch (const std::exception& exception) {
-      Logger::Warning("Audio settings could not be loaded: " + file.generic_string() + " (" + exception.what() + ")",
+      Logger::Fail("Audio settings could not be loaded: " + file.generic_string() + ": " + exception.what(),
          Logger::LogChannel::Game);
-      return false;
    }
 }
 

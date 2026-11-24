@@ -34,7 +34,7 @@
       "preLandingFullBlendSeconds": 1.0,
       "preLandingMinOutwardHeight": 2.0,
       "preLandingPredictionSeconds": 5.0,
-      "preLandingReleaseLerpSpeed": 5.0,
+      "preLandingReleaseLerpSpeed": 4.0,
       "preLandingTerrainLookAhead": 15.0,
       "preLandingTerrainLookBlend": 0.30000001192092896,
       "rearLerpSpeed": 7.5,

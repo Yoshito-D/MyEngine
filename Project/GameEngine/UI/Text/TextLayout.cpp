@@ -2,14 +2,21 @@
 #include "GameEngine/UI/Text/TextLayout.h"
 #include "GameEngine/UI/Text/Utf8Decoder.h"
 #include "GameEngine/Assets/Font/FontManager.h"
+#include "GameEngine/Utility/Logger.h"
+#include <cmath>
+#include <format>
 
 namespace GameEngine {
 
 TextLayoutResult TextLayout::Build(FontManager& fontManager, std::string_view text, const TextStyle& style) {
    TextLayoutResult result{};
 
-   if (text.empty() || style.fontId.empty() || style.fontSize == 0 || !fontManager.HasFont(style.fontId)) {
+   if (text.empty()) {
       return result;
+   }
+
+   if (style.fontSize == 0 || !fontManager.HasFont(style.fontId)) {
+      Logger::Fail("Invalid text font or size: " + style.fontId);
    }
 
    const auto codePoints = DecodeUtf8(text);
@@ -20,10 +27,14 @@ TextLayoutResult TextLayout::Build(FontManager& fontManager, std::string_view te
 
    const FontMetrics metrics = fontManager.GetMetrics(style.fontId, style.fontSize);
 
-   // 不完全なフォントメタデータでも文字を重ねないよう、指定サイズを行高と基準線の代替にする。
-   const float lineHeight = metrics.lineHeight > 0.0f ? metrics.lineHeight : static_cast<float>(style.fontSize);
+   if (!std::isfinite(metrics.lineHeight) || metrics.lineHeight <= 0.0f ||
+       !std::isfinite(metrics.ascender) || metrics.ascender <= 0.0f) {
+      Logger::Fail("Invalid font metrics: " + style.fontId);
+   }
+
+   const float lineHeight = metrics.lineHeight;
    const float lineAdvance = lineHeight * std::max(style.lineSpacing, 0.1f);
-   float baseline = metrics.ascender > 0.0f ? metrics.ascender : static_cast<float>(style.fontSize);
+   float baseline = metrics.ascender;
    result.baseline = baseline;
 
    std::vector<LineRange> lines;
@@ -57,8 +68,7 @@ TextLayoutResult TextLayout::Build(FontManager& fontManager, std::string_view te
       const GlyphInfo* glyph = fontManager.GetOrCreateGlyph(style.fontId, style.fontSize, codePoint);
 
       if (!glyph) {
-         // フォールバック文字も得られないコードポイントだけを飛ばし、残りの文章は配置する。
-         continue;
+         Logger::Fail(std::format("Missing glyph U+{:04X} in font {}", static_cast<uint32_t>(codePoint), style.fontId));
       }
 
       float kerning = fontManager.GetKerning(style.fontId, previousGlyphIndex, glyph->glyphIndex, style.fontSize);

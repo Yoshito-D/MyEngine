@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Utility/Logger.h"
 #include "GameEngine/Scene/Camera/Camera.h"
 #include "GameEngine/Scene/Camera/Core/CameraState.h"
 #include "GameEngine/Math/MathUtils.h"
@@ -17,7 +18,7 @@ constexpr float kMaxFovY = 3.12413936f;  // 179度
 
 float ClampFovY(float fovY) {
    if (!std::isfinite(fovY)) {
-      return Camera::kDefaultFovY;
+      Logger::Fail("Camera field of view must be finite");
    }
 
    // 0 度／180 度付近では透視投影の tan が退化するため、実用上安全な開区間へ収める。
@@ -60,28 +61,28 @@ void Camera::Update() {
    fovY_ = ClampFovY(fovY_);
 
    if (!std::isfinite(aspectRatio_) || aspectRatio_ <= 0.0f) {
-      aspectRatio_ = 1.0f;
+      Logger::Fail("Camera aspect ratio must be finite and positive");
    }
 
-   if (!std::isfinite(nearClip_) || nearClip_ <= 0.0f) {
-      nearClip_ = kDefaultNearClip;
+   // UIの平行投影では近クリップを0 mに置ける。透視投影だけ正の距離と積の範囲を要求する。
+   const bool invalidPerspectiveClips =
+      projectionType_ == ProjectionType::Perspective && (nearClip_ <= 0.0f || !std::isfinite(nearClip_ * farClip_));
+
+   if (!std::isfinite(nearClip_) || !std::isfinite(farClip_) || farClip_ <= nearClip_ ||
+       !std::isfinite(farClip_ - nearClip_) || invalidPerspectiveClips) {
+      Logger::Fail(std::format("Invalid camera clip distances (m): near={}, far={}", nearClip_, farClip_));
    }
 
-   if (!std::isfinite(farClip_) || farClip_ <= nearClip_) {
-      farClip_ = nearClip_ + kDefaultFarClip;
-   }
+   const auto isFinite = [](const Vector3& value) {
+      return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z);
+   };
+   constexpr float kMinScaleMagnitude = 1.0e-6f;
 
-   if (!std::isfinite(farClip_) || farClip_ <= nearClip_ || !std::isfinite(nearClip_ * farClip_)) {
-      nearClip_ = kDefaultNearClip;
-      farClip_ = kDefaultFarClip;
+   if (!isFinite(transform_.translation) || !isFinite(transform_.scale) ||
+       std::abs(transform_.scale.x) <= kMinScaleMagnitude || std::abs(transform_.scale.y) <= kMinScaleMagnitude ||
+       std::abs(transform_.scale.z) <= kMinScaleMagnitude) {
+      Logger::Fail("Invalid camera transform: translation must be finite and scale must be invertible");
    }
-
-   auto finiteOr = [](float value, float fallback) { return std::isfinite(value) ? value : fallback; };
-   transform_.translation = {finiteOr(transform_.translation.x, 0.0f), finiteOr(transform_.translation.y, 0.0f),
-      finiteOr(transform_.translation.z, 0.0f)};
-   auto invertibleScale = [&](float value) { return std::abs(value) > 1.0e-6f ? finiteOr(value, 1.0f) : 1.0f; };
-   transform_.scale = {
-      invertibleScale(transform_.scale.x), invertibleScale(transform_.scale.y), invertibleScale(transform_.scale.z)};
 
    // TransformのrotationSourceに基づいてワールド行列を計算
    Matrix4x4 scaleMatrix = MakeScaleMatrix(transform_.scale);
@@ -113,7 +114,19 @@ void Camera::Update() {
 }
 
 void Camera::ApplyState(const CameraState& state) {
-   if (!state.transform.IsFinite()) return;
+   if (!state.transform.IsFinite()) {
+      Logger::Fail("Cannot apply a non-finite camera transform");
+   }
+
+   if (state.hasViewMatrixOverride) {
+      for (const auto& row : state.viewMatrixOverride.m) {
+         for (float element : row) {
+            if (!std::isfinite(element)) {
+               Logger::Fail("Camera view matrix override contains a non-finite value");
+            }
+         }
+      }
+   }
 
    fovY_ = state.fov;
    nearClip_ = state.nearClip;
@@ -127,15 +140,7 @@ void Camera::ApplyState(const CameraState& state) {
    }
 
    Update();
-   bool validOverride = state.hasViewMatrixOverride;
-
-   for (const auto& row : state.viewMatrixOverride.m) {
-      for (float element : row) {
-         validOverride &= std::isfinite(element);
-      }
-   }
-
-   if (validOverride) {
+   if (state.hasViewMatrixOverride) {
       viewMatrix_ = state.viewMatrixOverride;
       viewProjectionMatrix_ = viewMatrix_ * GetProjectionMatrix();
       SetCameraForGpuData();
@@ -184,10 +189,12 @@ Vector3 Camera::GetForward() const {
 namespace GameEngine {
 
 void Camera::SetTransform(const Transform& transform) {
-   if (transform.IsFinite()) {
-      transform_ = transform;
-      Update();
+   if (!transform.IsFinite()) {
+      Logger::Fail("Camera transform must be finite");
    }
+
+   transform_ = transform;
+   Update();
 }
 
 void Camera::SetPosition(const Vector3& position) {
