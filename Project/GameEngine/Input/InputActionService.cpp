@@ -30,7 +30,7 @@ const char* ToString(InputActionType type) {
          return "Axis2D";
    }
 
-   return "Button";
+   Logger::Fail("Unknown input action type: " + std::to_string(static_cast<std::int32_t>(type)));
 }
 
 bool TryParseActionType(const std::string& text, InputActionType& type) {
@@ -96,38 +96,31 @@ void InputActionService::Initialize(IInputBackend& backend, const InputActionCon
    backend_ = &backend;
    overridePath_ = configuration.overridePath;
 
-   // ファイル定義を読み込めない場合にも、アプリケーションが指定した操作を利用できるようにする。
    actions_.clear();
-   for (const auto& definition : configuration.fallback) {
-      actions_.insert_or_assign(MakeKey(definition.map, definition.id), ActionDefinition{definition});
-   }
-
-   const auto& defaultPath = configuration.defaultPath;
-   if (!defaultPath.empty() && !LoadDefinitions(defaultPath, true)) {
-      Logger::Warning("Input actions default file is missing or invalid; built-in defaults are active: " +
-                      defaultPath.generic_string());
+   if (!configuration.defaultPath.empty()) {
+      LoadDefinitions(configuration.defaultPath, true);
    }
 
    defaults_ = actions_;
    LoadOverrides();
 }
 
-bool InputActionService::LoadDefinitions(const std::filesystem::path& path, bool replaceAll) {
+void InputActionService::LoadDefinitions(const std::filesystem::path& path, bool replaceAll) {
    std::ifstream stream(path);
 
    if (!stream) {
-      return false;
+      Logger::Fail("Cannot open input action settings: " + path.generic_string());
    }
 
    json root;
    try {
       stream >> root;
-   } catch (const json::exception&) {
-      return false;
+   } catch (const json::exception& error) {
+      Logger::Fail("Invalid input action JSON: " + path.generic_string() + ": " + error.what());
    }
 
    if (!root.contains("maps") || !root["maps"].is_object()) {
-      return false;
+      Logger::Fail("Missing or invalid input action maps: " + path.generic_string());
    }
 
    // 読み込み途中で不正項目が見つかっても現在の設定を壊さないよう、作業用コピーへ適用する。
@@ -137,23 +130,24 @@ bool InputActionService::LoadDefinitions(const std::filesystem::path& path, bool
 
    for (const auto& [mapName, mapData] : root["maps"].items()) {
       if (!mapData.is_object()) {
-         continue;
+         Logger::Fail("Invalid input action map: " + path.generic_string() + ": " + mapName);
       }
 
       for (const auto& [actionId, actionData] : mapData.items()) {
+         const std::string actionContext = path.generic_string() + ": " + mapName + "/" + actionId;
+
          if (!actionData.is_object()) {
-            continue;
+            Logger::Fail("Invalid input action: " + actionContext);
          }
 
          const std::string key = MakeKey(mapName, actionId);
          auto existing = actions_.find(key);
 
          if (!replaceAll && existing == actions_.end()) {
-            Logger::Warning("Ignoring unknown input action override: " + mapName + "/" + actionId);
-            continue;
+            Logger::Fail("Unknown input action override: " + actionContext);
          }
 
-         // 各項目を既存定義から始めることで、不正な項目だけフォールバック値へ戻せる。
+         // 上書きで省略された任意項目は既定のアクション定義を引き継ぐ。
          ActionDefinition action = existing != actions_.end() ? existing->second : ActionDefinition{};
          action.map = mapName;
          action.id = actionId;
@@ -162,8 +156,7 @@ bool InputActionService::LoadDefinitions(const std::filesystem::path& path, bool
          if (!actionData.contains("type") || !actionData["type"].is_string() ||
              !TryParseActionType(actionData["type"].get<std::string>(), type) || !actionData.contains("bindings") ||
              !actionData["bindings"].is_array()) {
-            Logger::Warning("Invalid input action; retaining fallback: " + mapName + "/" + actionId);
-            continue;
+            Logger::Fail("Invalid input action type or bindings: " + actionContext);
          }
 
          // 配列全体を検証してから置換する。途中まで有効な配列は操作体系を予測不能にするため採用しない。
@@ -182,13 +175,11 @@ bool InputActionService::LoadDefinitions(const std::filesystem::path& path, bool
          }
 
          if (!valid || bindings.empty()) {
-            Logger::Warning("Invalid bindings; retaining fallback: " + mapName + "/" + actionId);
-            continue;
+            Logger::Fail("Invalid input action bindings: " + actionContext);
          }
 
          if (actionData.contains("deadZone") && !actionData.at("deadZone").is_number()) {
-            Logger::Warning("Invalid dead zone; retaining fallback: " + mapName + "/" + actionId);
-            continue;
+            Logger::Fail("Invalid input action dead zone: " + actionContext);
          }
 
          action.type = type;
@@ -196,9 +187,12 @@ bool InputActionService::LoadDefinitions(const std::filesystem::path& path, bool
             actionData.contains("deadZone") ? actionData.at("deadZone").get<float>() : action.deadZone;
 
          // 1.0ではスティックが決して反応しなくなるため、上限にはわずかな余裕を残す。
-         action.deadZone = std::isfinite(configuredDeadZone)
-                              ? std::clamp(configuredDeadZone, 0.0f, kMaximumStickDeadZone)
-                              : action.deadZone;
+         if (!std::isfinite(configuredDeadZone) || configuredDeadZone < 0.0f ||
+             configuredDeadZone > kMaximumStickDeadZone) {
+            Logger::Fail("Input action dead zone out of range: " + actionContext);
+         }
+
+         action.deadZone = configuredDeadZone;
          action.bindings = std::move(bindings);
          loadedActions[key] = std::move(action);
          ++appliedCount;
@@ -206,7 +200,7 @@ bool InputActionService::LoadDefinitions(const std::filesystem::path& path, bool
    }
 
    if (replaceAll && appliedCount == 0) {
-      return false;
+      Logger::Fail("Input action settings define no actions: " + path.generic_string());
    }
 
    actions_ = std::move(loadedActions);
@@ -214,8 +208,6 @@ bool InputActionService::LoadDefinitions(const std::filesystem::path& path, bool
    if (rebindSession_.IsActive()) {
       rebindSession_.Cancel();
    }
-
-   return true;
 }
 
 void InputActionService::Update() {
@@ -450,16 +442,10 @@ bool InputActionService::LoadOverrides() {
    if (overridePath_.empty()) return false;
 
    if (!std::filesystem::exists(overridePath_)) {
-      Logger::Info("Input override file is missing; defaults are active: " + overridePath_.generic_string());
       return false;
    }
 
-   if (!LoadDefinitions(overridePath_, false)) {
-      Logger::Warning(
-         "Input override file is invalid; defaults are active per action: " + overridePath_.generic_string());
-      return false;
-   }
-
+   LoadDefinitions(overridePath_, false);
    return true;
 }
 

@@ -98,6 +98,7 @@ private:
    bool multiViewportEnabled_ = true; // マルチビューポート有効フラグ
    bool resetLayoutRequested_ = false; ///< 次のフレームでドッキング配置を初期化する要求。
    HWND windowHandle_ = nullptr; // Windowが所有する非所有ハンドル
+   ImGuiStyle unscaledStyle_;    ///< DPI倍率を掛ける前の基準スタイル。
    float uiScale_ = 1.0f;        ///< エディターUIの基準サイズへ掛ける倍率。
    ImGuiHelper::EditorLanguage language_ = ImGuiHelper::EditorLanguage::Japanese; ///< エディター表示言語。
 };

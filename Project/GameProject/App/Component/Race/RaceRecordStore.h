@@ -19,7 +19,7 @@ public:
    const std::vector<float>& GetBestTimes() const { return bestTimes_; }
 
 private:
-   static void LogRecordWarning(const std::string& file, const std::string& message);
+   static void LogRecordError(const std::string& file, const std::string& message);
    std::vector<float> bestTimes_;
 };
 }

@@ -5,6 +5,7 @@
 #endif
 #include <cstdint>
 #include "GameEngine/Utility/JsonValue.h"
+#include "GameEngine/Utility/Logger.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Scene/SceneWorld.h"
@@ -23,12 +24,9 @@ nlohmann::json SerializeQuaternion(const Quaternion& value) {
    return nlohmann::json::array({value.x, value.y, value.z, value.w});
 }
 
-Quaternion DeserializeQuaternion(const nlohmann::json& data, const Quaternion& fallback) {
-   if (!data.is_array() || data.size() != 4) {
-      return fallback;
-   }
-
-   return Quaternion{data[0].get<float>(), data[1].get<float>(), data[2].get<float>(), data[3].get<float>()};
+Quaternion DeserializeQuaternion(const nlohmann::json& data) {
+   const auto value = GameEngine::JsonValue::ReadVector4(data);
+   return {value.x, value.y, value.z, value.w};
 }
 
 nlohmann::json SerializeMatrix4x4(const Matrix4x4& matrix) {
@@ -47,23 +45,19 @@ nlohmann::json SerializeMatrix4x4(const Matrix4x4& matrix) {
    return rows;
 }
 
-Matrix4x4 DeserializeMatrix4x4(const nlohmann::json& data, const Matrix4x4& fallback) {
-   if (!data.is_array() || data.size() != 4) {
-      return fallback;
+Matrix4x4 DeserializeMatrix4x4(const nlohmann::json& data) {
+   Matrix4x4 matrix{};
+
+   if (!data.is_array() || data.size() != std::size(matrix.m)) {
+      Logger::Fail("Invalid camera view matrix: expected four rows");
    }
 
-   // 一行でも形が不正なら行列全体をfallbackへ戻す。部分更新されたView行列は
-   // 逆行列計算やカメラ姿勢を壊すため、要素単位の復元は行わない。
-   Matrix4x4 matrix = fallback;
-
-   for (std::int32_t row = 0; row < 4; ++row) {
-      if (!data[row].is_array() || data[row].size() != 4) {
-         return fallback;
-      }
-
-      for (std::int32_t column = 0; column < 4; ++column) {
-         matrix.m[row][column] = data[row][column].get<float>();
-      }
+   for (size_t row = 0; row < std::size(matrix.m); ++row) {
+      const auto values = GameEngine::JsonValue::ReadVector4(data[row]);
+      matrix.m[row][0] = values.x;
+      matrix.m[row][1] = values.y;
+      matrix.m[row][2] = values.z;
+      matrix.m[row][3] = values.w;
    }
 
    return matrix;
@@ -83,24 +77,25 @@ nlohmann::json SerializeTransform(const Transform& transform) {
 
 Transform DeserializeTransform(const nlohmann::json& data, const Transform& fallback) {
    if (!data.is_object()) {
-      return fallback;
+      Logger::Fail("Invalid camera transform: expected an object");
    }
 
    Transform transform = fallback;
    transform.translation = data.contains("translation")
-                              ? GameEngine::JsonValue::ReadVector3(data.at("translation"), transform.translation)
+                              ? GameEngine::JsonValue::ReadVector3(data.at("translation"))
                               : transform.translation;
    transform.scale =
-      data.contains("scale") ? GameEngine::JsonValue::ReadVector3(data.at("scale"), transform.scale) : transform.scale;
+      data.contains("scale") ? GameEngine::JsonValue::ReadVector3(data.at("scale")) : transform.scale;
 
    const std::string rotationSource =
       data.value("rotationSource", transform.IsUsingQuaternion() ? "quaternion" : "euler");
 
    if (rotationSource == "quaternion" && data.contains("rotationQuaternion")) {
-      transform.SetRotationQuaternion(
-         DeserializeQuaternion(data.at("rotationQuaternion"), transform.GetActiveQuaternion()));
+      transform.SetRotationQuaternion(DeserializeQuaternion(data.at("rotationQuaternion")));
    } else if (rotationSource == "euler" && data.contains("rotation")) {
-      transform.SetRotationEuler(GameEngine::JsonValue::ReadVector3(data.at("rotation"), transform.GetActiveEuler()));
+      transform.SetRotationEuler(GameEngine::JsonValue::ReadVector3(data.at("rotation")));
+   } else if (rotationSource != "euler" && rotationSource != "quaternion") {
+      Logger::Fail("Invalid camera rotationSource: " + rotationSource);
    }
 
    return transform;
@@ -114,7 +109,7 @@ nlohmann::json SerializeCameraState(const CameraState& state) {
 
 CameraState DeserializeCameraState(const nlohmann::json& data, const CameraState& fallback) {
    if (!data.is_object()) {
-      return fallback;
+      Logger::Fail("Invalid camera state: expected an object");
    }
 
    // 欠けている項目は現在値を維持し、旧バージョンの部分的なCameraStateも適用できるようにする。
@@ -124,24 +119,14 @@ CameraState DeserializeCameraState(const nlohmann::json& data, const CameraState
       state.transform = DeserializeTransform(data.at("transform"), state.transform);
    }
 
-   if (data.contains("fov") && data.at("fov").is_number()) {
-      state.fov = data.at("fov").get<float>();
-   }
-
-   if (data.contains("nearClip") && data.at("nearClip").is_number()) {
-      state.nearClip = data.at("nearClip").get<float>();
-   }
-
-   if (data.contains("farClip") && data.at("farClip").is_number()) {
-      state.farClip = data.at("farClip").get<float>();
-   }
-
-   if (data.contains("hasViewMatrixOverride") && data.at("hasViewMatrixOverride").is_boolean()) {
-      state.hasViewMatrixOverride = data.at("hasViewMatrixOverride").get<bool>();
-   }
+   state.fov = GameEngine::JsonValue::ReadFloat(data, "fov", state.fov);
+   state.nearClip = GameEngine::JsonValue::ReadFloat(data, "nearClip", state.nearClip);
+   state.farClip = GameEngine::JsonValue::ReadFloat(data, "farClip", state.farClip);
+   state.hasViewMatrixOverride =
+      GameEngine::JsonValue::ReadBool(data, "hasViewMatrixOverride", state.hasViewMatrixOverride);
 
    if (data.contains("viewMatrixOverride")) {
-      state.viewMatrixOverride = DeserializeMatrix4x4(data.at("viewMatrixOverride"), state.viewMatrixOverride);
+      state.viewMatrixOverride = DeserializeMatrix4x4(data.at("viewMatrixOverride"));
    }
 
    return state;

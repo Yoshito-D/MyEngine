@@ -69,7 +69,7 @@ void LookAtAim::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool
    damping_ = GameEngine::JsonValue::ReadFloat(data, "damping", damping_);
 
    if (data.contains("offset")) {
-      offset_ = GameEngine::JsonValue::ReadVector3(data.at("offset"), offset_);
+      offset_ = GameEngine::JsonValue::ReadVector3(data.at("offset"));
    }
 }
 

@@ -317,7 +317,7 @@ void PlanetSwitcher::ReadParameters(const nlohmann::json& data, [[maybe_unused]]
    }
 
    if (data.contains("obbHalfExtents")) {
-      obbHalfExtents = GameEngine::JsonValue::ReadVector3(data.at("obbHalfExtents"), obbHalfExtents);
+      obbHalfExtents = GameEngine::JsonValue::ReadVector3(data.at("obbHalfExtents"));
    }
 
    if (initializeRuntime) {

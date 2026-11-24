@@ -3,6 +3,7 @@
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #include "GameEngine/Math/Functions/MathConstants.h"
+#include "GameEngine/Utility/Logger.h"
 #include "imgui.h"
 #include "ImGuizmo.h"
 
@@ -204,18 +205,13 @@ EditorLanguage GetLanguage() {
 
 const char* Localize(const LocalizedText& text) {
    const char* selected = gLanguage == EditorLanguage::Japanese ? text.japanese : text.english;
-   const char* fallback = gLanguage == EditorLanguage::Japanese ? text.english : text.japanese;
 
-   // 選択言語が未設定でも反対言語へ退避し、ラベルやImGui IDが空になるのを避ける。
-   if (selected != nullptr && selected[0] != '\0') {
-      return selected;
+   if (selected == nullptr || selected[0] == '\0') {
+      const char* label = gLanguage == EditorLanguage::Japanese ? text.english : text.japanese;
+      Logger::Fail(std::string("Missing editor translation: ") + (label ? label : ""), Logger::LogChannel::Editor);
    }
 
-   if (fallback != nullptr && fallback[0] != '\0') {
-      return fallback;
-   }
-
-   return "";
+   return selected;
 }
 
 const char* LanguageDisplayName(EditorLanguage language) {

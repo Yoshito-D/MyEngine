@@ -19,8 +19,8 @@ public:
    /// @brief 全体・BGM・SE音量を読み込む。ファイルがない場合や不正な場合は現在の音量を保つ。
    /// @details ポーズ画面を持たないタイトルの音声にも反映するため、シーン読込前に呼び出す。
    /// @param audio 読み込んだ0～1の音量を適用する音声サービス。
-   /// @return 読み込みに成功した場合、または初回起動でファイルがない場合はtrue。
-   static bool LoadAudioSettings(GameEngine::Audio& audio);
+   /// @note 初回起動では既定値を使い、既存ファイルの読み込みに失敗した場合はログを記録して例外にする。
+   static void LoadAudioSettings(GameEngine::Audio& audio);
 
    /// @brief 共通の音量設定を開く。表示要求が受理された場合はtrueを返す。
    bool OpenSettings();

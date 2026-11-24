@@ -29,11 +29,10 @@ struct InputActionDefinition {
    float deadZone = 0.24f;                        ///< スティックを中立とみなす範囲。
 };
 
-/// @brief ファイル設定と、設定ファイルを用意できない場合にも使う既定アクション。
+/// @brief 必須の既定アクション設定と、省略可能なユーザー設定のパス。
 struct InputActionConfiguration {
-   std::filesystem::path defaultPath;               ///< 既定アクション設定ファイル。空なら読み込まない。
-   std::filesystem::path overridePath;              ///< ユーザー設定ファイル。空なら読み書きしない。
-   std::span<const InputActionDefinition> fallback; ///< 初期化中にコピーする既定アクション。
+   std::filesystem::path defaultPath;  ///< 既定アクション設定ファイル。アクションを使用しない場合は空。
+   std::filesystem::path overridePath; ///< ユーザー設定ファイル。空なら読み書きしない。
 };
 
 /// @brief 一フレーム分の入力アクション状態。
@@ -118,7 +117,7 @@ private:
       std::array<InputActionState, kMaxPlayers> states{}; ///< プレイヤーごとの評価済み状態。
    };
 
-   bool LoadDefinitions(const std::filesystem::path& path, bool replaceAll);
+   void LoadDefinitions(const std::filesystem::path& path, bool replaceAll);
    ActionDefinition* FindAction(const std::string& actionMap, const std::string& actionId);
    const ActionDefinition* FindAction(const std::string& actionMap, const std::string& actionId) const;
    void UpdateRebind();

@@ -1,4 +1,5 @@
 #include "GameEngine/Input/InputBinding.h"
+#include "GameEngine/Utility/Logger.h"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -56,7 +57,7 @@ const char* ToString(InputBindingAxis axis) {
          return "Y";
    }
 
-   return "Both";
+   Logger::Fail("Unknown input binding axis: " + std::to_string(static_cast<int>(axis)));
 }
 
 bool TryParseBindingAxis(const std::string& text, InputBindingAxis& axis) {
@@ -85,7 +86,7 @@ const char* ToString(KeyCode key) {
       }
    }
 
-   return "Space";
+   Logger::Fail("Unknown key in input binding: " + std::to_string(static_cast<int>(key)));
 }
 
 bool TryParseKey(const std::string& text, KeyCode& key) {
@@ -106,7 +107,7 @@ const char* ToString(GamePadButton button) {
       }
    }
 
-   return "A";
+   Logger::Fail("Unknown gamepad button in input binding: " + std::to_string(static_cast<int>(button)));
 }
 
 bool TryParseGamePadButton(const std::string& text, GamePadButton& button) {

@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Utility/Logger.h"
 #include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameEngine/Object/Component/Rendering/MeshComponent.h"
@@ -29,7 +30,7 @@ const char* ToSourceTypeName(GameEngine::MeshComponent::SourceType sourceType) {
 }
 
 GameEngine::MeshComponent::SourceType ParseSourceType(
-   const nlohmann::json& value, GameEngine::MeshComponent::SourceType fallback) {
+   const nlohmann::json& value) {
    if (value.is_string()) {
       const std::string name = value.get<std::string>();
 
@@ -42,7 +43,7 @@ GameEngine::MeshComponent::SourceType ParseSourceType(
       }
    }
 
-   return fallback;
+   Logger::Fail("Invalid sourceType value: " + value.dump());
 }
 
 const char* ToPrimitiveTypeName(GameEngine::MeshComponent::PrimitiveType primitiveType) {
@@ -51,14 +52,14 @@ const char* ToPrimitiveTypeName(GameEngine::MeshComponent::PrimitiveType primiti
 }
 
 GameEngine::MeshComponent::PrimitiveType ParsePrimitiveType(
-   const nlohmann::json& value, GameEngine::MeshComponent::PrimitiveType fallback) {
+   const nlohmann::json& value) {
    if (value.is_string()) {
       if (const auto* definition = GameEngine::PrimitiveMeshFactory::Find(value.get<std::string>())) {
          return definition->type;
       }
    }
 
-   return fallback;
+   Logger::Fail("Invalid primitiveType value: " + value.dump());
 }
 
 bool ReadVector2(const nlohmann::json& data, const char* key, GameEngine::Vector2& out) {
@@ -95,7 +96,7 @@ const char* ToPlaneOrientationName(GameEngine::MeshComponent::PlaneOrientation o
 }
 
 GameEngine::MeshComponent::PlaneOrientation ParsePlaneOrientation(
-   const nlohmann::json& value, GameEngine::MeshComponent::PlaneOrientation fallback) {
+   const nlohmann::json& value) {
    if (value.is_string()) {
       const std::string name = value.get<std::string>();
 
@@ -112,7 +113,7 @@ GameEngine::MeshComponent::PlaneOrientation ParsePlaneOrientation(
       }
    }
 
-   return fallback;
+   Logger::Fail("Invalid planeOrientation value: " + value.dump());
 }
 
 }
@@ -235,7 +236,7 @@ void MeshComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] 
    if (!data.is_object()) return;
 
    if (data.contains("sourceType")) {
-      sourceType_ = ParseSourceType(data.at("sourceType"), sourceType_);
+      sourceType_ = ParseSourceType(data.at("sourceType"));
    }
 
    if (data.contains("reverseFaces") && data.at("reverseFaces").is_boolean()) {
@@ -254,11 +255,11 @@ void MeshComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] 
    }
 
    if (data.contains("primitiveType")) {
-      primitiveType_ = ParsePrimitiveType(data.at("primitiveType"), primitiveType_);
+      primitiveType_ = ParsePrimitiveType(data.at("primitiveType"));
    }
 
    if (data.contains("planeOrientation")) {
-      planeOrientation_ = ParsePlaneOrientation(data.at("planeOrientation"), planeOrientation_);
+      planeOrientation_ = ParsePlaneOrientation(data.at("planeOrientation"));
    }
 
    Vector2 value = quadSize_;

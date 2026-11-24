@@ -163,7 +163,6 @@ private:
    bool controllerEnabledWhenPlaying_ = true; ///< シーン読込時の走行制御の有効状態。
    bool gravityEnabledWhenPlaying_ = true;    ///< シーン読込時の物理の有効状態。
    bool completionTransitionAttempted_ = false;        ///< 二重遷移の抑止。
-   bool referencesUnavailable_ = false; ///< 参照不足で一時停止しており、復旧時に現在課題の設定を戻す必要があるか。
 };
 
 } // namespace App

@@ -582,19 +582,19 @@ void GravityFollowCamera::ReadParameters(const nlohmann::json& data, [[maybe_unu
    SetDistance(GameEngine::JsonValue::ReadFloat(data, "distance", distance_));
 
    if (data.contains("flatForward")) {
-      flatForward_ = GameEngine::JsonValue::ReadVector3(data.at("flatForward"), flatForward_);
+      flatForward_ = GameEngine::JsonValue::ReadVector3(data.at("flatForward"));
    }
 
    if (data.contains("gravityUp")) {
-      gravityUp_ = GameEngine::JsonValue::ReadVector3(data.at("gravityUp"), gravityUp_);
+      gravityUp_ = GameEngine::JsonValue::ReadVector3(data.at("gravityUp"));
    }
 
    if (data.contains("currentGravityUp")) {
-      currentGravityUp_ = GameEngine::JsonValue::ReadVector3(data.at("currentGravityUp"), currentGravityUp_);
+      currentGravityUp_ = GameEngine::JsonValue::ReadVector3(data.at("currentGravityUp"));
    }
 
    if (data.contains("pivotTarget")) {
-      pivotTarget_ = GameEngine::JsonValue::ReadVector3(data.at("pivotTarget"), pivotTarget_);
+      pivotTarget_ = GameEngine::JsonValue::ReadVector3(data.at("pivotTarget"));
    }
 
    playerSpeed_ = GameEngine::JsonValue::ReadFloat(data, "playerSpeed", playerSpeed_);
@@ -608,17 +608,17 @@ void GravityFollowCamera::ReadParameters(const nlohmann::json& data, [[maybe_unu
    isSpeedInitialized_ = GameEngine::JsonValue::ReadBool(data, "isSpeedInitialized", isSpeedInitialized_);
 
    if (data.contains("currentEyeOffset")) {
-      currentEyeOffset_ = GameEngine::JsonValue::ReadVector3(data.at("currentEyeOffset"), currentEyeOffset_);
+      currentEyeOffset_ = GameEngine::JsonValue::ReadVector3(data.at("currentEyeOffset"));
    }
 
    isEyeInitialized_ = GameEngine::JsonValue::ReadBool(data, "isEyeInitialized", isEyeInitialized_);
 
    if (data.contains("cachedRight")) {
-      cachedRight_ = GameEngine::JsonValue::ReadVector3(data.at("cachedRight"), cachedRight_);
+      cachedRight_ = GameEngine::JsonValue::ReadVector3(data.at("cachedRight"));
    }
 
    if (data.contains("cachedUp")) {
-      cachedUp_ = GameEngine::JsonValue::ReadVector3(data.at("cachedUp"), cachedUp_);
+      cachedUp_ = GameEngine::JsonValue::ReadVector3(data.at("cachedUp"));
    }
 
    if (initializeRuntime) {

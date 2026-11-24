@@ -220,41 +220,49 @@ void GraphicsDevice::InitializeDXGIDevice([[maybe_unused]] bool enableDebugLayer
    }
 #endif
 
-   HRESULT result = CreateDXGIFactory1(IID_PPV_ARGS(dxgiFactory_.GetAddressOf()));
-   assert(SUCCEEDED(result));
+   const HRESULT factoryResult = CreateDXGIFactory1(IID_PPV_ARGS(dxgiFactory_.GetAddressOf()));
+
+   if (FAILED(factoryResult)) {
+      Logger::Fail(std::format("Cannot create DXGI factory: HRESULT=0x{:08X}", static_cast<UINT>(factoryResult)));
+   }
 
    Microsoft::WRL::ComPtr<IDXGIAdapter4> adapter;
 
    // 列挙順を高性能GPU優先とし、WARP等のソフトウェアアダプターを除外する。
-   for (UINT i = 0; dxgiFactory_->EnumAdapterByGpuPreference(i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
-                       IID_PPV_ARGS(adapter.GetAddressOf())) != DXGI_ERROR_NOT_FOUND;
-      ++i) {
+   for (UINT index = 0; !adapter; ++index) {
+      Microsoft::WRL::ComPtr<IDXGIAdapter4> candidate;
+      const HRESULT result = dxgiFactory_->EnumAdapterByGpuPreference(
+         index, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(candidate.GetAddressOf()));
 
-      DXGI_ADAPTER_DESC3 desc;
-      adapter->GetDesc3(&desc);
+      if (result == DXGI_ERROR_NOT_FOUND) {
+         Logger::Fail("No hardware graphics adapter found");
+      }
+
+      if (FAILED(result)) {
+         Logger::Fail(std::format("Cannot enumerate graphics adapters: HRESULT=0x{:08X}", static_cast<UINT>(result)));
+      }
+
+      DXGI_ADAPTER_DESC3 desc{};
+      const HRESULT descResult = candidate->GetDesc3(&desc);
+
+      if (FAILED(descResult)) {
+         Logger::Fail(std::format("Cannot read graphics adapter info: HRESULT=0x{:08X}", static_cast<UINT>(descResult)));
+      }
 
       if (!(desc.Flags & DXGI_ADAPTER_FLAG3_SOFTWARE)) {
          Logger::Info(std::format(L"Use Adapter: {}", desc.Description));
-         break;
+         adapter = std::move(candidate);
       }
    }
 
-   assert(adapter != nullptr);
+   // D3D12CreateDeviceには使用できる最小機能レベルを指定する。
+   constexpr D3D_FEATURE_LEVEL kMinimumFeatureLevel = D3D_FEATURE_LEVEL_12_0;
+   const HRESULT deviceResult =
+      D3D12CreateDevice(adapter.Get(), kMinimumFeatureLevel, IID_PPV_ARGS(device_.GetAddressOf()));
 
-   // 機能レベルとログ出力用の文字列
-   D3D_FEATURE_LEVEL featureLevels[] = {D3D_FEATURE_LEVEL_12_2, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0};
-   const char* featureLevelStrings[] = {"12.2", "12.1", "12.0"};
-
-   // 同じ物理アダプター上で利用可能な最高機能レベルを選び、下位GPUにもフォールバックする。
-   for (size_t i = 0; i < _countof(featureLevels); ++i) {
-      if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), featureLevels[i], IID_PPV_ARGS(device_.GetAddressOf())))) {
-         Logger::Info(std::format("FeatureLevel : {}", featureLevelStrings[i]));
-         break;
-      }
-   }
-
-   if (!device_) {
-      throw std::runtime_error("Failed to create D3D12 Device.");
+   if (FAILED(deviceResult)) {
+      Logger::Fail(std::format("Cannot create D3D12 device (minimum feature level 12.0): HRESULT=0x{:08X}",
+         static_cast<UINT>(deviceResult)));
    }
 
    Logger::Info("Complete create D3D12Device!!!");

@@ -66,6 +66,11 @@ void Logger::WriteLogEntry(
    instance.Log(message, level, channel, location);
 }
 
+void Logger::Fail(const std::string& message, LogChannel channel, std::source_location location) {
+   Error(message, channel, location);
+   throw std::runtime_error(message);
+}
+
 void Logger::InitializeInternal() {
    // 出力中にストリームを差し替えないよう、再初期化全体を通常の書き込みと同じMutexで保護する。
    std::lock_guard<std::mutex> lock(logMutex_);

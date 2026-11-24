@@ -144,27 +144,24 @@ void RacePresentation::ApplyCountdownCameraPose(GameEngine::CinemachineBrain* br
    }
 }
 
-bool RacePresentation::BeginIntro(GameEngine::CinemachineBrain* brain, const StageIntroSettings& settings) {
+void RacePresentation::BeginIntro(GameEngine::CinemachineBrain* brain, const StageIntroSettings& settings) {
    RefreshPlayerReferences();
    auto* introCamera = world_ ? world_->FindVirtualCamera(settings.cameraId) : nullptr;
    auto* countdownCamera = cameraSwitcher_ ? cameraSwitcher_->GetSelectedCamera() : nullptr;
 
    if (!brain || !introCamera || !countdownCamera || introCamera == countdownCamera || introCamera->IsActive() ||
        !introCamera->GetComponents().empty() || !settings.IsValid()) {
-      Logger::Warning("Stage intro requires valid poses and a separate inactive camera without components.",
-         Logger::LogChannel::Game);
-      return false;
+      Logger::Fail("Invalid stage intro camera or poses: " + settings.cameraId, Logger::LogChannel::Game);
    }
 
    for (const auto* camera : brain->GetVirtualCameras()) {
       if (camera->IsActive() && camera->GetPriority() >= introCamera->GetPriority()) {
-         Logger::Warning("Stage intro camera priority must exceed other active cameras.", Logger::LogChannel::Game);
-         return false;
+         Logger::Fail("Stage intro camera must have higher priority: " + settings.cameraId, Logger::LogChannel::Game);
       }
    }
 
    if (!introSequence_.Begin(settings)) {
-      return false;
+      Logger::Fail("Could not begin stage intro: " + settings.cameraId, Logger::LogChannel::Game);
    }
 
    introCameraId_ = settings.cameraId;
@@ -186,7 +183,6 @@ bool RacePresentation::BeginIntro(GameEngine::CinemachineBrain* brain, const Sta
    introCamera->SetActive(true);
    brain->SetCameraMotionPaused(true);
    brain->Cut(introCamera);
-   return true;
 }
 
 StageIntroSequence::Frame RacePresentation::UpdateIntro(GameEngine::CinemachineBrain* brain, float deltaTime,
@@ -195,9 +191,8 @@ StageIntroSequence::Frame RacePresentation::UpdateIntro(GameEngine::CinemachineB
    auto* countdownCamera = world_ ? world_->FindVirtualCamera(countdownCameraId_) : nullptr;
 
    if (!brain || !introCamera || !countdownCamera || !world_->FindObjectById(playerObjectId_)) {
-      Logger::Warning("Stage intro references were removed; continuing with the countdown.", Logger::LogChannel::Game);
-      CancelIntro(brain);
-      return {};
+      Logger::Fail("Stage intro lost a required reference: " + introCameraId_ + ", " + countdownCameraId_,
+         Logger::LogChannel::Game);
    }
 
    const auto frame = introSequence_.Advance(deltaTime, inputTriggered, skipTriggered, sceneTransitioning);

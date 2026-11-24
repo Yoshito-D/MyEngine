@@ -1,4 +1,6 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Utility/JsonValue.h"
+#include "GameEngine/Utility/Logger.h"
 #include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameEngine/Object/Component/Audio/AudioSourceComponent.h"
@@ -24,18 +26,6 @@ const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFa
    GameEngine::AudioSourceComponent::kDisplayName,
    GameEngine::ObjectType::Generic | GameEngine::ObjectType::Model | GameEngine::ObjectType::Sprite |
       GameEngine::ObjectType::UIText);
-
-template <typename T> T Read(const nlohmann::json& data, const char* key, T fallback) {
-   if (!data.contains(key)) {
-      return fallback;
-   }
-
-   try {
-      return data.at(key).get<T>();
-   } catch (...) {
-      return fallback;
-   }
-}
 }
 
 namespace GameEngine {
@@ -253,13 +243,19 @@ void AudioSourceComponent::ReadParameters(const nlohmann::json& data, [[maybe_un
       }
 
       Slot slot;
-      slot.name = Read<std::string>(value, "name", "");
-      slot.clipAssetId = Read<std::string>(value, "clipAssetId", "");
-      slot.bus = Read<std::string>(value, "bus", "SE") == "UI" ? AudioBus::Ui : AudioBus::Se;
-      slot.volume = Read<float>(value, "volume", 1.0f);
-      slot.pitch = Read<float>(value, "pitch", 1.0f);
-      slot.loop = Read<bool>(value, "loop", false);
-      slot.playOnStart = Read<bool>(value, "playOnStart", false);
+      slot.name = JsonValue::ReadString(value, "name", "");
+      slot.clipAssetId = JsonValue::ReadString(value, "clipAssetId", "");
+      const std::string bus = JsonValue::ReadString(value, "bus", "SE");
+
+      if (bus != "SE" && bus != "UI") {
+         Logger::Fail("Invalid audio source bus: " + bus);
+      }
+
+      slot.bus = bus == "UI" ? AudioBus::Ui : AudioBus::Se;
+      slot.volume = JsonValue::ReadFloat(value, "volume", 1.0f);
+      slot.pitch = JsonValue::ReadFloat(value, "pitch", 1.0f);
+      slot.loop = JsonValue::ReadBool(value, "loop", false);
+      slot.playOnStart = JsonValue::ReadBool(value, "playOnStart", false);
 
       if (slot.name.empty() || std::find(names.begin(), names.end(), slot.name) != names.end() ||
           !std::isfinite(slot.volume) || !std::isfinite(slot.pitch) || slot.pitch <= 0.0f) {

@@ -81,17 +81,16 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData, Material* defaultM
    }
 
    SkinCluster* skinCluster = meshComponent ? meshComponent->GetSkinCluster() : nullptr;
-   const bool canUseSkinning = asset && skinningEnabled && skinCluster;
-
-   // アセット・ユーザー設定・GPU資源・Compute PSOがすべて揃った場合だけGPUスキニングへ入る。
-   // 不完全なロード状態では静的頂点へフォールバックし、描画全体を失わない。
+   const bool useSkinning = asset && skinningEnabled && skinCluster;
    const auto* skinningComputePipeline =
       psoManager_ ? psoManager_->GetComputePipeline(kSkinningComputePipelineName) : nullptr;
    auto* skinningComputeRootSignature = (psoManager_ && skinningComputePipeline)
                                            ? psoManager_->GetRootSignature(skinningComputePipeline->rootSignatureName)
                                            : nullptr;
-   const bool useSkinning = canUseSkinning && skinningComputePipeline && skinningComputePipeline->pipelineState &&
-                            skinningComputeRootSignature && skinCluster->HasPalette();
+   if (useSkinning && (!skinningComputePipeline || !skinningComputePipeline->pipelineState ||
+                         !skinningComputeRootSignature || !skinCluster->HasPalette())) {
+      Logger::Fail("Missing GPU skinning resources for model: " + model->GetObjectName());
+   }
 
    TransformationMatrix* transformationMatrix = model->GetTransformationMatrix();
 
@@ -142,25 +141,19 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData, Material* defaultM
          return false;
       }
 
-      std::string name = material->GetPipelineName().empty() ? "Object3D" : material->GetPipelineName();
+      const std::string name = material->GetPipelineName().empty() ? "Object3D" : material->GetPipelineName();
       auto report = [&](const std::string& reason) {
          const std::string key = model->GetObjectName() + ":" + std::to_string(slot) + ":" + name + ":" + reason;
 
          if (reportedFailures_.insert(key).second) {
-            Logger::Warning("[ModelRenderer] object=" + model->GetObjectName() + ", slot=" + std::to_string(slot) +
+            Logger::Error("[ModelRenderer] object=" + model->GetObjectName() + ", slot=" + std::to_string(slot) +
                             ", pipeline=" + name + ": " + reason);
          }
       };
       const auto* contract = psoManager_->GetModelPipeline(name);
 
       if (!contract) {
-         report("unavailable or incompatible; using Object3D");
-         name = "Object3D";
-         contract = psoManager_->GetModelPipeline(name);
-      }
-
-      if (!contract) {
-         return false;
+         Logger::Fail("Unavailable model pipeline " + name + " for " + model->GetObjectName());
       }
 
       if (contract->parameters.empty() && !material->GetParameters().empty()) {
@@ -189,7 +182,8 @@ void ModelRenderer::DrawModel(const ModelDrawData& modelData, Material* defaultM
          if (overrideTexture && !overrideTexture->GetMetadata().IsCubemap()) {
             texture = overrideTexture->GetTextureSrvHandleGPU();
          } else {
-            report("unresolved/non-2D texture; using draw texture");
+            Logger::Fail("Missing or non-2D texture " + materialComponent->GetTextureName(slot) + " for " +
+                         model->GetObjectName());
          }
       }
 

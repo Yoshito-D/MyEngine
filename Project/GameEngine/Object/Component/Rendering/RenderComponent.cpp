@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Utility/Logger.h"
 #include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameEngine/Object/Component/Rendering/RenderComponent.h"
@@ -30,7 +31,7 @@ const char* ToRenderSpaceName(GameEngine::RenderComponent::RenderSpace renderSpa
 }
 
 GameEngine::RenderComponent::RenderSpace ParseRenderSpace(
-   const nlohmann::json& value, GameEngine::RenderComponent::RenderSpace fallback) {
+   const nlohmann::json& value) {
    // 描画空間は正規の保存名から解決する。
    if (value.is_string()) {
       const std::string name = value.get<std::string>();
@@ -44,7 +45,7 @@ GameEngine::RenderComponent::RenderSpace ParseRenderSpace(
       }
    }
 
-   return fallback;
+   Logger::Fail("Invalid renderSpace value: " + value.dump());
 }
 }
 
@@ -87,7 +88,7 @@ void RenderComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]
    }
 
    if (data.contains("renderSpace")) {
-      renderSpace = ParseRenderSpace(data.at("renderSpace"), renderSpace);
+      renderSpace = ParseRenderSpace(data.at("renderSpace"));
    }
 
    Configure(DescribeSettings());

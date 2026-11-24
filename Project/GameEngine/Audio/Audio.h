@@ -44,7 +44,7 @@ public:
    /// @brief 所有者がFinalizeを呼ばなかった場合にデバイスリソースを解放する。
    ~Audio();
 
-   /// @brief Media FoundationとXAudio2を初期化する。失敗時は無音状態を維持する。
+   /// @brief Media FoundationとXAudio2を初期化する。失敗時はエラーログを記録し、例外を送出する。
    void Initialize();
 
    /// @brief デバイスとMedia Foundationの終了前に全ボイスを解放する。複数回呼び出しても安全。

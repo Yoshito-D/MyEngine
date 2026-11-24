@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Utility/Logger.h"
 #include "GameEngine/Object/Sprite/Sprite.h"
 #include "GameEngine/Graphics/Resources/Texture.h"
 #include "GameEngine/Object/Component/Rendering/MaterialComponent.h"
@@ -39,7 +40,7 @@ const char* ToSpriteAnchorPointName(Sprite::AnchorPoint anchorPoint) {
    }
 }
 
-Sprite::AnchorPoint ParseSpriteAnchorPoint(const nlohmann::json& value, Sprite::AnchorPoint fallback) {
+Sprite::AnchorPoint ParseSpriteAnchorPoint(const nlohmann::json& value) {
    if (value.is_string()) {
       // 現行形式はenumの並び替えに影響されない名前で保存する。
       const std::string name = value.get<std::string>();
@@ -81,7 +82,7 @@ Sprite::AnchorPoint ParseSpriteAnchorPoint(const nlohmann::json& value, Sprite::
       }
    }
 
-   return fallback;
+   Logger::Fail("Invalid screenAnchorPoint value: " + value.dump());
 }
 
 // MaterialManagerの名前検索で別Spriteの既定Materialを共有しないよう、プロセス中に重複しない自動名を割り当てる。
@@ -168,7 +169,7 @@ void Sprite::DeserializeObjectData(const nlohmann::json& objectData) {
 
    // Sprite専用状態はスクリーンアンカーだけで、寸法・反転・UVはComponentが復元する。
    if (data.contains("screenAnchorPoint")) {
-      SetScreenAnchorPoint(ParseSpriteAnchorPoint(data.at("screenAnchorPoint"), screenAnchorPoint_));
+      SetScreenAnchorPoint(ParseSpriteAnchorPoint(data.at("screenAnchorPoint")));
    }
 }
 

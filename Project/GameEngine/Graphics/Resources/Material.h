@@ -115,7 +115,7 @@ public:
    LightingMode GetLightingMode() const;
 
    /// @brief このマテリアルが使用するパイプライン名を設定
-   /// @param name パイプライン名（空文字列の場合はデフォルト "Object3D" にフォールバック）
+   /// @param name パイプライン名（空文字列は既定パイプライン "Object3D" を指定）
    void SetPipelineName(const std::string& name);
 
    /// @brief すべての値を独立したGPUバッファへディープコピーする。
@@ -138,7 +138,7 @@ public:
    const std::string& GetPipelineName() const override { return pipelineName_; }
 
    /// @brief マテリアルが優先するブレンドモードを設定
-   /// @param mode ブレンドモード（std::nullopt で DrawCommand のモードにフォールバック）
+   /// @param mode ブレンドモード（std::nullopt は DrawCommand のモードを使用）
    void SetBlendMode(std::optional<BlendMode> mode) { blendMode_ = mode; }
 
    /// @brief マテリアルが優先するブレンドモードを取得

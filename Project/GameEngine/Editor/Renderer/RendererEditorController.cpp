@@ -51,6 +51,9 @@ constexpr float kHierarchyDropGuideThickness = 2.0f;
 constexpr std::int32_t kEmptyCStringPayloadSize = 1;
 constexpr size_t kInspectorNameBufferSize = 256;
 constexpr const char* kFolderIconAssetId = "ic_system_folder_01_128";
+constexpr float kTimeScaleSliderWidthInEm = 8.0f;
+constexpr float kMinToolbarTimeScale = 0.0f;
+constexpr float kMaxToolbarTimeScale = 2.0f;
 
 void ContinueRowIfFits(float nextWidth) {
    const float right = ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x;
@@ -58,6 +61,10 @@ void ContinueRowIfFits(float nextWidth) {
    if (ImGui::GetItemRectMax().x + ImGui::GetStyle().ItemSpacing.x + nextWidth <= right) {
       ImGui::SameLine();
    }
+}
+
+float ButtonWidth(const char* caption) {
+   return ImGui::CalcTextSize(caption, nullptr, true).x + ImGui::GetStyle().FramePadding.x * 2.0f;
 }
 
 std::string ParentAssetId(const std::string& id) {
@@ -317,11 +324,11 @@ void RendererEditorController::ShowSceneDialogs() {
 }
 
 void RendererEditorController::ShowPlayModeToolbar() {
-   bool visible = EngineContext::GetEditorWindowVisibility("PlayModeToolbar", {"再生", "Toolbar"});
+   bool visible = EngineContext::GetEditorWindowVisibility("PlayModeToolbar", {"再生操作", "Playback"});
 
    if (!visible) return;
 
-   const std::string label = StableWindowLabel(Tr("再生", "Toolbar"), "PlayModeToolbar");
+   const std::string label = StableWindowLabel(Tr("再生操作", "Playback"), "PlayModeToolbar");
    const bool drawContents = ImGui::Begin(label.c_str(), &visible);
    EngineContext::SetEditorWindowVisibility("PlayModeToolbar", visible);
 
@@ -332,9 +339,17 @@ void RendererEditorController::ShowPlayModeToolbar() {
 
    auto* context = GetActiveEditorContext();
    const PlayMode mode = EngineContext::GetPlayMode();
+   const char* play = Tr("再生###Play", "Play###Play");
+   const char* resume = Tr("再開###Play", "Resume###Play");
+   const char* pause = Tr("一時停止###Pause", "Pause###Pause");
+   const char* stop = Tr("停止###Stop", "Stop###Stop");
+   const char* step = Tr("1フレーム進む###Step", "Step Frame###Step");
+
+   ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_Header));
    ImGui::BeginDisabled(mode == PlayMode::Playing);
 
-   if (ImGui::Button(mode == PlayMode::Paused ? "Resume" : "Play")) {
+   if (ImGui::Button(
+          mode == PlayMode::Paused ? resume : play, ImVec2(std::max(ButtonWidth(play), ButtonWidth(resume)), 0))) {
       if (context) {
          FinishInspectorEdit(*context);
       }
@@ -343,44 +358,61 @@ void RendererEditorController::ShowPlayModeToolbar() {
    }
 
    ImGui::EndDisabled();
-   ContinueRowIfFits(ImGui::CalcTextSize("Stop").x + ImGui::GetStyle().FramePadding.x * 2);
-   ImGui::BeginDisabled(mode == PlayMode::Edit);
+   ImGui::PopStyleColor();
 
-   if (ImGui::Button("Stop")) {
-      EngineContext::RequestPlayModeStop();
-   }
-
-   ImGui::EndDisabled();
-   ContinueRowIfFits(ImGui::CalcTextSize("Pause").x + ImGui::GetStyle().FramePadding.x * 2);
+   ContinueRowIfFits(ButtonWidth(pause));
    ImGui::BeginDisabled(mode != PlayMode::Playing);
 
-   if (ImGui::Button("Pause")) {
+   if (ImGui::Button(pause)) {
       EngineContext::RequestPlayModePause();
    }
 
    ImGui::EndDisabled();
-   ContinueRowIfFits(ImGui::CalcTextSize("Step").x + ImGui::GetStyle().FramePadding.x * 2);
+   ContinueRowIfFits(ButtonWidth(step));
    ImGui::BeginDisabled(mode != PlayMode::Paused);
 
-   if (ImGui::Button("Step")) {
+   if (ImGui::Button(step)) {
       EngineContext::RequestPlayModeStep();
    }
 
    ImGui::EndDisabled();
+   ContinueRowIfFits(ButtonWidth(stop));
+   ImGui::BeginDisabled(mode == PlayMode::Edit);
+
+   if (ImGui::Button(stop)) {
+      EngineContext::RequestPlayModeStop();
+   }
+
+   ImGui::EndDisabled();
+
+   const char* timeScaleLabel = Tr("再生速度", "Playback Speed");
+   const float sliderWidth = ImGui::GetFontSize() * kTimeScaleSliderWidthInEm;
+   const float timeScaleLabelWidth = ImGui::CalcTextSize(timeScaleLabel).x;
+   ContinueRowIfFits(timeScaleLabelWidth + ImGui::GetStyle().ItemSpacing.x + sliderWidth);
+   ImGui::AlignTextToFramePadding();
+   ImGui::TextUnformatted(timeScaleLabel);
+   ContinueRowIfFits(sliderWidth);
+   ImGui::SetNextItemWidth(std::max(1.0f, std::min(sliderWidth, ImGui::GetContentRegionAvail().x)));
    float timeScale = EngineContext::GetTimeScale();
 
-   if (ImGuiHelper::DrawSliderFloat(Tr("タイムスケール", "Time Scale"), timeScale, 0.0f, 2.0f)) {
+   if (ImGui::SliderFloat("##PlaybackTimeScale", &timeScale, kMinToolbarTimeScale, kMaxToolbarTimeScale, "%.2fx")) {
       EngineContext::SetTimeScale(timeScale);
    }
 
-   ImGui::Text("%s", EngineContext::GetPlayModeName());
-   ImGui::Text("%s: %.4f", Tr("デルタタイム", "Delta Time"), EngineContext::GetDeltaTime());
-   ImGui::Text("%s: %.4f", Tr("実時間デルタタイム", "Unscaled Delta Time"), EngineContext::GetUnscaledDeltaTime());
+   const char* editStatus = Tr("編集中", "Editing");
+   const char* playingStatus = Tr("再生中", "Playing");
+   const char* pausedStatus = Tr("一時停止中", "Paused");
+   ContinueRowIfFits(std::max(
+      {ImGui::CalcTextSize(editStatus).x, ImGui::CalcTextSize(playingStatus).x, ImGui::CalcTextSize(pausedStatus).x}));
+   ImGui::AlignTextToFramePadding();
+   const char* status = mode == PlayMode::Edit ? editStatus : mode == PlayMode::Playing ? playingStatus : pausedStatus;
+   ImGui::TextUnformatted(status);
    ImGui::End();
 }
 
 void RendererEditorController::ShowSceneManagementWindow() {
-   bool visible = EngineContext::GetEditorWindowVisibility("SceneManagement", {"シーン管理", "Scene Management"});
+   bool visible =
+      EngineContext::GetEditorWindowVisibility("SceneManagement", {"シーン管理", "Scene Management"}, false);
 
    if (!visible) return;
 
@@ -548,7 +580,9 @@ void RendererEditorController::ShowAssetWindow() {
    HandlePanelShortcuts(*context, true);
    DrawParameterAssetSummary();
 
-   if (ImGui::SmallButton("Rescan")) {
+   const char* rescanLabel = Tr("再スキャン", "Rescan");
+
+   if (ImGui::Button(rescanLabel)) {
       if (assetManager_ && assetManager_->GetTextureManager()) {
          assetManager_->GetTextureManager()->RefreshFailedLoads();
       }
@@ -557,9 +591,12 @@ void RendererEditorController::ShowAssetWindow() {
       editorAssetQueryKey_.clear();
    }
 
-   ContinueRowIfFits(ImGui::CalcTextSize("Grid").x + ImGui::GetStyle().FramePadding.x * 2);
+   const char* showGrid = Tr("グリッド表示###ViewMode", "Show Grid###ViewMode");
+   const char* showList = Tr("リスト表示###ViewMode", "Show List###ViewMode");
+   const float viewModeWidth = std::max(ButtonWidth(showGrid), ButtonWidth(showList));
+   ContinueRowIfFits(viewModeWidth);
 
-   if (ImGui::SmallButton(editorAssetIconView_ ? "Grid" : "List")) {
+   if (ImGui::Button(editorAssetIconView_ ? showList : showGrid, ImVec2(viewModeWidth, 0))) {
       editorAssetIconView_ = !editorAssetIconView_;
    }
 
@@ -696,7 +733,11 @@ void RendererEditorController::ShowAssetWindow() {
    const std::int32_t columns =
       editorAssetIconView_ ? std::max(1, static_cast<std::int32_t>(ImGui::GetContentRegionAvail().x / cellWidth)) : 1;
 
-   if (ImGui::BeginTable("AssetContents", columns)) {
+   if (editorVisibleAssets_.empty()) {
+      ImGui::TextWrapped("%s", editorAssetSearch_[0] || editorAssetTypeFilter_
+                                  ? Tr("条件に一致するアセットがありません", "No matching assets")
+                                  : Tr("このフォルダーにアセットはありません", "This folder is empty"));
+   } else if (ImGui::BeginTable("AssetContents", columns)) {
       for (const auto& id : editorVisibleAssets_) {
          if (const auto* entry = registry.FindAsset(id)) {
             ImGui::TableNextColumn();
@@ -734,36 +775,23 @@ void RendererEditorController::ShowAssetWindow() {
 
 void RendererEditorController::ShowHierarchyWindow() {
    const std::string windowLabel = StableWindowLabel(Tr("ヒエラルキー", "Hierarchy"), "Hierarchy");
-   ImGui::Begin(windowLabel.c_str());
+
+   if (!ImGui::Begin(windowLabel.c_str())) {
+      ImGui::End();
+      return;
+   }
 
    auto* editorContext = GetActiveEditorContext();
 
    if (editorContext) {
       HandlePanelShortcuts(*editorContext, false);
+
+      if (ImGui::Button(Tr("オブジェクトを追加###AddObject", "Add Object###AddObject"))) {
+         ImGui::OpenPopup("HierarchyCreateContext");
+      }
    }
 
-   // コンテキストがある場合は削除墓標で隠されたシーン所有物を除いた編集用一覧を正本にする。
-   auto sceneObjects = editorContext ? editorContext->CollectEditableObjects() : CollectSceneObjects();
-   auto particleSystems =
-      editorContext ? editorContext->CollectEditableParticleSystems() : std::vector<ParticleSystem*>{};
-
    if (editorContext && ImGui::BeginPopupContextWindow("HierarchyCreateContext", ImGuiPopupFlags_MouseButtonRight)) {
-      if (ImGui::MenuItem(Tr("選択を複製", "Duplicate Selected"), "Ctrl+D")) {
-         editorContext->DuplicateSelectedObject();
-      }
-
-      if (ImGui::MenuItem(Tr("選択を削除", "Delete Selected"), "Delete")) {
-         editorContext->DeleteSelection();
-      }
-
-      if (Object* selected = editorContext->GetSelectedObject();
-         selected && !selected->GetParentEntityId().empty() &&
-         ImGui::MenuItem(Tr("親子関係を解除", "Unparent Selected"))) {
-         editorContext->ReorderObject(selected, nullptr, EditorSceneContext::HierarchyDropPosition::After);
-      }
-
-      ImGui::Separator();
-
       if (ImGui::MenuItem(Tr("空のオブジェクト", "Empty Object"))) {
          editorContext->CreateEmptyObject();
       }
@@ -856,46 +884,36 @@ void RendererEditorController::ShowHierarchyWindow() {
          ImGui::EndMenu();
       }
 
-      ImGui::EndPopup();
-   }
+      Object* selected = editorContext->GetSelectedObject();
 
-   ImGui::Button("Drop Model / Particle at scene root", ImVec2(-1, 0));
+      if (selected || editorContext->GetSelectedParticleSystem()) {
+         ImGui::Separator();
 
-   if (editorContext && ImGui::BeginDragDropTarget()) {
-      if (const auto* entry = EditorUI::AcceptAssetDrop(EditorAssetType::Unknown, [](const EditorAssetEntry& entry) {
-             return entry.type == EditorAssetType::Model || entry.type == EditorAssetType::Particle ||
-                    entry.type == EditorAssetType::UIScreen;
-          })) {
-         FinishInspectorEdit(*editorContext);
+         if (ImGui::MenuItem(Tr("選択を複製", "Duplicate Selected"), "Ctrl+D")) {
+            editorContext->DuplicateSelectedObject();
+         }
 
-         if (editorContext->PlaceAsset(entry->assetId)) {
-            editorSelectedAssetId_.clear();
+         if (selected && !selected->GetParentEntityId().empty() &&
+             ImGui::MenuItem(Tr("親子関係を解除", "Unparent Selected"))) {
+            editorContext->ReorderObject(selected, nullptr, EditorSceneContext::HierarchyDropPosition::After);
+         }
+
+         if (ImGui::MenuItem(Tr("選択を削除", "Delete Selected"), "Delete")) {
+            editorContext->DeleteSelection();
          }
       }
 
-      ImGui::EndDragDropTarget();
+      ImGui::EndPopup();
    }
 
-   // メニューやDropの生成結果もこのフレームの選択検証へ含める。
-   if (editorContext) {
-      sceneObjects = editorContext->CollectEditableObjects();
-      particleSystems = editorContext->CollectEditableParticleSystems();
+   // コンテキストがある場合は削除墓標で隠されたシーン所有物を除いた編集用一覧を正本にする。
+   const auto sceneObjects = editorContext ? editorContext->CollectEditableObjects() : CollectSceneObjects();
+   const auto particleSystems =
+      editorContext ? editorContext->CollectEditableParticleSystems() : std::vector<ParticleSystem*>{};
 
-      if (editorContext->GetSelectedObject() || editorContext->GetSelectedParticleSystem()) {
-         editorSelectedAssetId_.clear();
-      }
-   }
-
-   if (sceneObjects.empty() && particleSystems.empty()) {
-      ImGui::Text("%s", Tr("オブジェクトがありません", "No objects"));
-
-      if (editorContext) {
-         editorContext->SelectObject(nullptr);
-         editorContext->SelectParticleSystem(nullptr);
-      }
-
-      ImGui::End();
-      return;
+   // メニューから生成した結果もこのフレームの選択検証へ含める。
+   if (editorContext && (editorContext->GetSelectedObject() || editorContext->GetSelectedParticleSystem())) {
+      editorSelectedAssetId_.clear();
    }
 
    Object* selectedObject = editorContext ? editorContext->GetSelectedObject() : nullptr;
@@ -925,21 +943,42 @@ void RendererEditorController::ShowHierarchyWindow() {
    ImGui::SetNextItemOpen(true, ImGuiCond_Once);
    const std::string sceneObjectsLabel =
       std::string(Tr("シーンオブジェクト", "Scene Objects")) + "###HierarchySceneObjects";
-   const bool sceneObjectsOpen = ImGui::TreeNodeEx(sceneObjectsLabel.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+   const bool sceneObjectsOpen =
+      ImGui::TreeNodeEx(sceneObjectsLabel.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_SpanAvailWidth);
 
-   if (editorContext && ImGui::BeginDragDropTarget()) {
-      if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_SCENE_OBJECT")) {
-         const char* draggedId = static_cast<const char*>(payload->Data);
+   if (editorContext) {
+      ImGui::SetItemTooltip("%s", Tr("モデル・パーティクル・UI画面をここにドロップしてルートに配置",
+                                     "Drop a model, particle system, or UI screen here to place it at the root"));
 
-         if (Object* draggedObject = draggedId ? Object::FindByEntityId(draggedId) : nullptr) {
-            editorContext->ReorderObject(draggedObject, nullptr, EditorSceneContext::HierarchyDropPosition::After);
+      if (ImGui::BeginDragDropTarget()) {
+         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_SCENE_OBJECT")) {
+            const char* draggedId = static_cast<const char*>(payload->Data);
+
+            if (Object* draggedObject = draggedId ? Object::FindByEntityId(draggedId) : nullptr) {
+               editorContext->ReorderObject(draggedObject, nullptr, EditorSceneContext::HierarchyDropPosition::After);
+            }
          }
-      }
 
-      ImGui::EndDragDropTarget();
+         if (const auto* entry = EditorUI::AcceptAssetDrop(EditorAssetType::Unknown, [](const EditorAssetEntry& entry) {
+                return entry.type == EditorAssetType::Model || entry.type == EditorAssetType::Particle ||
+                       entry.type == EditorAssetType::UIScreen;
+             })) {
+            FinishInspectorEdit(*editorContext);
+
+            if (editorContext->PlaceAsset(entry->assetId)) {
+               editorSelectedAssetId_.clear();
+            }
+         }
+
+         ImGui::EndDragDropTarget();
+      }
    }
 
    if (sceneObjectsOpen) {
+      if (sceneObjects.empty()) {
+         ImGui::TextDisabled("%s", Tr("オブジェクトがありません", "No objects"));
+      }
+
       std::unordered_set<Object*> renderedObjects;
       std::function<void(Object*)> drawEntityNode;
       std::function<void(const std::vector<Object*>&)> drawEntityList;
@@ -970,7 +1009,13 @@ void RendererEditorController::ShowHierarchyWindow() {
          }
 
          const bool isOpen = ImGui::TreeNodeEx(objectName.c_str(), flags);
-         const bool clicked = ImGui::IsItemClicked();
+         const bool selected =
+            ImGui::IsItemClicked() || (ImGui::IsItemFocused() && ImGui::IsKeyPressed(ImGuiKey_Enter, false));
+         const float labelWidth = ImGui::GetItemRectSize().x - ImGui::GetTreeNodeToLabelSpacing();
+
+         if (ImGui::CalcTextSize(objectName.c_str(), nullptr, true).x > labelWidth) {
+            ImGui::SetItemTooltip("%s", objectName.c_str());
+         }
 
          if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
             const std::string& entityId = object->GetEntityId();
@@ -1006,7 +1051,7 @@ void RendererEditorController::ShowHierarchyWindow() {
             ImGui::EndDragDropTarget();
          }
 
-         if (clicked && editorContext) {
+         if (selected && editorContext) {
             FinishInspectorEdit(*editorContext);
             editorSelectedAssetId_.clear();
             editorContext->SelectObject(object);
@@ -1097,7 +1142,8 @@ void RendererEditorController::ShowHierarchyWindow() {
          label += "##ParticleSystem_" + std::to_string(i);
 
          const bool isSelected = (selectedParticleSystem == particleSystem);
-         ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+         ImGuiTreeNodeFlags flags =
+            ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanAvailWidth;
 
          if (isSelected) {
             flags |= ImGuiTreeNodeFlags_Selected;
@@ -1105,7 +1151,7 @@ void RendererEditorController::ShowHierarchyWindow() {
 
          ImGui::TreeNodeEx(label.c_str(), flags);
 
-         if (ImGui::IsItemClicked()) {
+         if (ImGui::IsItemClicked() || (ImGui::IsItemFocused() && ImGui::IsKeyPressed(ImGuiKey_Enter, false))) {
             if (editorContext) {
                FinishInspectorEdit(*editorContext);
                editorSelectedAssetId_.clear();
@@ -1217,7 +1263,8 @@ void RendererEditorController::ShowInspectorWindow() {
    if (!selectedObject && !selectedParticleSystem) {
       editorComponentSaveStatusEntityId_.clear();
       editorComponentSaveStatus_.clear();
-      ImGui::Text("%s", Tr("未選択", "No selection"));
+      ImGui::TextWrapped("%s", Tr("ヒエラルキーでオブジェクト、またはプロジェクトでアセットを選択してください。",
+                                  "Select an object in Hierarchy or an asset in Project."));
       ImGui::End();
       return;
    }
@@ -1317,31 +1364,37 @@ void RendererEditorController::ShowInspectorWindow() {
       selectedObject->SetObjectName(objectNameBuffer);
    }
 
-   ImGui::Spacing();
-
    if (editorContext) {
-      ImGui::Text("%s: %s", Tr("Entity ID", "Entity ID"), selectedObject->GetEntityId().c_str());
-
-      if (!selectedObject->GetParentEntityId().empty()) {
-         ImGui::Text("%s: %s", Tr("親Entity", "Parent Entity"), selectedObject->GetParentEntityId().c_str());
-      }
+      const char* deleteLabel = Tr("削除", "Delete");
+      const char* duplicateLabel = Tr("複製", "Duplicate");
 
       if (editorContext->CanDeleteObject(selectedObject)) {
-         if (ImGui::Button(Tr("削除", "Delete"))) {
+         if (ImGui::Button(deleteLabel)) {
             recordInspector();
             FinishInspectorEdit(*editorContext);
             editorContext->DeleteSelectedObject();
             ImGui::End();
             return;
          }
+
+         ContinueRowIfFits(ButtonWidth(duplicateLabel));
       }
 
-      ImGui::SameLine();
-
-      if (ImGui::Button(Tr("複製", "Duplicate"))) {
+      if (ImGui::Button(duplicateLabel)) {
          recordInspector();
          FinishInspectorEdit(*editorContext);
          editorContext->DuplicateSelectedObject();
+      }
+
+      if (ImGui::TreeNode(Tr("エンティティ情報###EntityDetails", "Entity Details###EntityDetails"))) {
+         ImGui::TextWrapped("%s: %s", Tr("エンティティID", "Entity ID"), selectedObject->GetEntityId().c_str());
+
+         if (!selectedObject->GetParentEntityId().empty()) {
+            ImGui::TextWrapped(
+               "%s: %s", Tr("親エンティティID", "Parent ID"), selectedObject->GetParentEntityId().c_str());
+         }
+
+         ImGui::TreePop();
       }
 
       ImGui::Spacing();

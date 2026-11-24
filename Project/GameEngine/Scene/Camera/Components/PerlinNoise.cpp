@@ -152,7 +152,7 @@ void PerlinNoise::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bo
 
    if (data.contains("shakeDirection")) {
       shakeDirection_ = NormalizeOrDefault(
-         GameEngine::JsonValue::ReadVector3(data.at("shakeDirection"), shakeDirection_), {0.0f, 1.0f, 0.0f});
+         GameEngine::JsonValue::ReadVector3(data.at("shakeDirection")), {0.0f, 1.0f, 0.0f});
    }
 
    if (data.contains("useDirectionalShake") && data.at("useDirectionalShake").is_boolean()) {

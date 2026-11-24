@@ -1,4 +1,5 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Utility/Logger.h"
 #include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameEngine/Object/Component/UI/UITextComponent.h"
@@ -31,9 +32,9 @@ const char* ToAnchorName(GameEngine::UIAnchor anchor) {
    return index < std::size(kNames) ? kNames[index] : kNames[0];
 }
 
-GameEngine::UIAnchor ParseAnchor(const nlohmann::json& value, GameEngine::UIAnchor fallback) {
+GameEngine::UIAnchor ParseAnchor(const nlohmann::json& value) {
    if (!value.is_string()) {
-      return fallback;
+      Logger::Fail("Invalid screenAnchor value: " + value.dump());
    }
 
    const std::string name = value.get<std::string>();
@@ -46,7 +47,7 @@ GameEngine::UIAnchor ParseAnchor(const nlohmann::json& value, GameEngine::UIAnch
       }
    }
 
-   return fallback;
+   Logger::Fail("Invalid screenAnchor value: " + value.dump());
 }
 
 const char* ToAlignmentName(GameEngine::TextHorizontalAlignment alignment) {
@@ -62,9 +63,9 @@ const char* ToAlignmentName(GameEngine::TextHorizontalAlignment alignment) {
 }
 
 GameEngine::TextHorizontalAlignment ParseAlignment(
-   const nlohmann::json& value, GameEngine::TextHorizontalAlignment fallback) {
+   const nlohmann::json& value) {
    if (!value.is_string()) {
-      return fallback;
+      Logger::Fail("Invalid horizontalAlignment value: " + value.dump());
    }
 
    const std::string name = value.get<std::string>();
@@ -81,7 +82,7 @@ GameEngine::TextHorizontalAlignment ParseAlignment(
       return GameEngine::TextHorizontalAlignment::Left;
    }
 
-   return fallback;
+   Logger::Fail("Invalid horizontalAlignment value: " + value.dump());
 }
 }
 
@@ -208,7 +209,7 @@ void UITextComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]
    }
 
    if (data.contains("screenAnchor")) {
-      style.screenAnchor = ParseAnchor(data.at("screenAnchor"), style.screenAnchor);
+      style.screenAnchor = ParseAnchor(data.at("screenAnchor"));
    }
 
    if (data.contains("pivot") && data.at("pivot").is_array() && data.at("pivot").size() >= 2) {
@@ -217,7 +218,7 @@ void UITextComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]
    }
 
    if (data.contains("horizontalAlignment")) {
-      style.horizontalAlignment = ParseAlignment(data.at("horizontalAlignment"), style.horizontalAlignment);
+      style.horizontalAlignment = ParseAlignment(data.at("horizontalAlignment"));
    }
 
    if (data.contains("maxWidth") && data.at("maxWidth").is_number()) {

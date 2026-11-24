@@ -91,6 +91,13 @@ public:
       WriteLogEntry(message, LogLevel::Error, channel, location);
    }
 
+   /// @brief 対象と原因をエラーログに記録し、処理を中断する例外を送出する。
+   /// @param message 失敗した対象と原因。
+   /// @param channel 出力チャンネル。
+   /// @param location 失敗箇所の呼び出し元情報。
+   [[noreturn]] static void Fail(const std::string& message, LogChannel channel = LogChannel::Engine,
+      std::source_location location = std::source_location::current());
+
    /// @brief Criticalログを出力する
    /// @param message メッセージ
    /// @param channel 出力チャンネル

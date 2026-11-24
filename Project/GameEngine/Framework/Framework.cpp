@@ -221,11 +221,9 @@ void Framework::Run() {
    // 初期化
    try {
       Initialize();
-   } catch (const std::exception& error) {
-      Logger::Critical(error.what());
-      MessageBoxA(nullptr, error.what(), "Engine initialization failed", MB_OK | MB_ICONERROR);
+   } catch (const std::exception&) {
       Finalize();
-      return;
+      throw;
    }
 
    // メインループ

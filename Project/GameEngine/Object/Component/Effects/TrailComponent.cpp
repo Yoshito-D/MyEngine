@@ -322,7 +322,7 @@ void TrailComponent::ReadSettings(const nlohmann::json& data) {
    breakDistance_ = std::max(minDistance_, JsonValue::ReadFloat(data, "breakDistance", breakDistance_));
 
    if (const auto color = data.find("color"); color != data.end()) {
-      color_ = JsonValue::ReadVector4(*color, color_);
+      color_ = JsonValue::ReadVector4(*color);
       color_.w = std::clamp(color_.w, 0.0f, 1.0f);
    }
 
@@ -335,7 +335,7 @@ void TrailComponent::ReadSettings(const nlohmann::json& data) {
 
    for (size_t index = 0; index < offsets_.size(); ++index) {
       const Vector3 previous = offsets_[index];
-      offsets_[index] = JsonValue::ReadVector3((*offsets)[index], previous);
+      offsets_[index] = JsonValue::ReadVector3((*offsets)[index]);
 
       if ((offsets_[index] - previous).LengthSquared() > 0.0f) {
          paths_[index] = {};

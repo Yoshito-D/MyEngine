@@ -69,6 +69,20 @@ constexpr float kUiCameraFarClip = 10000.0f;
 constexpr float kPerspectiveUiCameraFarClip = 100.0f;
 constexpr float kPerspectiveUiCameraFovY = 0.7853981633974483f;
 
+GameEngine::Texture* ResolvePrimaryTexture(GameEngine::TextureManager& textures,
+   const GameEngine::MaterialComponent* material, const std::string& objectName) {
+   // テクスチャが未指定のマテリアルは白を掛け、設定された色をそのまま描く。
+   const bool hasTexture = material && !material->GetTextureNames().empty() && !material->GetTextureNames()[0].empty();
+   const std::string name = hasTexture ? material->GetTextureNames()[0] : "white1x1";
+   auto* texture = textures.GetTexture(name);
+
+   if (!texture || texture->GetMetadata().IsCubemap()) {
+      Logger::Fail("Expected a 2D texture: " + name + " (object=" + objectName + ")");
+   }
+
+   return texture;
+}
+
 GameEngine::Vector3 ExtractTranslation(const GameEngine::Matrix4x4& matrix) {
    return GameEngine::Vector3(matrix.m[3][0], matrix.m[3][1], matrix.m[3][2]);
 }
@@ -203,12 +217,12 @@ void Renderer::BuildDefaultPasses() {
    settings.opacity = 0.7f;
    settings.receiverRange = 10.0f;
 
-   // 既存のif文の初期化呼び出しを変更する。
-   if (shadowPass->Initialize(device_, settings)) {
-      auto* ptr = shadowPass.get();
-      AddPass(std::move(shadowPass));
-      playerShadowPass_ = ptr;
+   if (!shadowPass->Initialize(device_, settings)) {
+      Logger::Fail("Cannot initialize the player shadow render pass");
    }
+
+   playerShadowPass_ = shadowPass.get();
+   AddPass(std::move(shadowPass));
 
    AddPass(std::make_unique<TransparentPass>());
    AddPass(std::make_unique<PostEffectPass>(offscreenRenderTarget_.get()));
@@ -715,9 +729,6 @@ void Renderer::DrawAutoRegisteredModels() {
 
    if (!textureManager) return;
 
-   // テクスチャ未設定でもマテリアル色を描けるよう白テクスチャを既定値にする。
-   auto* fallbackTexture = textureManager->GetTexture("white1x1");
-
    for (auto* model : Model::GetRegisteredModels()) {
       if (!model) {
          continue;
@@ -736,31 +747,19 @@ void Renderer::DrawAutoRegisteredModels() {
 
       auto* materialComp = model->GetComponent<MaterialComponent>();
 
-      // Texture は MaterialComponent からのみ取得
-      Texture* texture = nullptr;
-
-      if (materialComp && !materialComp->GetTextureNames().empty() && !materialComp->GetTextureNames()[0].empty()) {
-         texture = textureManager->GetTexture(materialComp->GetTextureNames()[0]);
-      }
-
-      // 2DサンプラーへCubemap SRVを渡すのはビュー次元不一致になるため、環境用は通常テクスチャから除外する。
-      if (texture && texture->GetMetadata().IsCubemap()) {
-         texture = nullptr;
-      }
-
-      if (!texture) {
-         texture = fallbackTexture;
-      }
-
-      if (!texture) {
-         continue;
-      }
+      Texture* texture = ResolvePrimaryTexture(*textureManager, materialComp, model->GetObjectName());
 
       if (materialComp && !materialComp->GetEnvironmentTextureName().empty()) {
-         auto* envTex = textureManager->GetTexture(materialComp->GetEnvironmentTextureName());
+         const auto& textureName = materialComp->GetEnvironmentTextureName();
+         auto* envTex = textureManager->GetTexture(textureName);
+
+         if (!envTex || !envTex->GetMetadata().IsCubemap()) {
+            Logger::Fail("Expected an environment cubemap: " + textureName);
+         }
+
          SetEnvironmentTexture(envTex);
       } else {
-         SetEnvironmentTexture(textureManager->GetLastCubemapTexture());
+         SetEnvironmentTexture(nullptr);
       }
 
       auto* uiModelComponent = model->GetComponent<UIModelComponent>();
@@ -786,8 +785,6 @@ void Renderer::DrawAutoRegisteredSprites(const UISystem* ui) {
 
    if (!textureManager) return;
 
-   auto* fallbackTexture = textureManager->GetTexture("white1x1");
-
    for (auto* sprite : Sprite::GetRegisteredSprites()) {
       if (!sprite || (ui && ui->IsManaged(*sprite))) {
          continue;
@@ -806,24 +803,7 @@ void Renderer::DrawAutoRegisteredSprites(const UISystem* ui) {
 
       auto* materialComp = sprite->GetComponent<MaterialComponent>();
 
-      // Texture は MaterialComponent からのみ取得
-      Texture* texture = nullptr;
-
-      if (materialComp && !materialComp->GetTextureNames().empty() && !materialComp->GetTextureNames()[0].empty()) {
-         texture = textureManager->GetTexture(materialComp->GetTextureNames()[0]);
-      }
-
-      if (texture && texture->GetMetadata().IsCubemap()) {
-         texture = nullptr;
-      }
-
-      if (!texture) {
-         texture = fallbackTexture;
-      }
-
-      if (!texture) {
-         continue;
-      }
+      Texture* texture = ResolvePrimaryTexture(*textureManager, materialComp, sprite->GetObjectName());
 
       if (renderComponent->DescribeSettings().renderSpace == RenderComponent::RenderSpace::Screen) {
          const uint32_t screenWidth = Window::kUiReferenceWidth;
@@ -1113,19 +1093,9 @@ void Renderer::SetPipeline(const std::string& pipelineName, BlendMode blendMode)
       pipelineState = psoManager_->GetPipeline(pipelineName, blendMode);
 
       if (!pipelineState) {
-         Logger::Error("Failed to get pipeline: " + pipelineName +
-                       " with blend mode: " + std::to_string(static_cast<std::int32_t>(blendMode)));
-
-         // フォールバック: ブレンドモードなしで再試行
-         pipelineState = psoManager_->GetPipeline(pipelineName, BlendMode::kBlendModeNone);
-
-         if (!pipelineState) {
-            Logger::Error("Failed to get fallback pipeline: " + pipelineName);
-            return;
-         }
+         Logger::Fail("Missing graphics pipeline: " + pipelineName +
+                      ", blend mode=" + std::to_string(static_cast<std::int32_t>(blendMode)));
       }
-
-      // 解決結果を記録（nullptr でも resolved=true として二重検索を防ぐ）
       pipelineCache_[cacheKey] = PipelineHandle{pipelineState, true};
    }
 

@@ -1,4 +1,6 @@
 #include "GameEngine/pch.h"
+#include "GameEngine/Utility/JsonValue.h"
+#include "GameEngine/Utility/Logger.h"
 #include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameEngine/Object/Component/Audio/BgmComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
@@ -23,18 +25,6 @@ const bool kRegistered = GameEngine::ComponentRegistry::GetInstance().RegisterFa
    GameEngine::BgmComponent::kDisplayName,
    GameEngine::ObjectType::Generic | GameEngine::ObjectType::Model | GameEngine::ObjectType::Sprite |
       GameEngine::ObjectType::UIText);
-
-template <typename T> T Read(const nlohmann::json& data, const char* key, T fallback) {
-   if (!data.contains(key)) {
-      return fallback;
-   }
-
-   try {
-      return data.at(key).get<T>();
-   } catch (...) {
-      return fallback;
-   }
-}
 }
 
 namespace GameEngine {
@@ -133,13 +123,13 @@ void BgmComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] b
       Stop();
    }
    Settings settings;
-   settings.clipAssetId = Read<std::string>(data, "clipAssetId", settings.clipAssetId);
-   settings.volume = Read<float>(data, "volume", settings.volume);
-   settings.loop = Read<bool>(data, "loop", settings.loop);
-   settings.playOnStart = Read<bool>(data, "playOnStart", settings.playOnStart);
-   settings.fadeInSeconds = Read<float>(data, "fadeInSeconds", settings.fadeInSeconds);
-   settings.fadeOutSeconds = Read<float>(data, "fadeOutSeconds", settings.fadeOutSeconds);
-   settings.continueAcrossScenes = Read<bool>(data, "continueAcrossScenes", settings.continueAcrossScenes);
+   settings.clipAssetId = JsonValue::ReadString(data, "clipAssetId", settings.clipAssetId);
+   settings.volume = JsonValue::ReadFloat(data, "volume", settings.volume);
+   settings.loop = JsonValue::ReadBool(data, "loop", settings.loop);
+   settings.playOnStart = JsonValue::ReadBool(data, "playOnStart", settings.playOnStart);
+   settings.fadeInSeconds = JsonValue::ReadFloat(data, "fadeInSeconds", settings.fadeInSeconds);
+   settings.fadeOutSeconds = JsonValue::ReadFloat(data, "fadeOutSeconds", settings.fadeOutSeconds);
+   settings.continueAcrossScenes = JsonValue::ReadBool(data, "continueAcrossScenes", settings.continueAcrossScenes);
 
    if (initializeRuntime) {
       clip_.reset();

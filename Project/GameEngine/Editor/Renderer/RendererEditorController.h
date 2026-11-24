@@ -86,7 +86,7 @@ private:
    EditorSceneSession* session_ = nullptr; ///< 表示中シーンの編集セッションへの非所有参照。
    AssetManager* assetManager_ = nullptr;  ///< アセットの読み込みと共有を委譲する管理オブジェクトへの参照。
 
-   bool editorAssetIconView_ = true;              ///< アセットをアイコン一覧で表示するかどうか。
+   bool editorAssetIconView_ = false;             ///< アセットをアイコン一覧で表示するかどうか。
    float editorThumbnailSize_ = 64.0f;            ///< アセット一覧のサムネイル表示サイズ（ピクセル）。
    float editorFolderPaneWidth_ = 190.0f;         ///< アセットブラウザーのフォルダーペイン幅（ピクセル）。
    std::string editorCurrentFolder_;              ///< アセット一覧で表示しているフォルダー。

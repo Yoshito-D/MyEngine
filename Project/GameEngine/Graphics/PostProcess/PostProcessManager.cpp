@@ -404,6 +404,11 @@ bool PostProcessManager::ApplySceneState(const nlohmann::json& state) {
          return false;
       }
 
+      if (std::none_of(effects_.begin(), effects_.end(), [&](const auto& effect) { return effect.id == id; })) {
+         Logger::Error("[PostProcessManager] Scene references an unknown effect: " + id);
+         return false;
+      }
+
       if (const auto enabledIt = entry.find("enabled"); enabledIt != entry.end() && !enabledIt->is_boolean()) {
          return false;
       }
@@ -427,8 +432,6 @@ bool PostProcessManager::ApplySceneState(const nlohmann::json& state) {
       entriesById.emplace(id, &entry);
    }
 
-   std::unordered_set<std::string> appliedIds;
-
    for (auto& effectInfo : effects_) {
       // シーンに記載のない項目は前シーン値を引き継がず、レジストリ既定値へ戻す。
       effectInfo.enabled = effectInfo.defaultEnabled;
@@ -445,22 +448,12 @@ bool PostProcessManager::ApplySceneState(const nlohmann::json& state) {
       }
 
       const nlohmann::json& entry = *entryIt->second;
-      appliedIds.insert(effectInfo.id);
       effectInfo.enabled = entry.value("enabled", effectInfo.defaultEnabled);
       effectInfo.priority = entry.value("order", effectInfo.defaultPriority);
 
       if (effectInfo.effect && entry.contains("settings") &&
           !effectInfo.effect->DeserializeSettings(entry.at("settings"))) {
          return false;
-      }
-   }
-
-   for (const auto& [id, entry] : entriesById) {
-      (void)entry;
-
-      if (!appliedIds.contains(id)) {
-         // 新しい／削除済みエフェクトIDは無視して、異なるバージョンのシーンを読み進められるようにする。
-         Logger::EngineWarning("[PostProcessManager] Scene references an unknown effect: " + id);
       }
    }
 
@@ -495,7 +488,7 @@ void PostProcessManager::DisableAllEffects() {
 #ifdef USE_IMGUI
 bool PostProcessManager::ShowImGuiControls() {
    bool visible =
-      EngineContext::GetEditorWindowVisibility("PostProcessManager", {"ポストプロセス", "Post Process Manager"});
+      EngineContext::GetEditorWindowVisibility("PostProcessManager", {"ポストプロセス", "Post Process Manager"}, false);
 
    if (!visible) {
       return false;

@@ -36,7 +36,6 @@ public:
 
 private:
    void CheckSceneFailure();
-   bool fatalSceneFailureReported_ = false; ///< 致命的なシーン読み込み失敗をユーザーへ通知済みかどうか。
    GameEngine::SceneCatalog sceneCatalog_;  ///< 登録シーンの定義と起動シーン設定。
    /// @brief 現在シーンの所有権と安全な切り替えを管理する所有オブジェクト。
    std::unique_ptr<GameEngine::SceneManager> sceneManager_ = nullptr;
