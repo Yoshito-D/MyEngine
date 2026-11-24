@@ -1,0 +1,120 @@
+{
+   "blendMode": 1,
+   "textureName": "rock_brown_relief",
+   "modelAssetId": "game/models/rocks/rock_d_01.obj",
+   "usePostProcess": true,
+   "mainModule": {
+      "looping": true,
+      "maxParticles": 640,
+      "playOnAwake": true,
+      "simulationSpace": 0,
+      "startLifetime": {
+         "min": 22,
+         "max": 42,
+         "randomize": true
+      },
+      "startSpeedMode": 1,
+      "startVelocity": {
+         "min": [
+            -1.1,
+            -0.65,
+            -1.8
+         ],
+         "max": [
+            1.1,
+            0.65,
+            1.8
+         ],
+         "randomize": true
+      },
+      "startRotation": {
+         "min": [
+            0,
+            0,
+            0
+         ],
+         "max": [
+            6.283185307,
+            6.283185307,
+            6.283185307
+         ],
+         "randomize": true
+      },
+      "gravityModifier": {
+         "min": 0,
+         "max": 0,
+         "randomize": false
+      }
+   },
+   "emissionModule": {
+      "enabled": true,
+      "rateOverTime": 15,
+      "rateOverDistance": 0,
+      "bursts": []
+   },
+   "shapeModule": {
+      "enabled": true,
+      "shapeType": 3,
+      "emitFrom": 0,
+      "boxSize": [
+         42,
+         32,
+         78
+      ]
+   },
+   "colorOverLifetimeModule": {
+      "enabled": true,
+      "startColor": [
+         0.82,
+         0.9,
+         1,
+         0.94
+      ],
+      "endColor": [
+         0.82,
+         0.9,
+         1,
+         0
+      ]
+   },
+   "sizeOverLifetimeModule": {
+      "enabled": true,
+      "startSize": [
+         0.38,
+         0.38,
+         0.38
+      ],
+      "endSize": [
+         0.38,
+         0.38,
+         0.38
+      ],
+      "sizeMultiplier": {
+         "min": 0.4,
+         "max": 1,
+         "randomize": true
+      }
+   },
+   "rotationOverLifetimeModule": {
+      "enabled": true,
+      "angularVelocityMin": [
+         -0.55,
+         -1.35,
+         -0.7
+      ],
+      "angularVelocityMax": [
+         0.55,
+         1.35,
+         0.7
+      ],
+      "angularVelocityRandomize": true
+   },
+   "rendererModule": {
+      "enabled": true,
+      "billboardType": 0,
+      "rotationSpace": 0,
+      "cameraFadeEnabled": true,
+      "cameraFadeNear": 4,
+      "cameraFadeFar": 12
+   }
+}
