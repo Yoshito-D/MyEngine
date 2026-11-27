@@ -59,7 +59,7 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+   void ReadParameters(const nlohmann::json& data);
 
    float influenceRadius = 0.0f; ///< 影響半径（0以下で無限）。
 

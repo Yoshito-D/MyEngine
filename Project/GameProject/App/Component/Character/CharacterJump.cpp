@@ -59,14 +59,14 @@ nlohmann::json CharacterJump::GetSharedParameters() const {
 }
 
 void CharacterJump::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
+   ReadParameters(data);
 }
 
 void CharacterJump::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
+   ReadParameters(data);
 }
 
-void CharacterJump::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
+void CharacterJump::ReadParameters(const nlohmann::json& data) {
    if (data.contains("jumpStrength")) {
       jumpStrength = data["jumpStrength"];
    }

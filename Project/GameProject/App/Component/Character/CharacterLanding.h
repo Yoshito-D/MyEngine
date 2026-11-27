@@ -84,7 +84,7 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+   void ReadParameters(const nlohmann::json& data);
 
    float landingOffset = 0.0f;                                  ///< 原点（inertia中心）から着地点までの追加オフセット。
    GameEngine::Vector3 obbHalfExtents = {0.35f, 0.175f, 0.75f}; ///< OBBの半サイズ（各軸を個別指定）。

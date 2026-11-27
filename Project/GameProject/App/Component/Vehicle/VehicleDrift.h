@@ -89,7 +89,7 @@ public:
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 private:
-   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+   void ReadParameters(const nlohmann::json& data);
 
    // ----------------------------------------------------------------
    // 調整パラメータ
@@ -142,16 +142,17 @@ private:
    /// ドリフト中は入力が離れたら終了する
    bool ShouldContinueDrift(bool driftInput, float steerInput) const;
 
+   float GetSteeringSign(float steerInput) const;
+
    // ----------------------------------------------------------------
    // 物理ヘルパー
    // ----------------------------------------------------------------
 
    /// @brief ドリフト中の速度横滑りを GravityBody へ書き込む
    /// 横速度を瞬時に設定せず lateralBuildupRate で滑らかに目標値へ近づける。
-   /// @param steerInput  現在のステア入力（横方向符号の決定に使用）
    /// @param gravityUp   重力Up（垂直速度成分を維持するため）
    /// @param deltaTime   フレーム時間
-   void ApplySlideVelocity(float steerInput, const GameEngine::Vector3& gravityUp, float deltaTime);
+   void ApplySlideVelocity(const GameEngine::Vector3& gravityUp, float deltaTime);
 
    /// @brief ドリフト終了後に残留横速度を指数減衰させ GravityBody へ書き込む
    /// これにより「タイヤがグリップを取り戻す」余韻が生まれる。

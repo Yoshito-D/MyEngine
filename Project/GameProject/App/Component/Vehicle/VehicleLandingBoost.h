@@ -58,7 +58,7 @@ public:
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 private:
-   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+   void ReadParameters(const nlohmann::json& data);
 
    /// @brief 着地ブーストの加算量（m/s）
    float boostAmount = 0.0f;

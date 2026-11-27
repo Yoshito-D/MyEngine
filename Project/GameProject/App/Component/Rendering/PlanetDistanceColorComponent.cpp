@@ -145,14 +145,14 @@ nlohmann::json PlanetDistanceColorComponent::GetSharedParameters() const {
 }
 
 void PlanetDistanceColorComponent::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
+   ReadParameters(data);
 }
 
 void PlanetDistanceColorComponent::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
+   ReadParameters(data);
 }
 
-void PlanetDistanceColorComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
+void PlanetDistanceColorComponent::ReadParameters(const nlohmann::json& data) {
    if (!data.is_object()) return;
 
    auto settings = settings_;

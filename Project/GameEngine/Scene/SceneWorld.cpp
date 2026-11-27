@@ -12,6 +12,8 @@
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include <algorithm>
 #include <objbase.h>
+#include <string_view>
+#include <unordered_map>
 #include <unordered_set>
 
 namespace GameEngine {
@@ -93,14 +95,22 @@ bool SceneWorld::IsValidSnapshot(const nlohmann::json& data) {
       }
    }
 
+   // 親として参照できるのは同じスナップショット内のObjectだけで、単体のParticleSystemは含めない。
+   std::unordered_map<std::string_view, std::string_view> parents;
+
    for (const auto& object : data.at("objects")) {
       const auto kind = object.at("objectType").get<std::string>();
       if (kind == "ParticleSystem") {
-         if (object.contains("components") && !object.at("components").empty()) {
+         if ((object.contains("components") && !object.at("components").empty()) ||
+             (object.contains("parentId") && !object.at("parentId").get_ref<const std::string&>().empty())) {
             return false;
          }
          continue;
       }
+      const std::string_view parent = object.contains("parentId")
+                                        ? std::string_view(object.at("parentId").get_ref<const std::string&>())
+                                        : std::string_view{};
+      parents.emplace(object.at("id").get_ref<const std::string&>(), parent);
       const auto type = SceneObjectStore::FindObjectType(kind);
 
       if (!type || !object.contains("components")) {
@@ -113,6 +123,28 @@ bool SceneWorld::IsValidSnapshot(const nlohmann::json& data) {
             return false;
          }
       }
+   }
+
+   // 各祖先を検査済みとして記録し、階層の深さによらず同じ経路を繰り返し調べない。
+   std::unordered_set<std::string_view> checked;
+   std::unordered_set<std::string_view> visiting;
+
+   for (const auto& [id, parent] : parents) {
+      std::string_view current = id;
+
+      while (!current.empty() && !checked.contains(current)) {
+         const auto link = parents.find(current);
+
+         if (link == parents.end() || !visiting.insert(current).second) {
+            Logger::Error("Invalid parent hierarchy for scene object: " + std::string(id) +
+                          ", missing or cyclic reference: " + std::string(current));
+            return false;
+         }
+
+         current = link->second;
+      }
+
+      checked.merge(visiting);
    }
 
    const auto& cameras = data.at("cameras");
@@ -202,12 +234,40 @@ bool SceneWorld::ApplySnapshot(const nlohmann::json& sceneData) {
    // JSONから除かれたIDも含め、全Entityを同じStoreから置き換える。
    Clear();
 
-   for (const auto& data : sceneData.at("objects")) {
-      const bool particle = data.at("objectType") == "ParticleSystem";
+   const auto& objects = sceneData.at("objects");
 
-      if (particle ? objectStore_.RestoreParticleSystem(data) == nullptr
-                   : objectStore_.RestoreObject(data) == nullptr) {
+   for (const auto& data : objects) {
+      bool restored = false;
+
+      if (data.at("objectType") == "ParticleSystem") {
+         restored = objectStore_.RestoreParticleSystem(data) != nullptr;
+      } else if (data.contains("parentId") && !data.at("parentId").get_ref<const std::string&>().empty()) {
+         auto detached = data;
+         detached.erase("parentId");
+         restored = objectStore_.RestoreObject(detached) != nullptr;
+      } else {
+         restored = objectStore_.RestoreObject(data) != nullptr;
+      }
+
+      if (!restored) {
          Logger::Error("SceneWorld could not restore object: " + data.at("id").get<std::string>());
+         return false;
+      }
+   }
+
+   // 親がJSON内で後に現れても、同じワールドに全IDを登録してから親子を接続する。
+   for (const auto& data : objects) {
+      const auto parent = data.find("parentId");
+
+      if (parent == data.end() || parent->get_ref<const std::string&>().empty()) {
+         continue;
+      }
+
+      const auto& id = data.at("id").get_ref<const std::string&>();
+      auto* object = FindObjectById(id);
+
+      if (!object || !object->SetParentEntityId(parent->get_ref<const std::string&>())) {
+         Logger::Error("SceneWorld could not restore parent for object: " + id);
          return false;
       }
    }
@@ -261,7 +321,7 @@ void SceneWorld::Update(float deltaTime, float uiDeltaTime) {
    const auto objects = objectStore_.GetObjects();
    const bool gameplay = !uiSystem_->PausesGameplay();
    for (auto* object : objects) {
-      if (!objectStore_.Contains(object) || objectStore_.IsPendingDeletion(object)) {
+      if (!objectStore_.Contains(object)) {
          continue;
       }
       if (gameplay) {
@@ -424,7 +484,7 @@ std::string SceneWorld::GetObjectId(const Object* object) const {
 void SceneWorld::ResolveReferences(const std::vector<Object*>& objects, bool initializeRuntime) {
    // 参照先をすべて生成してから解決し、JSON内の順序への依存をなくす。
    for (Object* object : objects) {
-      if (object) {
+      if (objectStore_.Contains(object)) {
          object->ResolveComponentReferences(*this, initializeRuntime);
       }
    }

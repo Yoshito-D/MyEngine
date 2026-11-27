@@ -570,6 +570,7 @@
     <ClInclude Include="GameProject\App\Component\Tutorial\TutorialGuidePresenter.h" />
     <ClInclude Include="GameProject\App\Component\Rendering\PlayerShadowComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\RaceRecordStore.h" />
+    <ClInclude Include="GameProject\App\Component\Race\RaceTime.h" />
     <ClInclude Include="GameProject\App\Component\Race\RacePresentation.h" />
     <ClInclude Include="GameProject\App\Component\Race\StageIntroSequence.h" />
     <ClInclude Include="GameProject\App\Component\Camera\VehicleCameraEffects.h" />

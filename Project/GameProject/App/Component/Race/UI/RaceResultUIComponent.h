@@ -48,7 +48,7 @@ public:
 #endif
 
 private:
-   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+   void ReadParameters(const nlohmann::json& data);
 
    void RefreshSelectionText(MenuSelectionAnimationComponent& animation);
    bool ConfirmSelection(MenuSelectionAnimationComponent& animation);

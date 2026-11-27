@@ -439,7 +439,9 @@ bool InputActionService::ApplyBinding(const std::string& actionMap, const std::s
 }
 
 bool InputActionService::LoadOverrides() {
-   if (overridePath_.empty()) return false;
+   if (overridePath_.empty()) {
+      return false;
+   }
 
    if (!std::filesystem::exists(overridePath_)) {
       return false;
@@ -450,7 +452,9 @@ bool InputActionService::LoadOverrides() {
 }
 
 bool InputActionService::SaveOverrides() const {
-   if (overridePath_.empty()) return false;
+   if (overridePath_.empty()) {
+      return false;
+   }
 
    // 現在の完全な割り当てを保存し、既定定義の変更でユーザー設定を変化させない。
    json root;

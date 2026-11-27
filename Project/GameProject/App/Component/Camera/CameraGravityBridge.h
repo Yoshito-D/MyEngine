@@ -73,7 +73,7 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+   void ReadParameters(const nlohmann::json& data);
 
    Settings settings_;
    VehicleCameraEffects effects_;

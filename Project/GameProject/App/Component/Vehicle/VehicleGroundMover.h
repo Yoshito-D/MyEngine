@@ -104,7 +104,7 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+   void ReadParameters(const nlohmann::json& data);
 
    float autoSpeed = 16.0f; ///< 通常走行速度。これを下回ったときのみ減速演出を発火する。
    float steerSpeed = 120.0f * GameEngine::MathConstants::kDegreesToRadians; ///< ステアリング角速度（rad/s）。
@@ -129,8 +129,10 @@ private:
    /// @brief GravityBody の水平速度を flatForward * currentSpeed_ に更新する
    void ApplyVelocityToGravityBody(const GameEngine::Vector3& flatForward, const GameEngine::Vector3& gravityUp);
 
-   /// @brief 現在の前進実速度（負値は未初期化を示す）
-   float currentSpeed_ = -1.0f;
+   static constexpr float kInitialSpeed = 15.0f; ///< 発進時の地上走行速度（m/s）。
+
+   /// @brief 現在の前進実速度（m/s）。
+   float currentSpeed_ = kInitialSpeed;
 
    /// @brief 外部から積まれた加速度（m/s²）。UpdateSpeed で v += a * dt して毎フレームリセット
    float acceleration_ = 0.0f;
@@ -143,8 +145,6 @@ private:
 
    /// @brief 直近の水平前方ベクトル
    GameEngine::Vector3 flatForward_ = {0.0f, 0.0f, 1.0f};
-
-   const float kInitialSpeed = 15.0f; ///< 初期化時に適用する地上走行速度。
 };
 
 } // namespace App

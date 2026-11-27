@@ -10,6 +10,7 @@
 
 namespace GameEngine {
 class SceneWorld;
+class SceneObjectStore;
 class Camera;
 class TransformComponent;
 
@@ -17,10 +18,7 @@ class TransformComponent;
 /// コンポーネントの管理はComponentContainerに委譲する
 class Object {
 public:
-   /// @brief コンポーネントの復元前に、所有元のWorldを関連付ける。
-   void SetWorld(SceneWorld* world) { world_ = world; }
-
-   /// @brief 所有元のWorldを取得する。シーン外の補助オブジェクトではnullptrを返す。
+   /// @brief 所属ワールドを取得する。未登録または削除待ちの場合はnullptrを返す。
    SceneWorld* GetWorld() const { return world_; }
 
    /// @brief 必須の名前コンポーネントを持つオブジェクトを生成する
@@ -29,19 +27,18 @@ public:
    /// @brief 所有するコンポーネントとともに破棄する
    virtual ~Object();
 
-   /// @brief シーン内参照に使用する安定IDを設定する
-   /// @param entityId 保存データと親子参照に使用するID
-   /// @return 空文字列または他Entityと重複する場合はfalse
-   bool SetEntityId(const std::string& entityId);
-
-   /// @brief シーン内参照に使用する安定IDを取得する
-   /// @return このEntityの安定ID
+   /// @brief 所属ワールドで割り当てられた安定IDを取得する。
+   /// @return 登録前は空文字列。削除待ちの間は診断用に元のIDを保持する。
    const std::string& GetEntityId() const { return entityId_; }
 
-   /// @brief 親Entityを安定IDで設定する
-   /// @param parentEntityId 親EntityのID。空文字列で親を解除する
-   /// @return 自己参照または循環参照でなければtrue
+   /// @brief 所属ワールド内で親Entityを設定する。
+   /// @param parentEntityId 親のID。空文字列なら親を解除する。
+   /// @return 設定できた場合はtrue。親の不在、別ワールドへの参照や循環は拒否する。
    bool SetParentEntityId(const std::string& parentEntityId);
+
+   /// @brief 所属ワールドから現在の親を取得する。
+   /// @return 親が未設定、または自身が未登録の場合はnullptr。
+   const Object* GetParent() const;
 
    /// @brief 親Entityの安定IDを取得する
    /// @return 親がない場合は空文字列
@@ -54,20 +51,6 @@ public:
    /// @brief 親階層のワールド行列を計算する
    /// @return 親がない場合は単位行列
    Matrix4x4 GetParentWorldMatrix() const;
-
-   /// @brief 現在生存している全シーンEntityを取得する
-   /// @return Objectの非所有ポインター一覧
-   static const std::vector<Object*>& GetRegisteredObjects();
-
-   /// @brief 安定IDから生存中のEntityを検索する
-   /// @param entityId 検索する安定ID
-   /// @return 一致するEntity。存在しない場合はnullptr
-   static Object* FindByEntityId(const std::string& entityId);
-
-   /// @brief 表示名から生存中のEntityを検索する
-   /// @param objectName 検索する表示名
-   /// @return 最初に一致するEntity。存在しない場合はnullptr
-   static Object* FindByObjectName(const std::string& objectName);
 
    /// @brief 実体のオブジェクト種別を取得する
    /// @return コンポーネント互換性の判定に使用する種別
@@ -178,8 +161,8 @@ public:
 #endif
 
 private:
-   SceneWorld* world_ = nullptr; ///< このObjectを所有するワールド。シーン外の補助Objectではnullptr。
-   bool WouldCreateParentCycle(const std::string& parentEntityId) const;
+   friend class SceneObjectStore;
+   SceneWorld* world_ = nullptr; ///< 登録先のワールド。ストアだけが所属と安定IDを設定する。
 
    ComponentContainer components_; ///< このObjectが所有するコンポーネントと型検索のコンテナ。
    std::string entityId_;          ///< シーン内参照に使用する安定ID。

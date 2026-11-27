@@ -87,7 +87,9 @@ public:
    /// @brief 指定基底型へ変換できる最初のComponentを取得する。所有権は移さない。
    template <typename T> T* GetDerived() {
       for (const auto& component : components_) {
-         if (auto* found = dynamic_cast<T*>(component.get())) return found;
+         if (auto* found = dynamic_cast<T*>(component.get())) {
+            return found;
+         }
       }
       return nullptr;
    }
@@ -95,7 +97,9 @@ public:
    /// @brief 指定基底型へ変換できる最初のComponentを読み取り専用で取得する。
    template <typename T> const T* GetDerived() const {
       for (const auto& component : components_) {
-         if (const auto* found = dynamic_cast<const T*>(component.get())) return found;
+         if (const auto* found = dynamic_cast<const T*>(component.get())) {
+            return found;
+         }
       }
       return nullptr;
    }
@@ -132,7 +136,10 @@ public:
    /// @return 削除できた場合はtrue
    bool RemoveByTypeName(const std::string& typeName);
 
-   /// @brief 全コンポーネントを更新する
+   /// @brief 指定の区分に属する有効な部品をフェーズ順に更新する。
+   /// @param deltaTime 更新時間（秒）。
+   /// @param domain 更新する部品の区分。
+   /// @details 更新中の追加は次の更新から対象となり、取り外した実体は現在の更新終了まで保持する。
    void Update(float deltaTime, ObjectUpdateDomain domain = ObjectUpdateDomain::Gameplay);
 
    /// @brief 無効な部品も含め共通設定の変更を適用する。
@@ -176,6 +183,8 @@ private:
    std::vector<std::unique_ptr<IObjectComponent>> components_; ///< 所有Objectへ接続したコンポーネントの所有一覧。
    /// @brief 型情報から所有済みコンポーネントをO(1)で引く非所有索引。
    std::unordered_map<std::type_index, IObjectComponent*> typeIndex_;
+   std::vector<std::unique_ptr<IObjectComponent>> detachedDuringUpdate_; ///< 更新の一覧が参照し得る取り外し済み部品。
+   bool updating_ = false; ///< このコンテナの更新が実行中かどうか。
 };
 
 } // namespace GameEngine

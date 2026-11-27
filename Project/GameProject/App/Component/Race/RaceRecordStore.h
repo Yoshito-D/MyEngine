@@ -8,12 +8,19 @@ namespace App {
 class RaceRecordStore {
 public:
    static constexpr size_t kBestTimeCount = 3; ///< 保存・表示する記録の最大件数。
-   /// @brief 正の有限タイムだけを追加し、速い順に最大件数へ制限する。
-   void AddBestTime(float timeSeconds);
-   /// @brief 指定したファイルとコースの記録を読み込み、失敗時は空にする。
+
+   /// @brief 正の有限タイムを追加する。保存を有効にしている場合は、保存できた順位を反映する。
+   /// @param timeSeconds 計測した走行時間（秒）。
+   /// @param file 記録ファイルのパス。
+   /// @param key コースの識別子。空の場合は実行中の順位だけを更新する。
+   /// @return 有効なタイムを順位へ反映できた場合はtrue。保存失敗時は既存の順位を維持する。
+   bool AddBestTime(float timeSeconds, const std::string& file, const std::string& key);
+
+   /// @brief ファイルからコースの記録を読み込む。ファイルまたはコースが存在しない場合は空の順位にする。
+   /// @param file 記録ファイルのパス。
+   /// @param key コースの識別子。空の場合は記録を読み込まない。
+   /// @return 読み込みに成功した場合はtrue。失敗した場合は既存の順位を維持する。
    bool LoadBestTimes(const std::string& file, const std::string& key);
-   /// @brief 他コースを保持しながら一時ファイルを完成させて置換する。保存失敗時はfalse。
-   bool SaveBestTimes(const std::string& file, const std::string& key) const;
 
    /// @brief 正規化済みのタイムを速い順に返す。
    const std::vector<float>& GetBestTimes() const { return bestTimes_; }

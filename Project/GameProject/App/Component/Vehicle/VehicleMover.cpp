@@ -97,18 +97,11 @@ Quaternion VehicleMover::AlignToGravity(const Quaternion& rotation, const Vector
       return rotation;
    }
 
-   // gravityAlignmentSpeed_ に基づき段階的に回転
-   float t = std::clamp(gravityAlignmentSpeed_ * deltaTime, 0.0f, 1.0f);
-   Quaternion rotDelta = MakeRotateAxisAngleQuaternion(rotAxis, angle * t);
-   Quaternion cur = rotation;
-
-   // 現在Upも補間更新
-   if (t >= 0.9999f) {
-      orientationUp_ = target;
-   } else {
-      orientationUp_ = Vector3::Lerp(current, target, t);
-   }
-   return (rotDelta * cur).Normalize();
+   // 適用した回転と同じだけ基準Upを回し、次フレームの回転量に食い違いを持ち越さない。
+   const float response = -std::expm1(-gravityAlignmentSpeed_ * std::max(deltaTime, 0.0f));
+   const Quaternion rotationDelta = MakeRotateAxisAngleQuaternion(rotAxis, angle * response);
+   orientationUp_ = RotateVector(current, rotationDelta).Normalize();
+   return (rotationDelta * rotation).Normalize();
 }
 
 void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchInput, bool driftInput, bool isGrounded,
@@ -162,8 +155,7 @@ void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchI
 
          rotation = ground->Apply(effectiveSteer, gravityUp, deltaTime, rotation);
 
-         // lastMoveDirection_ は VehicleController::GetLastMoveDirection() 経由で
-         // カメラ追従などに使われる。
+         // Inspectorで走行方向を確認できるよう、最後に地上走行へ適用した方向を保持する。
          lastMoveDirection_ = ground->GetFlatForward();
       }
 

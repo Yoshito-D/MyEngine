@@ -121,22 +121,21 @@ void VehicleSpeedGaugeUIComponent::Update(float deltaTime) {
 void VehicleSpeedGaugeUIComponent::SetHudVisible(bool visible) {
    // 背景枠はHUDの有効状態に従う一方、塗りゲージは速度がほぼ0なら隠して
    // 最小幅として確保したQuadが細線として見えるのを防ぐ。
-   if (gaugeRender_) {
-      {
-         auto settings = gaugeRender_->DescribeSettings();
-         settings.visible = visible && displayedRatio_ > 0.001f;
-         gaugeRender_->Configure(settings);
+   const auto setVisible = [](GameEngine::RenderComponent* render, bool show) {
+      if (!render) return;
+
+      auto settings = render->DescribeSettings();
+
+      if (settings.visible != show) {
+         settings.visible = show;
+         render->Configure(settings);
       }
-   }
+   };
+
+   setVisible(gaugeRender_, visible && displayedRatio_ > 0.001f);
 
    if (frameObject_) {
-      if (auto* render = frameObject_->GetComponent<GameEngine::RenderComponent>()) {
-         {
-            auto settings = render->DescribeSettings();
-            settings.visible = visible;
-            render->Configure(settings);
-         }
-      }
+      setVisible(frameObject_->GetComponent<GameEngine::RenderComponent>(), visible);
    }
 
    if (speedText_ && !visible) {
@@ -156,14 +155,14 @@ nlohmann::json VehicleSpeedGaugeUIComponent::GetSharedParameters() const {
 }
 
 void VehicleSpeedGaugeUIComponent::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
+   ReadParameters(data);
 }
 
 void VehicleSpeedGaugeUIComponent::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
+   ReadParameters(data);
 }
 
-void VehicleSpeedGaugeUIComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
+void VehicleSpeedGaugeUIComponent::ReadParameters(const nlohmann::json& data) {
    if (!data.is_object()) return;
 
    // 各項目を独立して検証し、欠落・型不一致の項目は既定値または現在値を維持する。

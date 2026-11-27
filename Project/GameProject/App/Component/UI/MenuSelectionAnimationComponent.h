@@ -98,7 +98,7 @@ public:
 #endif
 
 private:
-   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+   void ReadParameters(const nlohmann::json& data);
 
    enum class State {
       Hidden,

@@ -41,9 +41,6 @@ public:
    void ApplyMovement(float steerInput, float rollInput, float pitchInput, bool driftInput, bool isGrounded,
       const GameEngine::Vector3& gravityUp, float deltaTime);
 
-   /// @brief 直近の移動方向を取得する
-   GameEngine::Vector3 GetLastMoveDirection() const { return lastMoveDirection_; }
-
    /// @brief 重力への姿勢追従速度を共有パラメータとして返す。
    nlohmann::json GetSharedParameters() const override;
 

@@ -106,8 +106,20 @@ bool PauseMenuComponent::SaveAudioSettings(const GameEngine::Audio& audio) {
       return true;
    }
 
-   Logger::Warning("Audio settings could not be saved: " + file.generic_string(), Logger::LogChannel::Game);
+   Logger::Error("Audio settings could not be saved: " + file.generic_string(), Logger::LogChannel::Game);
    return false;
+}
+
+void PauseMenuComponent::SavePendingAudioSettings() {
+   if (!audioSettingsDirty_) return;
+
+   if (const auto* audio = GameEngine::EngineContext::GetAudio()) {
+      SaveAudioSettings(*audio);
+   } else {
+      Logger::Error("Cannot save audio settings: audio service is unavailable", Logger::LogChannel::Game);
+   }
+
+   audioSettingsDirty_ = false;
 }
 
 void PauseMenuComponent::OnSceneLoaded(GameEngine::SceneWorld& world) {
@@ -124,6 +136,11 @@ void PauseMenuComponent::Update(float deltaTime) {
    auto& ui = world_->GetUI();
    const auto* pauseScreen = world_->FindObjectById(pauseScreenId_);
    const bool showingSettings = IsSettingsVisible();
+
+   if (!showingSettings) {
+      SavePendingAudioSettings();
+   }
+
    const bool showingPause = (pauseScreen && ui.IsUpdateVisible(*pauseScreen)) || showingSettings;
 
    // 背景と枠は下の画面に残し、設定の表示中はメニューの中身だけを隠す。
@@ -139,6 +156,7 @@ void PauseMenuComponent::Update(float deltaTime) {
 
    // ポーズ固有の適用条件と演出値はゲーム側で決め、エンジンへは汎用の描画・音量操作だけを渡す。
    GameEngine::EngineContext::SetOverlayBackgroundBlur(showingPause ? kPauseBackgroundBlur : 0.0f);
+   presentationApplied_ = showingPause;
 
    if (settingsOnly_) {
       UpdateSelectionSound(showingSettings ? settingsScreenId_ : std::string{});
@@ -207,11 +225,14 @@ bool PauseMenuComponent::CreatePauseScreen() {
 }
 
 void PauseMenuComponent::BindButton(const std::string& rootId, const char* key, std::function<void()> callback) {
-   if (auto* object = world_->GetUI().FindElement(rootId, key)) {
-      if (auto* button = object->GetComponent<GameEngine::UIButtonComponent>()) {
-         button->SetOnClick(std::move(callback));
-      }
+   auto* object = world_->GetUI().FindElement(rootId, key);
+   auto* button = object ? object->GetComponent<GameEngine::UIButtonComponent>() : nullptr;
+
+   if (!button) {
+      Logger::Fail("Missing button " + std::string(key) + " in screen " + rootId, Logger::LogChannel::Game);
    }
+
+   button->SetOnClick(std::move(callback));
 }
 
 bool PauseMenuComponent::IsSettingsVisible() const {
@@ -257,26 +278,29 @@ bool PauseMenuComponent::OpenSettings() {
 }
 
 void PauseMenuComponent::BindVolumeSlider(const char* key, float volume, std::function<void(float)> callback) {
-   if (auto* object = world_->GetUI().FindElement(settingsScreenId_, key)) {
-      if (auto* slider = object->GetComponent<GameEngine::UISliderComponent>()) {
-         slider->SetValue(volume, false);
-         UpdateVolumeText(key, slider->GetValue());
-         slider->SetOnValueChanged([this, key = std::string(key), callback = std::move(callback)](float value) {
-            callback(value);
+   auto* object = world_->GetUI().FindElement(settingsScreenId_, key);
+   auto* slider = object ? object->GetComponent<GameEngine::UISliderComponent>() : nullptr;
 
-            if (UpdateVolumeText(key, value)) {
-               PlayUISound(kCursorSoundAsset);
-               // 選択と音量変更が同じフレームに起きても、カーソル音を二重に鳴らさない。
-               selectionScreenId_ = settingsScreenId_;
-               selectedElementId_ = world_->GetUI().GetFocusedElementId(settingsScreenId_);
-            }
-
-            if (auto* audio = GameEngine::EngineContext::GetAudio()) {
-               SaveAudioSettings(*audio);
-            }
-         });
-      }
+   if (!slider) {
+      Logger::Fail("Missing audio slider " + std::string(key) + " in screen " + settingsScreenId_,
+         Logger::LogChannel::Game);
    }
+
+   slider->SetValue(volume, false);
+   UpdateVolumeText(key, slider->GetValue());
+   slider->SetOnValueChanged([this, key = std::string(key), callback = std::move(callback)](float value) {
+      callback(value);
+
+      if (UpdateVolumeText(key, value)) {
+         PlayUISound(kCursorSoundAsset);
+         // 選択と音量変更が同じフレームに起きても、カーソル音を二重に鳴らさない。
+         selectionScreenId_ = settingsScreenId_;
+         selectedElementId_ = world_->GetUI().GetFocusedElementId(settingsScreenId_);
+      }
+
+      // 連続操作は即座に試聴できるよう適用し、保存は画面を閉じたときにまとめる。
+      audioSettingsDirty_ = true;
+   });
 }
 
 bool PauseMenuComponent::UpdateVolumeText(const std::string& key, float volume) {
@@ -418,18 +442,34 @@ void PauseMenuComponent::PlayUISound(const char* clipAssetId) {
    }
 }
 
-void PauseMenuComponent::OnDetach() {
+void PauseMenuComponent::OnDisable() {
    if (!world_) return;
 
-   GameEngine::EngineContext::SetOverlayBackgroundBlur(0.0f);
+   SavePendingAudioSettings();
 
-   if (auto* audio = GameEngine::EngineContext::GetAudio()) {
-      audio->SetBgmDucking(1.0f);
+   if (presentationApplied_) {
+      GameEngine::EngineContext::SetOverlayBackgroundBlur(0.0f);
+
+      if (!settingsOnly_) {
+         if (auto* audio = GameEngine::EngineContext::GetAudio()) {
+            audio->SetBgmDucking(1.0f);
+         }
+      }
+
+      presentationApplied_ = false;
    }
 
    // 入力配送中でも削除とコールバック解除はUISystemの安全な境界で確定する。
-   world_->GetUI().RemoveScreen(settingsScreenId_);
-   world_->GetUI().RemoveScreen(pauseScreenId_);
+   auto& ui = world_->GetUI();
+   ui.RemoveScreen(settingsScreenId_);
+   ui.RemoveScreen(pauseScreenId_);
+   settingsScreenId_.clear();
+   pauseScreenId_.clear();
+   selectionScreenId_.clear();
+   selectedElementId_.clear();
+}
+
+void PauseMenuComponent::OnDetach() {
    world_ = nullptr;
 }
 

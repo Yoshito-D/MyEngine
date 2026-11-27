@@ -55,7 +55,7 @@ public:
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 private:
-   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+   void ReadParameters(const nlohmann::json& data);
 
    /// @brief 姿勢補正にかける時間（秒）
    float alignTime = 0.1f;

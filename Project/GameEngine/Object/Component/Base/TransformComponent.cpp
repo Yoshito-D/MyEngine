@@ -80,8 +80,7 @@ nlohmann::json TransformComponent::Serialize() const {
       {"rotation", {activeEuler.x, activeEuler.y, activeEuler.z}},
       {"rotationQuaternion", {activeQuaternion.x, activeQuaternion.y, activeQuaternion.z, activeQuaternion.w}},
       {"rotationSource", transform.IsUsingQuaternion() ? "quaternion" : "euler"},
-      {"scale", {transform.scale.x, transform.scale.y, transform.scale.z}},
-      {"parentEntityId", HasOwner() ? GetOwner().GetParentEntityId() : std::string()}};
+      {"scale", {transform.scale.x, transform.scale.y, transform.scale.z}}};
 }
 
 void TransformComponent::Deserialize(const nlohmann::json& data) {
@@ -155,11 +154,6 @@ void TransformComponent::Deserialize(const nlohmann::json& data) {
    }
 
    ApplyLocalPose(pose);
-
-   // Entity IDの設定はOwner側の循環検査を通す。
-   if (data.contains("parentEntityId") && data.at("parentEntityId").is_string() && HasOwner()) {
-      GetOwner().SetParentEntityId(data.at("parentEntityId").get<std::string>());
-   }
 }
 
 #ifdef USE_IMGUI

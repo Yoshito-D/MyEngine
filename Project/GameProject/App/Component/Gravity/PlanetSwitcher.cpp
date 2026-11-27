@@ -11,6 +11,7 @@
 #include <cmath>
 #include <utility>
 #include "GameEngine/Object/Model/Model.h"
+#include "GameEngine/Scene/SceneWorld.h"
 #include "GameProject/App/Component/Gravity/SphericalGravityAttractor.h"
 
 #ifdef USE_IMGUI
@@ -21,10 +22,6 @@
 namespace App {
 
 namespace {
-
-GameEngine::Model* FindPlanetById(const std::string& objectId) {
-   return dynamic_cast<GameEngine::Model*>(GameEngine::Object::FindByEntityId(objectId));
-}
 
 bool TryReadPlanetSurface(const GameEngine::Model& planet, GameEngine::Vector3& center, float& radius) {
    const auto* transform = planet.GetComponent<GameEngine::TransformComponent>();
@@ -216,6 +213,11 @@ void PlanetSwitcher::CommitPendingSwitch() {
 GravityAttractor* PlanetSwitcher::GetSelectedAttractor() const {
    auto* planet = IsEnabled() ? GetPlanetModel(selectedGravityIndex_) : nullptr;
    return planet ? planet->GetComponent<SphericalGravityAttractor>() : nullptr;
+}
+
+GameEngine::Model* PlanetSwitcher::FindPlanetById(const std::string& objectId) const {
+   auto* world = HasOwner() ? GetOwner().GetWorld() : nullptr;
+   return world ? dynamic_cast<GameEngine::Model*>(world->FindObjectById(objectId)) : nullptr;
 }
 
 GameEngine::Model* PlanetSwitcher::GetPlanetModel(std::int32_t index) const {

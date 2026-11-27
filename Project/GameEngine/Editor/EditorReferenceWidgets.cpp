@@ -10,7 +10,7 @@
 #include "GameEngine/Assets/ResourceAssetPath.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
-#include "imgui.h"
+#include "imgui_internal.h"
 #include <filesystem>
 #include <fstream>
 #include <cstring>
@@ -191,9 +191,36 @@ bool AssetFileReference(const char* label, std::string& resourcePath, EditorAsse
    return true;
 }
 
+void SetObjectDragPayload(Object& object) {
+   auto* dragged = &object;
+   ImGui::SetDragDropPayload(kObjectDragPayloadType, &dragged, sizeof(dragged));
+}
+
+Object* ResolveObjectDragPayload(const SceneObjectStore& store) {
+   const auto* payload = ImGui::GetDragDropPayload();
+
+   if (!payload || !payload->IsDataType(kObjectDragPayloadType) || !payload->Data ||
+       payload->DataSize != static_cast<int>(sizeof(Object*))) {
+      return nullptr;
+   }
+
+   // 受け取ったポインターは逆参照せず、現在のワールドに登録されている実体だけを返す。
+   Object* object = nullptr;
+   std::memcpy(&object, payload->Data, sizeof(object));
+   return store.Contains(object) ? object : nullptr;
+}
+
+void CancelObjectDrag() {
+   const auto* payload = ImGui::GetCurrentContext() ? ImGui::GetDragDropPayload() : nullptr;
+
+   if (payload && payload->IsDataType(kObjectDragPayloadType)) {
+      ImGui::ClearDragDrop();
+   }
+}
+
 bool ObjectReference(const char* label, std::string& id, const char* requiredComponent) {
    auto* context = Context();
-   const auto objects = context ? context->CollectEditableObjects() : Object::GetRegisteredObjects();
+   const auto objects = context ? context->CollectEditableObjects() : std::vector<Object*>{};
    const auto accepts = [requiredComponent](const Object* object) {
       return object && (!requiredComponent[0] || object->HasComponentByTypeName(requiredComponent));
    };
@@ -238,21 +265,12 @@ bool ObjectReference(const char* label, std::string& id, const char* requiredCom
       ImGui::EndCombo();
    }
 
-   if (ImGui::BeginDragDropTarget()) {
-      if (const auto* payload = ImGui::AcceptDragDropPayload("EDITOR_SCENE_OBJECT")) {
-         if (payload->Data && payload->DataSize > 1 && payload->DataSize <= 4096 &&
-             std::memchr(payload->Data, '\0', static_cast<size_t>(payload->DataSize)) ==
-                static_cast<const char*>(payload->Data) + payload->DataSize - 1) {
-            const std::string dropped(static_cast<const char*>(payload->Data), payload->DataSize - 1);
+   if (context && ImGui::BeginDragDropTarget()) {
+      const auto* dropped = ResolveObjectDragPayload(context->GetObjectStore());
 
-            for (const auto* object : objects) {
-               if (accepts(object) && object->GetEntityId() == dropped) {
-                  changed = id != dropped;
-                  id = dropped;
-                  break;
-               }
-            }
-         }
+      if (accepts(dropped) && ImGui::AcceptDragDropPayload(kObjectDragPayloadType)) {
+         changed = id != dropped->GetEntityId();
+         id = dropped->GetEntityId();
       }
 
       ImGui::EndDragDropTarget();

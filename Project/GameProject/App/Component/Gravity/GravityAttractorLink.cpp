@@ -28,6 +28,14 @@ void GravityAttractorLink::Update(float) {
    }
 }
 
+void GravityAttractorLink::OnDisable() {
+   if (!HasOwner()) return;
+
+   if (auto* body = GetOwner().GetComponent<GravityBody>()) {
+      body->ReleaseGravity();
+   }
+}
+
 #ifdef USE_IMGUI
 void GravityAttractorLink::DrawInspector() {
    const auto* selector = HasOwner() ? GetOwner().GetComponent<PlanetSwitcher>() : nullptr;

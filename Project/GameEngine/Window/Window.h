@@ -22,7 +22,19 @@ public:
    static constexpr int32_t kUiReferenceHeight = kWindowHeight;
 
 public:
-   /// @brief ウィンドウの生成
+   /// @brief ウィンドウやスレッド資源を未取得の状態で構築する。
+   Window() = default;
+
+   /// @brief 生成と同じスレッドで、取得済みのウィンドウと初期化状態を解放する。
+   ~Window();
+
+   /// @brief ウィンドウとスレッド資源の所有権の複製を禁止する。
+   Window(const Window&) = delete;
+
+   /// @brief コピー代入によるウィンドウの所有権の変更を禁止する。
+   Window& operator=(const Window&) = delete;
+
+   /// @brief ゲームウィンドウを生成する。初期化に失敗した場合はログを記録して例外を送出する。
    /// @param title タイトル
    /// @param windowStyle ウィンドウのスタイル
    /// @param clientWidth ウィンドウの幅
@@ -30,7 +42,8 @@ public:
    void CreateGameWindow(const wchar_t* title = L"DirectX12", UINT windowStyle = WS_OVERLAPPEDWINDOW,
       int32_t clientWidth = kWindowWidth, int32_t clientHeight = kWindowHeight);
 
-   /// @brief ウィンドウの破棄
+   /// @brief 生成時に取得したウィンドウとスレッド資源を解放する。
+   /// @details 生成と同じスレッドから呼び出す。部分初期化後や解放済みの状態でも呼び出せる。
    void DestroyGameWindow();
 
    /// @brief メッセージ
@@ -57,6 +70,9 @@ public:
 private:
    HWND hwnd_ = nullptr;   // ウィンドウハンドル
    WNDCLASSEX wndClass_{}; // ウィンドウクラス
+   bool comInitialized_ = false;      ///< このスレッドでCoUninitializeが必要か。
+   bool windowClassRegistered_ = false; ///< このインスタンスがウィンドウクラスを登録したか。
+   bool timerPeriodRequested_ = false;  ///< タイマー分解能の要求を解除する必要があるか。
    UINT windowStyle_;      ///< ウィンドウ生成・切り替えに使うWin32スタイル。
    float aspectRatio_;     ///< 横幅を高さで割った投影アスペクト比。
    bool isFullscreen_ = false; ///< フルスクリーン状態。

@@ -343,15 +343,14 @@ nlohmann::json MenuSelectionAnimationComponent::GetSharedParameters() const {
 }
 
 void MenuSelectionAnimationComponent::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
+   ReadParameters(data);
 }
 
 void MenuSelectionAnimationComponent::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
+   ReadParameters(data);
 }
 
-void MenuSelectionAnimationComponent::ReadParameters(
-   const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
+void MenuSelectionAnimationComponent::ReadParameters(const nlohmann::json& data) {
    if (!data.is_object()) return;
 
    if (const auto it = data.find("optionObjectIds"); it != data.end() && it->is_array()) {

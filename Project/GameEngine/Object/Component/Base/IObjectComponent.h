@@ -65,10 +65,12 @@ public:
    /// @brief コンポーネントの型名を取得する（純粋仮想）
    virtual const char* GetTypeName() const = 0;
 
-   /// @brief オーナーオブジェクトへの参照を取得する
+   /// @brief 接続先のオブジェクトを取得する。
+   /// @pre HasOwner()がtrueであること。
    Object& GetOwner() { return *owner_; }
 
-   /// @brief オーナーオブジェクトへの読み取り専用参照を取得する
+   /// @brief 接続先のオブジェクトを読み取り専用で取得する。
+   /// @pre HasOwner()がtrueであること。
    const Object& GetOwner() const { return *owner_; }
 
    /// @brief オーナーが設定されているか確認する
@@ -106,8 +108,9 @@ public:
    /// @brief 更新フェーズを返す。同じフェーズ内では追加順を維持する。
    virtual ObjectUpdatePhase GetUpdatePhase() const { return ObjectUpdatePhase::Default; }
 
-   /// @brief 更新処理（オーナーはGetOwner()で取得）
-   virtual void Update([[maybe_unused]] float deltaTime) {};
+   /// @brief 指定された時間だけ部品の実行状態を更新する。
+   /// @param deltaTime 更新時間（秒）。
+   virtual void Update([[maybe_unused]] float deltaTime) {}
 
    /// @brief コンポーネント設定をJSONへ変換する
    virtual nlohmann::json Serialize() const = 0;
@@ -132,6 +135,6 @@ private:
    void Detach();
 
    Object* owner_ = nullptr; ///< この部品の接続先となる所有オブジェクトへの参照。
-   bool isEnabled_ = true;   ///< コンポーネントが更新対象として有効かどうかする。
+   bool isEnabled_ = true;   ///< コンポーネントが更新対象として有効かどうか。
 };
 }

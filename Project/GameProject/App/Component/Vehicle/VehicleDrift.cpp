@@ -84,7 +84,7 @@ void VehicleDrift::Apply(bool driftInput, float steerInput, const Vector3& gravi
    //    ドリフト中でないときのみ蓄積する（ドリフト中は開始判定不要）。
    // ----------------------------------------------------------------
    if (!isDrifting_ && driftMode == DriftMode::SustainedSteer) {
-      float steerSign = (steerInput > driftSteerDeadZone) ? 1.0f : (steerInput < -driftSteerDeadZone) ? -1.0f : 0.0f;
+      const float steerSign = GetSteeringSign(steerInput);
 
       if (steerSign != 0.0f && steerSign == prevSteerSign_) {
          // 同方向ステアが継続中 → タイマーを加算する。
@@ -103,7 +103,7 @@ void VehicleDrift::Apply(bool driftInput, float steerInput, const Vector3& gravi
    // ----------------------------------------------------------------
    if (isDrifting_) {
       // ドリフト中: steerInput の符号方向に横速度を蓄積しながら書き込む。
-      ApplySlideVelocity(steerInput, gravityUp, deltaTime);
+      ApplySlideVelocity(gravityUp, deltaTime);
    } else if (std::abs(slideLateralSpeed_) > 0.01f) {
       // ドリフト終了後: 横速度が残っていれば減衰させながら書き込む。
       // これが「グリップを取り戻す」余韻に相当する。
@@ -148,24 +148,25 @@ bool VehicleDrift::ShouldContinueDrift(bool driftInput, float steerInput) const 
       case DriftMode::SustainedSteer:
          // ドリフト開始方向 (driftSign_) と現在の入力符号が一致していれば継続する。
          // 入力が消えるか反転したらドリフト終了。
-         {
-            float steerSign = (steerInput > driftSteerDeadZone)    ? 1.0f
-                              : (steerInput < -driftSteerDeadZone) ? -1.0f
-                                                                   : 0.0f;
-            return (steerSign == driftSign_);
-         }
+         return GetSteeringSign(steerInput) == driftSign_;
    }
 
    return false;
+}
+
+float VehicleDrift::GetSteeringSign(float steerInput) const {
+   if (steerInput > driftSteerDeadZone) {
+      return 1.0f;
+   }
+
+   return steerInput < -driftSteerDeadZone ? -1.0f : 0.0f;
 }
 
 // ================================================================
 // private  物理ヘルパー
 // ================================================================
 
-void VehicleDrift::ApplySlideVelocity(float steerInput, const Vector3& gravityUp, float deltaTime) {
-   (void)steerInput;
-
+void VehicleDrift::ApplySlideVelocity(const Vector3& gravityUp, float deltaTime) {
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
 
    if (!gravityBody || !gravityBody->IsEnabled()) return;
@@ -349,14 +350,14 @@ nlohmann::json VehicleDrift::GetSharedParameters() const {
 }
 
 void VehicleDrift::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
+   ReadParameters(data);
 }
 
 void VehicleDrift::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
+   ReadParameters(data);
 }
 
-void VehicleDrift::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
+void VehicleDrift::ReadParameters(const nlohmann::json& data) {
    if (data.contains("driftMode")) {
       driftMode = static_cast<DriftMode>(data["driftMode"].get<std::int32_t>());
    }

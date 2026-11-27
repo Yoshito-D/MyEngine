@@ -56,12 +56,6 @@ Quaternion VehicleGroundMover::Apply(
 // ---------------------------------------------------------------
 
 void VehicleGroundMover::UpdateSpeed(float deltaTime) {
-   // currentSpeed_ が負値のとき（初回呼び出し）は即座に autoSpeed に初期化する。
-   // 負値を「未初期化」フラグとして使うことで、シリアライズ値を上書きしない。
-   if (currentSpeed_ < 0.0f) {
-      currentSpeed_ = kInitialSpeed;
-   }
-
    // 外部から積まれた瞬間速度変化（インパルス）を直接加算する。
    // ブースト・ペナルティなど「即時に速度を変えたい」場合に使う。
    currentSpeed_ += velocityImpulse_;
@@ -74,11 +68,11 @@ void VehicleGroundMover::UpdateSpeed(float deltaTime) {
 
    // 指数平滑（一次ローパスフィルタ）で autoSpeed に近づける。
    // speedRecovery が大きいほど速く収束する。
-   // clamp(speedRecovery * dt, 0, 1) で補間率が 0〜1 に収まることを保証し、
-   // dt が大きくても currentSpeed_ が autoSpeed を行き過ぎないようにする。
+   // フレームの分け方にかかわらず、同じ経過時間で同じ割合だけ速度を回復する。
    // 禁止中も通常速度を超えた分の減衰は許可するが、速度回復は行わない。
    if (!IsAccelerationBlocked() || currentSpeed_ > autoSpeed) {
-      currentSpeed_ += (autoSpeed - currentSpeed_) * std::clamp(speedRecovery * deltaTime, 0.0f, 1.0f);
+      const float response = -std::expm1(-speedRecovery * std::max(deltaTime, 0.0f));
+      currentSpeed_ += (autoSpeed - currentSpeed_) * response;
    }
 
    // maxSpeed を超えないように clamp する。これによりブーストやペナルティの極端な値も制限される。
@@ -108,23 +102,14 @@ void VehicleGroundMover::AdvanceAccelerationBlock(float deltaTime) {
 void VehicleGroundMover::AddAcceleration(float accel) {
    if (IsAccelerationBlocked() && accel > 0.0f) return;
 
-   // currentSpeed_ が未初期化（負値）のときは autoSpeed を初期値として使う。
-   if (currentSpeed_ < 0.0f) {
-      currentSpeed_ = autoSpeed;
-   }
-
-   // 加速度を積み上げる。実際に速度へ返換されるのは次の UpdateSpeed。
+   // 加速度は次の UpdateSpeed で速度へ積分する。
    acceleration_ += accel;
 }
 
 void VehicleGroundMover::AddVelocityImpulse(float impulse) {
    if (IsAccelerationBlocked() && impulse > 0.0f) return;
 
-   if (currentSpeed_ < 0.0f) {
-      currentSpeed_ = autoSpeed;
-   }
-
-   // 速度に即座に加算する。autoSpeed への回復は UpdateSpeed の指数平滑に委ねる。
+   // 次の UpdateSpeed でフレーム時間を掛けずに加算する。
    velocityImpulse_ += impulse;
 }
 
@@ -223,14 +208,14 @@ nlohmann::json VehicleGroundMover::GetSharedParameters() const {
 }
 
 void VehicleGroundMover::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
+   ReadParameters(data);
 }
 
 void VehicleGroundMover::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
+   ReadParameters(data);
 }
 
-void VehicleGroundMover::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
+void VehicleGroundMover::ReadParameters(const nlohmann::json& data) {
    if (data.contains("autoSpeed")) {
       autoSpeed = data["autoSpeed"];
    }
@@ -291,9 +276,7 @@ void VehicleGroundMover::Configure(const Settings& requested) {
    speedRecovery = settings.speedRecovery;
    maxSpeed = settings.maxSpeed;
 
-   if (currentSpeed_ >= 0.0f) {
-      currentSpeed_ = std::min(currentSpeed_, maxSpeed);
-   }
+   currentSpeed_ = std::clamp(currentSpeed_, -maxSpeed, maxSpeed);
 }
 
 } // namespace App

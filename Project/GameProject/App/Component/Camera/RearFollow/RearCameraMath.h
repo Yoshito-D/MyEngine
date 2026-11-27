@@ -4,7 +4,6 @@
 #include "GameEngine/Math/Functions/MathConstants.h"
 #include "GameEngine/Math/Functions/MatrixOperations.h"
 #include "GameEngine/Math/Functions/QuaternionOperations.h"
-#include <nlohmann/json.hpp>
 #include <algorithm>
 #include <cmath>
 
@@ -26,12 +25,6 @@ float ClampCameraFov(float fov);
 
 /// @brief 指数平滑の補間係数を返す（dt 変動に強く、常に 0..1 未満）
 float ExpSmoothingFactor(float speed, float deltaTime);
-
-/// @brief JSONの数値を読み、欠落や型違いでは既存設定を維持する。
-float ReadFloat(const nlohmann::json& data, const char* key, float fallback);
-
-/// @brief JSONの真偽値を読み、欠落や型違いでは既存設定を維持する。
-bool ReadBool(const nlohmann::json& data, const char* key, bool fallback);
 
 /// @brief 微小ベクトルでは代替方向を使い、正規化可能な方向を返す。
 GameEngine::Vector3 NormalizeOrFallback(const GameEngine::Vector3& value, const GameEngine::Vector3& fallback);

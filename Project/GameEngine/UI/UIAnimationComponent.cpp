@@ -227,8 +227,13 @@ UIAnimationPose UIAnimationComponent::Sample(const UIAnimationClip& clip, float 
    const auto next = std::upper_bound(clip.keys.begin(), clip.keys.end(), progress,
       [](float time, const UIAnimationKeyframe& key) { return time < key.time; });
 
-   if (next == clip.keys.begin()) return next->pose;
-   if (next == clip.keys.end()) return clip.keys.back().pose;
+   if (next == clip.keys.begin()) {
+      return next->pose;
+   }
+
+   if (next == clip.keys.end()) {
+      return clip.keys.back().pose;
+   }
 
    const auto& previous = *std::prev(next);
    const float segment = (progress - previous.time) / (next->time - previous.time);
@@ -269,7 +274,9 @@ void UIAnimationComponent::Advance(Player& player, float deltaTime) {
 bool UIAnimationComponent::Start(UIAnimationEvent event, bool fromCurrent) {
    const auto index = static_cast<size_t>(event);
 
-   if (index >= settings_.clips.size() || !settings_.clips[index].enabled) return false;
+   if (index >= settings_.clips.size() || !settings_.clips[index].enabled) {
+      return false;
+   }
 
    auto& player = players_[static_cast<size_t>(GetChannel(event))];
    const auto current = player.pose;
@@ -309,7 +316,9 @@ UIAnimationPose UIAnimationComponent::GetPose(bool editing) const {
 }
 
 bool UIAnimationComponent::IsPlaying(UIAnimationEvent event) const {
-   if (event >= UIAnimationEvent::Count) return false;
+   if (event >= UIAnimationEvent::Count) {
+      return false;
+   }
 
    const auto& player = players_[static_cast<size_t>(GetChannel(event))];
    return player.event == event && player.playing;

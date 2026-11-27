@@ -11,6 +11,7 @@
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Scene/SceneWorld.h"
 #include "GameEngine/Utility/Logger.h"
+#include "GameEngine/Scene/SceneManager.h"
 #include "GameProject/App/Component/Character/CharacterJump.h"
 #include "GameProject/App/Component/Character/CharacterLanding.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
@@ -74,7 +75,7 @@ void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld
    airControlStartUp_ = {};
    airControlInputReceived_ = false;
    airRotationPerformed_ = false;
-   completionTransitionAttempted_ = false;
+   completionTransitionRequested_ = false;
    completionElapsed_ = 0.0f;
    phaseSettings_ = {};
    frameInput_ = {};
@@ -98,6 +99,7 @@ void TutorialProgressComponent::UpdatePresentation(float deltaTime) {
    state.phase = GetPhase();
    state.controls = VehicleInputComponent::DescribeControlLabels(vehicleInput_);
    state.miniTurboCount = miniTurboCount_;
+   state.requiredMiniTurbos = kRequiredMiniTurbos;
    state.canFireMiniTurbo = vehicleEvents_ && vehicleEvents_->GetSnapshot().miniTurboReady;
    state.isDrifting = vehicleEvents_ && vehicleEvents_->GetSnapshot().isDrifting;
    state.isAirborne = vehicleEvents_ && vehicleEvents_->GetSnapshot().isAirborne;
@@ -179,7 +181,7 @@ void TutorialProgressComponent::ConfigurePhases() {
       {.onEnter =
             [this]() {
                completionElapsed_ = 0.0f;
-               completionTransitionAttempted_ = false;
+               completionTransitionRequested_ = false;
             },
          .onUpdate = [this](float deltaTime) { UpdateComplete(deltaTime); }});
 
@@ -330,11 +332,19 @@ void TutorialProgressComponent::UpdateGoalApproach() {
 void TutorialProgressComponent::UpdateComplete(float deltaTime) {
    completionElapsed_ += deltaTime;
 
-   // クリア文を読む時間を確保し、遷移要求は一度だけ発行する。
-   if (!completionTransitionAttempted_ && !nextScene_.empty() && completionElapsed_ >= completionDelay_ &&
-       !GameEngine::EngineContext::IsSceneTransitioning()) {
-      GameEngine::EngineContext::RequestSceneChange(nextScene_);
-      completionTransitionAttempted_ = true;
+   // クリア文を読む時間を確保し、遷移予約が受理された後は要求を繰り返さない。
+   if (completionTransitionRequested_ || nextScene_.empty() || completionElapsed_ < completionDelay_ ||
+       GameEngine::EngineContext::IsSceneTransitioning()) return;
+
+   using GameEngine::SceneRequestStatus;
+   const auto request = GameEngine::EngineContext::RequestSceneChange(nextScene_);
+
+   if (request == SceneRequestStatus::Accepted) {
+      completionTransitionRequested_ = true;
+   } else if (request != SceneRequestStatus::Busy) {
+      const auto* manager = GameEngine::EngineContext::GetSceneManager();
+      const auto reason = manager ? manager->GetLastRequestError() : "scene manager is unavailable";
+      Logger::Fail("Cannot start the tutorial's nextScene " + nextScene_ + ": " + reason, Logger::LogChannel::Game);
    }
 }
 

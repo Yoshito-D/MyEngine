@@ -88,7 +88,7 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+   void ReadParameters(const nlohmann::json& data);
 
    float moveSpeed = 5.0f;       ///< 最大移動速度（m/s）。
    float acceleration = 20.0f;   ///< 1秒あたりの速度変化を表す加速度。

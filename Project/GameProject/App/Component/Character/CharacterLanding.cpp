@@ -146,14 +146,14 @@ nlohmann::json CharacterLanding::GetSharedParameters() const {
 }
 
 void CharacterLanding::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
+   ReadParameters(data);
 }
 
 void CharacterLanding::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
+   ReadParameters(data);
 }
 
-void CharacterLanding::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
+void CharacterLanding::ReadParameters(const nlohmann::json& data) {
    if (data.contains("surfaceRadius")) {
       surfaceRadius_ = data["surfaceRadius"];
    }

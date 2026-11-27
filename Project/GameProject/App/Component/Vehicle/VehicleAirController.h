@@ -60,7 +60,7 @@ public:
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 private:
-   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+   void ReadParameters(const nlohmann::json& data);
 
    /// @brief ロール角速度（rad/s）
    float rollSpeed = 285.0f * GameEngine::MathConstants::kDegreesToRadians;

@@ -233,41 +233,21 @@ public:
    bool IsKeyReleased(KeyCode key);
 
    /// @brief マウスのボタンが押されているか
-   /// @param button マウスボタン（0:左, 1:右, 2:中ボタン）
-   /// @return マウスボタンが押されている場合はtrue
-   bool IsMousePressed(uint8_t button);
-
-   /// @brief マウスのボタンが押されているか（enum版）
    /// @param button マウスボタン
    /// @return マウスボタンが押されている場合はtrue
    bool IsMousePressed(MouseButton button);
 
    /// @brief マウスのボタンが押されていないか
-   /// @param button マウスボタン（0:左, 1:右, 2:中ボタン）
-   /// @return マウスボタンが押されていない場合はtrue
-   bool IsMouseNotPressed(uint8_t button);
-
-   /// @brief マウスのボタンが押されていないか（enum版）
    /// @param button マウスボタン
    /// @return マウスボタンが押されていない場合はtrue
    bool IsMouseNotPressed(MouseButton button);
 
    /// @brief マウスのボタンがリリース(離された瞬間)されたか
-   /// @param button マウスボタン（0:左, 1:右, 2:中ボタン）
-   /// @return マウスボタンがリリースされた場合はtrue
-   bool IsMouseReleased(uint8_t button);
-
-   /// @brief マウスのボタンがリリース(離された瞬間)されたか（enum版）
    /// @param button マウスボタン
    /// @return マウスボタンがリリースされた場合はtrue
    bool IsMouseReleased(MouseButton button);
 
    /// @brief マウスのボタンがトリガー(押された瞬間)されたか
-   /// @param button マウスボタン（0:左, 1:右, 2:中ボタン）
-   /// @return マウスボタンがトリガーされた場合はtrue
-   bool IsMouseTriggered(uint8_t button);
-
-   /// @brief マウスのボタンがトリガー(押された瞬間)されたか（enum版）
    /// @param button マウスボタン
    /// @return マウスボタンがトリガーされた場合はtrue
    bool IsMouseTriggered(MouseButton button);
@@ -387,6 +367,7 @@ private:
    DIMOUSESTATE mouseState_ = {};                ///< 現在フレームのマウス移動量とボタン状態。
    DIMOUSESTATE prevMouseState_ = {};            ///< 前フレームのマウス移動量とボタン状態。
 
+   bool gamePadConnected_[XUSER_MAX_COUNT]{};        ///< 現在の入力状態と同じポーリングで確定した接続状態。
    XINPUT_STATE gamePadState_[XUSER_MAX_COUNT]{};     ///< ポート別の現在フレームのゲームパッド状態。
    XINPUT_STATE prevGamePadState_[XUSER_MAX_COUNT]{}; ///< ポート別の前フレームのゲームパッド状態。
 

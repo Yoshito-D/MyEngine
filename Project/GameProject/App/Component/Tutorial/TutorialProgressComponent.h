@@ -160,7 +160,7 @@ private:
    bool airRotationPerformed_ = false;        ///< 今回のジャンプ中に機体を十分に傾けたか。
    bool controllerEnabledWhenPlaying_ = true; ///< シーン読込時の走行制御の有効状態。
    bool gravityEnabledWhenPlaying_ = true;    ///< シーン読込時の物理の有効状態。
-   bool completionTransitionAttempted_ = false;        ///< 二重遷移の抑止。
+   bool completionTransitionRequested_ = false; ///< 遷移要求が受理されたか。
 };
 
 } // namespace App

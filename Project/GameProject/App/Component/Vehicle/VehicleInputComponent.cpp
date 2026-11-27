@@ -1,4 +1,6 @@
 #include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
+
+#include "GameEngine/Utility/Logger.h"
 #include "GameEngine/Object/Object.h"
 #include "GameProject/App/Component/Vehicle/VehicleDrift.h"
 #include <cstdint>
@@ -147,14 +149,21 @@ nlohmann::json VehicleInputComponent::Serialize() const {
 }
 
 void VehicleInputComponent::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object() || !data.contains("playerSlot") || !data.at("playerSlot").is_number_unsigned()) return;
+   if (!data.is_object()) {
+      Logger::Fail("VehicleInputComponent settings must be a JSON object", Logger::LogChannel::Game);
+   }
 
-   const uint64_t configuredSlot = data.at("playerSlot").get<uint64_t>();
+   const auto slot = data.find("playerSlot");
 
-   // 外部編集されたJSONでも入力サービスの固定プレイヤー配列を範囲外参照させない。
-   playerSlot = static_cast<uint32_t>(
-      std::min(configuredSlot, static_cast<uint64_t>(GameEngine::InputActionService::kMaxPlayers - 1)));
-   Configure(DescribeSettings());
+   if (slot == data.end()) return;
+
+   // 固定プレイヤー配列の範囲を、整数型を狭める前に確認する。
+   if (!slot->is_number_integer() || (!slot->is_number_unsigned() && slot->get<std::int64_t>() < 0) ||
+       slot->get<std::uint64_t>() >= GameEngine::InputActionService::kMaxPlayers) {
+      Logger::Fail("Invalid VehicleInputComponent.playerSlot", Logger::LogChannel::Game);
+   }
+
+   Configure({.playerSlot = slot->get<std::uint32_t>()});
 }
 
 #ifdef USE_IMGUI
@@ -167,10 +176,8 @@ void VehicleInputComponent::DrawInspector() {
 
    if (ImGui::SliderInt(GameEngine::LocalizeEditorText("プレイヤースロット", "Player Slot"), &slot, 0,
           static_cast<std::int32_t>(GameEngine::InputActionService::kMaxPlayers - 1))) {
-      playerSlot = static_cast<uint32_t>(slot);
+      Configure({.playerSlot = static_cast<std::uint32_t>(slot)});
    }
-
-   Configure(DescribeSettings());
 }
 #endif
 
@@ -185,10 +192,11 @@ VehicleInputComponent::Settings VehicleInputComponent::DescribeSettings() const 
 }
 
 void VehicleInputComponent::Configure(const Settings& requested) {
-   auto settings = requested;
-   [[maybe_unused]] const Settings defaults;
-   settings.playerSlot = std::min(settings.playerSlot, 3u);
-   playerSlot = settings.playerSlot;
+   if (requested.playerSlot >= GameEngine::InputActionService::kMaxPlayers) {
+      Logger::Fail("Invalid VehicleInputComponent.playerSlot", Logger::LogChannel::Game);
+   }
+
+   playerSlot = requested.playerSlot;
 }
 
 } // namespace App

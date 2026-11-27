@@ -140,6 +140,8 @@ public:
 private:
    std::int32_t GetLandingPlanetIndex() const;
 
+   GameEngine::Model* FindPlanetById(const std::string& objectId) const;
+
    void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
 
    float switchHysteresis = 1.0f; ///< 惑星切替に必要な距離差のヒステリシス（小さいほど敏感）。

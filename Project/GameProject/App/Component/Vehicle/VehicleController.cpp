@@ -13,11 +13,6 @@ using namespace GameEngine;
 
 namespace App {
 
-Vector3 VehicleController::GetLastMoveDirection() const {
-   const auto* mover = HasOwner() ? GetOwner().GetComponent<VehicleMover>() : nullptr;
-   return mover ? mover->GetLastMoveDirection() : Vector3{0.0f, 0.0f, 1.0f};
-}
-
 void VehicleController::Update(float deltaTime) {
    if (!HasOwner()) return;
 
@@ -34,13 +29,13 @@ void VehicleController::Update(float deltaTime) {
       gravityUp = gravityBody->GetTargetUpVector();
    }
 
-   // 接地判定（ジャンプ中でなければ接地扱い）
-   bool isGrounded = !(jump && jump->IsJumping());
-
    // ジャンプ入力
    if (jump && jump->IsEnabled() && input && input->IsJumpTriggered()) {
       jump->Jump(gravityUp);
    }
+
+   // 同じフレームに離陸した場合は、地上の操舵やドリフトを適用しない。
+   const bool isGrounded = !(jump && jump->IsJumping());
 
    // 移動・姿勢入力を VehicleMover へ委譲
    if (mover && mover->IsEnabled()) {
