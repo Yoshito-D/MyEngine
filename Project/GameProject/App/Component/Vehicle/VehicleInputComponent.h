@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_set>
+
 #include <cmath>
 #include <algorithm>
 
@@ -81,8 +83,10 @@ public:
    /// @param input 対象車両の入力部品。未指定時は先頭プレイヤーの継続操舵用案内を返す。
    static VehicleControlLabels DescribeControlLabels(const VehicleInputComponent* input);
 
-   /// @brief ジャンプ入力を許可し、再許可時はボタンを離すまで入力を保留する。
-   void SetJumpEnabled(bool enabled);
+   /// @brief 指定した所有者のジャンプ禁止だけを追加・解除する。
+   /// @param requester 禁止を解除するまで生存する要求元。
+   /// @param blocked 禁止する場合はtrue。
+   void SetJumpBlocked(const GameEngine::IObjectComponent& requester, bool blocked);
 
    /// @brief ジャンプ再許可後のボタン解放を監視する。
    void Update(float deltaTime) override;
@@ -125,7 +129,7 @@ public:
 
 private:
    uint32_t playerSlot = 0;           ///< 入力を読み取るプレイヤースロット。
-   bool jumpEnabled_ = true;          ///< 現在の課題でジャンプ入力を受け付けるか。
+   std::unordered_set<const GameEngine::IObjectComponent*> jumpBlocks_; ///< ジャンプ入力を禁止している所有者。
    bool jumpAwaitingRelease_ = false; ///< 決定ボタンと共用するジャンプの押し直し待ち。
 
 private:

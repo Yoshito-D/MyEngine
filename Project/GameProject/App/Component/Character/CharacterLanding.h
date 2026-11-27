@@ -6,12 +6,18 @@
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/Types/Vector3.h"
 
+#include <optional>
+
 namespace App {
 
-/// @brief 惑星表面への着地判定と接地固定を行うコンポーネント
-///
-/// - ジャンプ中: 落下して地表半径以下に到達したら着地処理
-/// - 地上: 常に地表へ再配置し、速度を抑制
+/// @brief 車体が支持される地表上の点と外向き法線。
+struct SurfaceContact {
+   GameEngine::Vector3 point;  ///< ワールド座標（m）。
+   GameEngine::Vector3 normal; ///< ワールド空間の単位法線。
+};
+
+/// @brief 車体が惑星表面に支持される状態を管理する。
+/// @details 接地中は地表に沿って位置を補正し、空中では降下して車体が地表に達した場合に接地する。
 class CharacterLanding final : public GameEngine::IObjectComponent {
 public:
    /// @brief 依存する状態の更新後に処理するためのフェーズを返す。
@@ -28,23 +34,17 @@ public:
    /// @brief 着地判定と接地状態を更新する
    void Update(float) override;
 
-   /// @brief 惑星中心を設定する
-   void SetPlanetCenter(const GameEngine::Vector3& center) { planetCenter_ = center; }
+   /// @brief 有効な地表に接地しているかを返す。
+   bool IsGrounded() const { return contact_.has_value(); }
 
-   /// @brief 地表半径を設定する
-   void SetSurfaceRadius(float radius) { surfaceRadius_ = radius; }
+   /// @brief このフレームの接触判定で空中から着地したかを返す。
+   bool DidLandThisFrame() const { return landedThisFrame_; }
 
-   /// @brief 接地中かどうかを返す
-   bool IsGrounded() const { return isGrounded_; }
+   /// @brief 接地点を返し、支持状態を解除する。空中では値を返さない。
+   std::optional<SurfaceContact> Takeoff();
 
-   /// @brief 直近の着地時にプレイヤーと惑星が接触したワールド座標を返す
-   const GameEngine::Vector3& GetLastLandingContactPoint() const { return lastLandingContactPoint_; }
-
-   /// @brief 直近の着地面の外向き法線を返す
-   const GameEngine::Vector3& GetLastLandingNormal() const { return lastLandingNormal_; }
-
-   /// @brief 有効な着地接触情報を保持しているかを返す
-   bool HasLandingContact() const { return hasLandingContact_; }
+   /// @brief 無効にした接触判定の支持状態を破棄する。
+   void OnDisable() override;
 
 #ifdef USE_IMGUI
 
@@ -69,11 +69,11 @@ public:
    struct Settings {
 
       /// @brief 原点（inertia中心）から着地点までの追加オフセット
-      /// surfaceRadius_ に加算され、実際のスナップ位置が決まる
+      /// 惑星の球半径に加算され、実際のスナップ位置が決まる。
       float landingOffset = 0.0f;
 
       /// @brief OBBの半サイズ（各軸を個別指定）
-      /// 地表スナップ時の支持半径計算に使用する
+      /// メートルで指定し、惑星選択・接触・カメラの着地予測で共用する。
       GameEngine::Vector3 obbHalfExtents = {0.35f, 0.175f, 0.75f};
    };
 
@@ -86,27 +86,10 @@ public:
 private:
    void ReadParameters(const nlohmann::json& data);
 
-   float landingOffset = 0.0f;                                  ///< 原点（inertia中心）から着地点までの追加オフセット。
-   GameEngine::Vector3 obbHalfExtents = {0.35f, 0.175f, 0.75f}; ///< OBBの半サイズ（各軸を個別指定）。
-
-private:
-   /// @brief 惑星地表の半径
-   float surfaceRadius_ = 15.0f;
-
-   /// @brief 惑星中心座標
-   GameEngine::Vector3 planetCenter_ = {0.0f, 0.0f, 0.0f};
-
-   /// @brief 接地フラグ
-   bool isGrounded_ = true;
-
-   /// @brief 直近の着地接触点（ワールド座標）
-   GameEngine::Vector3 lastLandingContactPoint_ = {0.0f, 0.0f, 0.0f};
-
-   /// @brief 直近の着地面法線（惑星外向き）
-   GameEngine::Vector3 lastLandingNormal_ = {0.0f, 1.0f, 0.0f};
-
-   /// @brief 直近の着地接触情報が有効か
-   bool hasLandingContact_ = false;
+   Settings settings_;
+   std::optional<SurfaceContact> contact_;
+   bool evaluatedContact_ = false; ///< 初回配置時だけ、空中からの着地と区別して地表に接地させる。
+   bool landedThisFrame_ = false;
 };
 
 } // namespace App

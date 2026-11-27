@@ -1,7 +1,7 @@
 #include "GameProject/App/Component/Race/UI/GamepadGuideTextComponent.h"
 
 #include "GameProject/App/Component/Race/RaceManagerComponent.h"
-#include "GameProject/App/Component/Character/CharacterJump.h"
+#include "GameProject/App/Component/Character/CharacterLanding.h"
 #include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
 #include "GameEngine/Object/Component/UI/UITextComponent.h"
 #include "GameEngine/Object/Object.h"
@@ -20,7 +20,7 @@ void GamepadGuideTextComponent::OnReferencesChanged(GameEngine::SceneWorld& scen
    // シーン再読み込み時に以前のシーンを指すポインターを残さないよう、
    // 新しい参照を検索する前に必ず解決状態を初期化する。
    raceManager_ = nullptr;
-   characterJump_ = nullptr;
+   characterLanding_ = nullptr;
    vehicleInput_ = nullptr;
 
    if (auto* managerObject = sceneWorld.FindObjectById(raceManagerId_)) {
@@ -28,7 +28,7 @@ void GamepadGuideTextComponent::OnReferencesChanged(GameEngine::SceneWorld& scen
    }
 
    if (auto* playerObject = sceneWorld.FindObjectById(playerObjectId_)) {
-      characterJump_ = playerObject->GetComponent<CharacterJump>();
+      characterLanding_ = playerObject->GetComponent<CharacterLanding>();
       vehicleInput_ = playerObject->GetComponent<VehicleInputComponent>();
    }
 }
@@ -53,9 +53,9 @@ void GamepadGuideTextComponent::Update(float deltaTime) {
       return;
    }
 
-   // CharacterJumpを解決できない構成でもガイド自体は維持し、
+   // CharacterLandingを解決できない構成でもガイド自体は維持し、
    // 空中状態を確認できた場合に限って空中操作へ切り替える。
-   const bool airborne = characterJump_ && characterJump_->IsJumping();
+   const bool airborne = characterLanding_ && !characterLanding_->IsGrounded();
 
    // 走行入力と同じスロットの割り当てを毎フレーム参照し、接続と再割り当てを表示へ反映する。
    const auto controls = VehicleInputComponent::DescribeControlLabels(vehicleInput_);
@@ -94,7 +94,7 @@ void GamepadGuideTextComponent::DrawInspector() {
 
    GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
    GameEngine::EditorUI::ObjectReference("Player", playerObjectId_, "TransformComponent");
-   ImGui::Text("Resolved: Race=%s Player Jump=%s", raceManager_ ? "true" : "false", characterJump_ ? "true" : "false");
+   ImGui::Text("Resolved: Race=%s Player Contact=%s", raceManager_ ? "true" : "false", characterLanding_ ? "true" : "false");
 }
 #endif
 

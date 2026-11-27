@@ -6,6 +6,8 @@
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Model/Model.h"
 #include "GameEngine/Object/Object.h"
+#include "GameProject/App/Component/Gravity/SphericalGravityAttractor.h"
+#include "GameProject/App/Component/Race/RaceGoalDirectionWorldComponent.h"
 #include "GameEngine/Scene/SceneWorld.h"
 #include "GameEngine/Utility/Logger.h"
 #include "GameProject/App/Component/Gravity/PlanetSwitcher.h"
@@ -49,7 +51,6 @@ constexpr float kNearDepth = 0.1f;                                  ///< 透視�
 constexpr float kMinGoalBearing = 0.001f;                           ///< ゴールの方角を求める平面距離の下限（m）。
 constexpr float kCoveredPointIntensity = 0.67f;
 constexpr float kOcclusionTolerance = 0.2f;                         ///< 光点の遮蔽判定に使う深度の許容差（m）。
-constexpr float kUnitSphereRadius = 0.5f;                           ///< 拡縮前の惑星メッシュの半径（m）。
 constexpr Vector2 kMapCenter{kPanelWidth * 0.5f, kMapTop + kMapRadius};
 constexpr Vector4 kPlanetColor{0.07f, 0.46f, 1.f, 1.f};
 constexpr Vector4 kCurrentPlanetColor{0.16f, 0.63f, 1.f, 1.f};
@@ -61,19 +62,6 @@ constexpr Vector4 kCaptionColor{1.f, 1.f, 1.f, 1.f};
 
 Vector3 GetTranslation(const GameEngine::Matrix4x4& matrix) {
    return {matrix.m[3][0], matrix.m[3][1], matrix.m[3][2]};
-}
-
-GameEngine::Quaternion GetWorldRotation(const GameEngine::Object& subject) {
-   auto rotation = GameEngine::Quaternion::Identity();
-
-   // 地図の基準軸に拡縮を混ぜず、所属ワールドの親の姿勢だけをモデルと同じ順序で合成する。
-   for (auto* object = &subject; object; object = object->GetParent()) {
-      if (const auto* transform = object->GetComponent<GameEngine::TransformComponent>()) {
-         rotation = transform->GetLocalPose().GetActiveQuaternion() * rotation;
-      }
-   }
-
-   return rotation.Normalize();
 }
 
 } // namespace
@@ -98,9 +86,17 @@ RaceMinimapHUDComponent::RaceMinimapHUDComponent() {
 void RaceMinimapHUDComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
    OnReferencesChanged(sceneWorld);
 
+   if (!goalDirectionId_.empty()) {
+      const auto* arrow = sceneWorld.FindObjectById(goalDirectionId_);
+
+      if (!arrow || !arrow->GetComponent<RaceGoalDirectionHUDComponent>()) {
+         Logger::Fail("RaceMinimap: invalid distance arrow " + goalDirectionId_, Logger::LogChannel::Game);
+      }
+   }
+
    // チュートリアルなどで表示が遅れても、シーン開始時の進行方向を使う。
    if (player_) {
-      worldToStart_ = GetWorldRotation(*player_).Conjugate();
+      worldToStart_ = player_->GetWorldRotation().Conjugate();
    }
 
    yaw_ = 0.f;
@@ -144,7 +140,24 @@ bool RaceMinimapHUDComponent::HandlesViewInputFor(const GameEngine::Object& play
    return &player == player_ && ShouldShow();
 }
 
-void RaceMinimapHUDComponent::Submit(RaceGoalDirectionHUDComponent* goalDirection) {
+RaceGoalDirectionHUDComponent* RaceMinimapHUDComponent::FindHudArrow() const {
+   auto* world = HasOwner() ? GetOwner().GetWorld() : nullptr;
+   auto* arrow = world && !goalDirectionId_.empty() ? world->FindObjectById(goalDirectionId_) : nullptr;
+   const auto* worldArrow = arrow ? arrow->GetComponent<RaceGoalDirectionWorldComponent>() : nullptr;
+   return arrow && !(worldArrow && worldArrow->IsEnabled()) ? arrow->GetComponent<RaceGoalDirectionHUDComponent>()
+                                                          : nullptr;
+}
+
+void RaceMinimapHUDComponent::OnDisable() {
+   if (auto* arrow = FindHudArrow()) {
+      arrow->Hide();
+   }
+}
+
+void RaceMinimapHUDComponent::PrepareDraw(const GameEngine::SceneDrawContext& context) {
+   if (context.editing) return;
+
+   auto* goalDirection = FindHudArrow();
    if (!ShouldShow()) {
       if (goalDirection) {
          goalDirection->Hide();
@@ -192,23 +205,14 @@ void RaceMinimapHUDComponent::Submit(RaceGoalDirectionHUDComponent* goalDirectio
             Logger::LogChannel::Game);
       }
 
-      // ゴールと同じ座標系で表示するため、親の平行移動と拡縮を惑星にも反映する。
-      const auto world = model->GetWorldMatrix();
-      const auto center = GetTranslation(world);
-      const Vector3 scale{
-         Vector3{world.m[0][0], world.m[0][1], world.m[0][2]}.Length(),
-         Vector3{world.m[1][0], world.m[1][1], world.m[1][2]}.Length(),
-         Vector3{world.m[2][0], world.m[2][1], world.m[2][2]}.Length()};
-      const float radius = std::max({scale.x, scale.y, scale.z}) * kUnitSphereRadius;
-
-      if (!std::isfinite(center.x) || !std::isfinite(center.y) || !std::isfinite(center.z) ||
-          !std::isfinite(scale.x) || !std::isfinite(scale.y) || !std::isfinite(scale.z) || radius <= 0.f) {
+      const auto surface = PlanetSurface::From(*model);
+      if (!surface) {
          Logger::Fail("RaceMinimap: invalid planet transform for " + model->GetEntityId(), Logger::LogChannel::Game);
       }
 
       const bool current = index == planetSwitcher_->GetCurrentPlanetIndex();
-      const auto rotation = GetWorldRotation(*model);
-      frame_.spheres.push_back({center, radius, current ? 1.f : 0.f,
+      const auto rotation = model->GetWorldRotation();
+      frame_.spheres.push_back({surface->center, surface->radius, current ? 1.f : 0.f,
          current ? kCurrentPlanetColor : kPlanetColor, GameEngine::RotateVector({1.f, 0.f, 0.f}, rotation),
          GameEngine::RotateVector({0.f, 1.f, 0.f}, rotation)});
    }
@@ -224,7 +228,7 @@ void RaceMinimapHUDComponent::Submit(RaceGoalDirectionHUDComponent* goalDirectio
    }
 
    if (!worldToStart_) {
-      worldToStart_ = GetWorldRotation(*player_).Conjugate();
+      worldToStart_ = player_->GetWorldRotation().Conjugate();
    }
 
    viewCenter_ = playerPosition;
@@ -243,7 +247,7 @@ void RaceMinimapHUDComponent::Submit(RaceGoalDirectionHUDComponent* goalDirectio
    frame_.caption = std::format("{:.0f}m", distance);
 
    if (goalDirection) {
-      goalDirection->ShowBesideDistance(directionToGoal, frame_.GetCaptionOffset(), frame_.caption, frame_.captionStyle);
+      goalDirection->ShowBesideDistance(context.camera, directionToGoal, frame_.GetCaptionOffset(), frame_.caption, frame_.captionStyle);
    }
 
    GameEngine::EngineContext::SubmitSphereMap(frame_);
@@ -324,7 +328,7 @@ void RaceMinimapHUDComponent::AddGoalPoint(const Vector3& viewPosition) {
 
 nlohmann::json RaceMinimapHUDComponent::Serialize() const {
    return {{"playerObjectId", playerId_}, {"goalObjectId", goalId_}, {"raceManagerId", raceManagerId_},
-      {"fontId", frame_.captionStyle.fontId}, {"viewPitch", initialPitch_}};
+      {"goalDirectionObjectId", goalDirectionId_}, {"fontId", frame_.captionStyle.fontId}, {"viewPitch", initialPitch_}};
 }
 
 void RaceMinimapHUDComponent::Deserialize(const nlohmann::json& data) {
@@ -332,6 +336,7 @@ void RaceMinimapHUDComponent::Deserialize(const nlohmann::json& data) {
       auto playerId = data.at("playerObjectId").get<std::string>();
       auto goalId = data.at("goalObjectId").get<std::string>();
       auto raceManagerId = data.at("raceManagerId").get<std::string>();
+      auto goalDirectionId = data.value("goalDirectionObjectId", std::string{});
       auto fontId = data.at("fontId").get<std::string>();
       const float pitch = data.at("viewPitch").get<float>();
 
@@ -343,6 +348,7 @@ void RaceMinimapHUDComponent::Deserialize(const nlohmann::json& data) {
       playerId_ = std::move(playerId);
       goalId_ = std::move(goalId);
       raceManagerId_ = std::move(raceManagerId);
+      goalDirectionId_ = std::move(goalDirectionId);
       frame_.captionStyle.fontId = std::move(fontId);
       initialPitch_ = pitch;
    } catch (const nlohmann::json::exception& error) {
@@ -366,6 +372,8 @@ void RaceMinimapHUDComponent::DrawInspector() {
    GameEngine::EditorUI::ObjectReference(Localize({"ゴール", "Goal"}), goalId_, GameEngine::TransformComponent::kTypeName);
    GameEngine::EditorUI::ObjectReference(
       Localize({"レース管理", "Race Manager"}), raceManagerId_, RaceManagerComponent::kTypeName);
+   GameEngine::EditorUI::ObjectReference(
+      Localize({"距離表示の矢印", "Distance Arrow"}), goalDirectionId_, RaceGoalDirectionHUDComponent::kTypeName);
    constexpr float kPitchLimitDegrees = kPitchLimit * GameEngine::MathConstants::kRadiansToDegrees;
    float pitch = initialPitch_;
 

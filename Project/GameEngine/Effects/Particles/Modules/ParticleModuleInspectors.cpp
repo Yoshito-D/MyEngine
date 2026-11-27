@@ -419,8 +419,14 @@ void EmissionModule::DrawInspector() {
             scheduleChanged = true;
          }
 
-         ImGui::TextDisabled("firedCount: %llu  nextFireTime: %.2f",
-            static_cast<unsigned long long>(burstStates_[i].firedCount), burstStates_[i].nextFireTime);
+         const double fired = burstStates_[i].firedCount;
+         const auto& playingBurst = bursts_[i];
+         ImGui::TextDisabled("firedCount: %.0f", fired);
+
+         if (playingBurst.cycles == 0 || fired < playingBurst.cycles) {
+            ImGui::SameLine();
+            ImGui::TextDisabled("nextFireTime: %.2f", playingBurst.time + fired * playingBurst.interval);
+         }
          ImGui::Unindent();
       }
 

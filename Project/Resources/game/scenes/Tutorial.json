@@ -1791,6 +1791,7 @@
             {
                "data": {
                   "fontId": "851Gkktt",
+                  "goalDirectionObjectId": "Model:GoalDirectionHUD",
                   "goalObjectId": "Model:Goal",
                   "playerObjectId": "Model:Player",
                   "raceManagerId": "",

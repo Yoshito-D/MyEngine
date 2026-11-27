@@ -79,6 +79,16 @@ Matrix4x4 Object::GetWorldMatrix() const {
    return CalculateWorldMatrix(this, visiting);
 }
 
+Quaternion Object::GetWorldRotation() const {
+   auto rotation = Quaternion::Identity();
+   for (auto* object = this; object; object = object->GetParent()) {
+      if (const auto* transform = object->GetComponent<TransformComponent>()) {
+         rotation = transform->GetLocalPose().GetActiveQuaternion() * rotation;
+      }
+   }
+   return rotation.Normalize();
+}
+
 Matrix4x4 Object::GetParentWorldMatrix() const {
    const auto* parent = GetParent();
 
@@ -151,8 +161,12 @@ nlohmann::json Object::SerializeComponents() const {
    return components_.Serialize();
 }
 
-void Object::UpdateComponents(float deltaTime, ObjectUpdateDomain domain) {
-   components_.Update(deltaTime, domain);
+void Object::PrepareDraw(const SceneDrawContext& context) {
+   components_.PrepareDraw(context);
+}
+
+void Object::UpdateComponents(float deltaTime, ObjectUpdateDomain domain, std::optional<ObjectUpdatePhase> phase) {
+   components_.Update(deltaTime, domain, phase);
 }
 
 void Object::Activate() {

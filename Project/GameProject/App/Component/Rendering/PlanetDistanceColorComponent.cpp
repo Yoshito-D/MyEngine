@@ -1,6 +1,7 @@
 #include "GameProject/App/Component/Rendering/PlanetDistanceColorComponent.h"
 #include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameEngine/Object/Object.h"
+#include "GameProject/App/Component/Gravity/SphericalGravityAttractor.h"
 #include "GameEngine/Object/Component/Rendering/MaterialComponent.h"
 #include "GameEngine/Scene/SceneWorld.h"
 #include "GameEngine/Utility/JsonValue.h"
@@ -38,17 +39,13 @@ void PlanetDistanceColorComponent::Update(float) {
       return;
    }
 
-   const auto playerWorld = player->GetWorldMatrix();
-   const GameEngine::Vector3 playerPosition{playerWorld.m[3][0], playerWorld.m[3][1], playerWorld.m[3][2]};
-   const auto world = GetOwner().GetWorldMatrix();
-   const GameEngine::Vector3 center{world.m[3][0], world.m[3][1], world.m[3][2]};
-   const GameEngine::Vector3 axisX{world.m[0][0], world.m[0][1], world.m[0][2]};
-   const GameEngine::Vector3 axisY{world.m[1][0], world.m[1][1], world.m[1][2]};
-   const GameEngine::Vector3 axisZ{world.m[2][0], world.m[2][1], world.m[2][2]};
-
-   // 半径0.5の球を基準に地表距離を使い、大きな惑星や親Transformがある場合にも対応する。
-   const float radius = std::max({axisX.Length(), axisY.Length(), axisZ.Length()}) * 0.5f;
-   const float surfaceDistance = (playerPosition - center).Length() - radius;
+   const auto surface = PlanetSurface::From(GetOwner());
+   if (!surface) {
+      ResetBaseColor();
+      return;
+   }
+   const auto playerPosition = GameEngine::TransformCoordinate({}, player->GetWorldMatrix());
+   const float surfaceDistance = (playerPosition - surface->center).Length() - surface->radius;
 
    if (!std::isfinite(surfaceDistance)) {
       ResetBaseColor();

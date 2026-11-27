@@ -4,7 +4,6 @@
 #include "GameProject/App/Component/Camera/CameraModeSwitcher.h"
 #include "GameProject/App/Component/Camera/LandingPrediction.h"
 #include "GameProject/App/Component/Character/CharacterLanding.h"
-#include "GameProject/App/Component/Character/CharacterJump.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
 #include "GameProject/App/Component/Gravity/PlanetSwitcher.h"
 #include "GameProject/App/Component/Vehicle/VehicleGroundMover.h"
@@ -66,7 +65,6 @@ void CameraGravityBridge::Update(float deltaTime) {
 
    auto* gravityBody = GetOwner().GetComponent<GravityBody>();
    auto* landing = GetOwner().GetComponent<CharacterLanding>();
-   auto* jump = GetOwner().GetComponent<CharacterJump>();
    auto* switcher = GetOwner().GetComponent<PlanetSwitcher>();
    const auto* drift = GetOwner().GetComponent<VehicleDrift>();
    const auto* input = GetOwner().GetComponent<VehicleInputComponent>();
@@ -74,28 +72,16 @@ void CameraGravityBridge::Update(float deltaTime) {
    const auto* cameraMode = GetOwner().GetComponent<CameraModeSwitcher>();
    const auto* selectedCamera = cameraMode ? cameraMode->GetSelectedCamera() : nullptr;
 
-   // 着地済みの基準を参照側から取得し、惑星選択側からの設定書き換えを不要にする。
-   if (switcher) {
-      float radius = 0.0f;
-      switcher->TryGetCurrentPlanet(planetCenter_, radius);
-   }
+   const auto pos = GameEngine::TransformCoordinate({}, GetOwner().GetWorldMatrix());
+   const auto gravityUp = gravityBody ? gravityBody->GetTargetUpVector() : GameEngine::Vector3{0.0f, 1.0f, 0.0f};
+   GameEngine::Vector3 currentCenter{};
+   GameEngine::Vector3 candidateCenter{};
+   float currentRadius = 0.0f;
+   float candidateRadius = 0.0f;
 
-   // 惑星中心→自身方向を正規化して重力Upを作る
-   GameEngine::Vector3 toSelf = transform->GetLocalPose().translation - planetCenter_;
-   float len = toSelf.Length();
-
-   if (len < 1e-4f) return;
-
-   GameEngine::Vector3 gravityUp = toSelf * (1.0f / len);
-   GameEngine::Vector3 pos = transform->GetLocalPose().translation;
-   GameEngine::Vector3 cameraPlanetCenter = planetCenter_;
-   float cameraPlanetSurfaceRadius = 0.0f;
-   bool hasCameraPlanet = false;
-
-   if (switcher) {
-      // 空中切替中は確定惑星ではなく保留中の着地先を使い、予測と重力先を一致させる。
-      hasCameraPlanet = switcher->TryGetLandingPlanet(cameraPlanetCenter, cameraPlanetSurfaceRadius);
-   }
+   const bool hasCurrentPlanet = switcher && switcher->TryGetCurrentPlanet(currentCenter, currentRadius);
+   const bool hasCandidate = switcher && switcher->TryGetLandingPlanet(candidateCenter, candidateRadius);
+   const bool grounded = landing && landing->IsGrounded();
 
    float speed = 0.0f;
    float autoSpeed = 13.0f;
@@ -109,8 +95,10 @@ void CameraGravityBridge::Update(float deltaTime) {
 
    const VehicleCameraFollowInput followInput{.gravityUp = gravityUp,
       .target = pos,
-      .planetCenter = planetCenter_,
-      .landingPlanetCenter = cameraPlanetCenter,
+      .planetCenter = hasCurrentPlanet ? currentCenter : candidateCenter,
+      .landingPlanetCenter = candidateCenter,
+      .planetSurfaceRadius = hasCurrentPlanet ? currentRadius : candidateRadius,
+      .hasLandingPlanet = hasCandidate,
       .speed = speed,
       .autoSpeed = autoSpeed};
 
@@ -123,14 +111,10 @@ void CameraGravityBridge::Update(float deltaTime) {
    // PlayerRearFollowCamera 側へ重力Up・注視対象・近傍惑星・前方・空中状態を同期
    if (playerRearFollowCamera_) {
       GameEngine::Vector3 forward = {0.0f, 0.0f, 1.0f};
-      GameEngine::Quaternion rotation = transform->GetLocalPose().GetActiveQuaternion();
+      const auto rotation = GetOwner().GetWorldRotation();
       forward = GameEngine::RotateVector(forward, rotation);
 
-      bool isAirborne = false;
-
-      if (jump) {
-         isAirborne = jump->IsJumping();
-      }
+      const bool isAirborne = !grounded;
 
       GameEngine::Vector3 airborneMoveForward = forward;
       GameEngine::Vector3 playerVelocity = {0.0f, 0.0f, 0.0f};
@@ -154,7 +138,7 @@ void CameraGravityBridge::Update(float deltaTime) {
       playerRearFollowCamera_->SetPlayerVelocity(playerVelocity);
 
       // 加速禁止はジャンプ中も続くため、失敗した着地の接地中だけ見切れを補正する。
-      const bool groundedAfterFailure = landing && events && events->IsEnabled() && events->GetSnapshot().isGrounded &&
+      const bool groundedAfterFailure = grounded && events && events->IsEnabled() &&
                                         events->GetSnapshot().landingResult == LandingResult::Failure;
       const bool failedLandingPenalty =
          groundedAfterFailure && groundMover && groundMover->IsEnabled() && groundMover->IsAccelerationBlocked();
@@ -166,17 +150,17 @@ void CameraGravityBridge::Update(float deltaTime) {
       // 条件を満たさないフレームでは前回値を残さず、カメラ側の予測補間を確実に解除する。
       playerRearFollowCamera_->ClearLandingPrediction();
 
-      if (isAirborne && hasCameraPlanet && gravityBody && landing) {
+      if (isAirborne && hasCandidate && gravityBody && gravityBody->HasSurfaceGravity() && landing) {
          const auto* air = GetOwner().GetComponent<VehicleAirController>();
          const auto* controller = GetOwner().GetComponent<VehicleController>();
          const auto* mover = GetOwner().GetComponent<VehicleMover>();
          const bool appliesAirDrag =
-            air && air->IsEnabled() && controller && controller->IsEnabled() && mover && mover->IsEnabled();
+            air && air->IsEnabled() && controller && controller->IsEnabled() && !controller->IsMotionStopped() && mover && mover->IsEnabled();
          const float airDrag = appliesAirDrag ? air->GetAirDrag() : 0.0f;
          float predictionHorizon = std::max(0.0f, playerRearFollowCamera_->GetPreLandingPredictionHorizon());
          LandingPrediction prediction{};
          const bool hasLandingPrediction =
-            PredictLanding(pos, playerVelocity, cameraPlanetCenter, cameraPlanetSurfaceRadius,
+            PredictLanding(pos, playerVelocity, candidateCenter, candidateRadius,
                landing->DescribeSettings().landingOffset, landing->DescribeSettings().obbHalfExtents, rotation,
                *gravityBody, airDrag, predictionHorizon, forward, playerRearFollowCamera_->GetCameraRight(), prediction);
 
@@ -187,7 +171,6 @@ void CameraGravityBridge::Update(float deltaTime) {
       }
    }
 
-   const bool grounded = (!landing || landing->IsGrounded()) && (!jump || !jump->IsJumping());
    const bool steering = grounded && drift && drift->IsEnabled() && input && input->GetSteerInput() != 0.0f;
    effects_.Update(settings_, deltaTime, steering, events ? events->GetSnapshot() : VehicleEventSnapshot{}, gravityUp,
       cameras_, selectedCamera);
@@ -218,8 +201,6 @@ void CameraGravityBridge::DrawInspector() {
    }
 
    ImGui::Separator();
-   ImGui::Text(
-      "%s: (%.2f, %.2f, %.2f)", Tr("惑星中心", "Planet Center"), planetCenter_.x, planetCenter_.y, planetCenter_.z);
    ImGui::Text("Resolved vehicle cameras: %zu", cameras_.size());
    ImGui::Separator();
    ImGui::Checkbox(Tr("着地シェイク", "Landing Shake"), &settings_.enableLandingShake);

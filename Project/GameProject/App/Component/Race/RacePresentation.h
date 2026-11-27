@@ -12,8 +12,6 @@ class SceneWorld;
 
 namespace App {
 class VehicleController;
-class VehicleInputComponent;
-class GravityBody;
 class CameraModeSwitcher;
 class VehicleSpeedPostEffectController;
 
@@ -23,10 +21,11 @@ public:
    /// @brief 指定されたプレイヤーから操作と演出の参照を解決する。
    void Resolve(GameEngine::SceneWorld& sceneWorld, const std::string& playerObjectId);
 
-   /// @brief シーン本来の有効状態を保存し、一時停止からの復元に使う。
+   /// @brief カメラ切り替えと速度演出の有効状態を、結果表示からの復元用に保存する。
    void CaptureInitialState();
 
-   /// @brief 入力・走行・物理を一時停止するか、保存した有効状態へ戻す。
+   /// @brief レース自身の走行停止要求を追加または解除する。
+   /// @param locked 停止を要求する場合はtrue。
    void SetPlayerLocked(bool locked);
 
    /// @brief 導入の決定入力と操作案内に使うプレイヤースロットを返す。
@@ -74,15 +73,11 @@ private:
    GameEngine::CameraState countdownCameraState_;        ///< 通常カメラへ戻すときの開始前の構図。
    bool introActive_ = false;                            ///< 導入による一時停止を所有しているか。
    std::vector<std::string> pausedPlanetColorObjectIds_; ///< 導入中に停止した惑星色コンポーネントの所有者ID。
-   bool vehicleControllerEnabledWhenUnlocked_ = false;   ///< 操作ロック解除時に戻す車両制御の元の有効状態。
-   bool vehicleInputEnabledWhenUnlocked_ = false;        ///< 操作ロック解除時に戻す走行入力の元の有効状態。
-   bool gravityBodyEnabledWhenUnlocked_ = false;         ///< 操作ロック解除時に戻す重力処理の元の有効状態。
+   bool playerLocked_ = false; ///< レースが所有する走行停止の要求。
    bool cameraSwitcherEnabledWhenUnlocked_ = false;      ///< 操作ロック解除時に戻すカメラ切り替えの元の有効状態。
    bool speedPostEffectEnabledWhenRacing_ = false;       ///< レース再開時に戻す速度演出制御の元の有効状態。
    /// @brief プレイヤーの車両操作を制御するコンポーネントへの非所有参照。
    VehicleController* vehicleController_ = nullptr;
-   VehicleInputComponent* vehicleInput_ = nullptr; ///< カメラ演出にも共有される走行用入力への非所有参照。
-   GravityBody* gravityBody_ = nullptr;            ///< プレイヤーの速度・重力・姿勢を参照するコンポーネント。
    CameraModeSwitcher* cameraSwitcher_ = nullptr;  ///< プレイヤーの仮想カメラ切り替えを行うコンポーネントへの参照。
    /// @brief プレイヤー速度に応じた画面演出を制御するコンポーネントへの参照。
    VehicleSpeedPostEffectController* speedPostEffectController_ = nullptr;

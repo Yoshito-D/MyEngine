@@ -620,6 +620,14 @@ void Renderer::DrawSkeleton(
 }
 
 void Renderer::EndFrame(SceneWorld* world) {
+   if (world) {
+      bool editing = false;
+#ifdef USE_IMGUI
+      editing = EngineContext::IsPlayModeEdit();
+#endif
+      world->PrepareDraw({cameraManager_ ? cameraManager_->GetActiveCamera() : nullptr, editing});
+   }
+
 #ifdef USE_IMGUI
    if (editorController_) {
       editorController_->ShowPlayModeToolbar();

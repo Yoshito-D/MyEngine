@@ -1,14 +1,11 @@
 #pragma once
 
 #include "GameEngine/Framework/Framework.h"
-#include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Scene/SceneManager.h"
 #include "GameEngine/Scene/SceneCatalog.h"
 #ifdef USE_IMGUI
-#include "GameEngine/Editor/EditorSceneSession.h"
-#endif
-#ifdef USE_IMGUI
-#include "GameEngine/Framework/PlayModeController.h"
+#include "GameEngine/Editor/EditorPlaySession.h"
+#include <optional>
 #endif
 
 /// @brief エンジン基盤とゲーム固有のシーン遷移を結び付けるアプリケーション本体
@@ -22,8 +19,7 @@ public:
    /// @details エディターの停止中はランタイム更新を進めず、編集用更新を継続する。
    void Update() override;
 
-   /// @brief エディター描画を行い、ミニマップとプレイヤーの影を描画用に提出する。
-   /// @details シーンまたは描画カメラがない場合は、影の描画情報を提出しない。
+   /// @brief 編集セッションが有効な場合、そのフレームのエディター描画を行う。
    void Draw() override;
 
    /// @brief シーンを終了し、編集用サービスとエンジン基盤を依存関係の逆順に解放する。
@@ -40,9 +36,6 @@ private:
    /// @brief 現在シーンの所有権と安全な切り替えを管理する所有オブジェクト。
    std::unique_ptr<GameEngine::SceneManager> sceneManager_ = nullptr;
 #ifdef USE_IMGUI
-   /// @brief 編集・プレイ・一時停止の遷移を管理する所有オブジェクト。
-   std::unique_ptr<GameEngine::PlayModeController> playModeController_ = nullptr;
-   /// @brief 現在シーンの選択・ギズモ・編集状態を管理する所有セッション。
-   std::unique_ptr<GameEngine::EditorSceneSession> editorSession_;
+   std::optional<GameEngine::EditorPlaySession> editor_; ///< 再生とシーン編集を接続するエディター専用セッション。
 #endif
 };

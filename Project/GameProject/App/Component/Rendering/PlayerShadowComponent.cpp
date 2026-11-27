@@ -12,7 +12,6 @@ bool PlayerShadowComponent::TryBuildPlayerShadowFrameData(
    GameEngine::Camera* camera, GameEngine::PlayerShadowFrameData& outFrameData) {
    outFrameData = {};
 
-   // レース中の無効化は操作の停止であり、影の描画対象からは外さない。
    if (!HasOwner() || !camera) {
       return false;
    }
@@ -52,11 +51,11 @@ bool PlayerShadowComponent::TryBuildPlayerShadowFrameData(
    return true;
 }
 
-void PlayerShadowComponent::SubmitPlayerShadow(GameEngine::Camera* camera) {
+void PlayerShadowComponent::PrepareDraw(const GameEngine::SceneDrawContext& context) {
+   auto* camera = context.camera;
    GameEngine::PlayerShadowFrameData data{};
 
    if (!TryBuildPlayerShadowFrameData(camera, data)) {
-      GameEngine::EngineContext::ClearPlayerShadowFrameData();
       return;
    }
 
@@ -90,7 +89,6 @@ void PlayerShadowComponent::SubmitPlayerShadow(GameEngine::Camera* camera) {
    };
 
    if (!prepareModel(data.player) || !prepareModel(data.receiver)) {
-      GameEngine::EngineContext::ClearPlayerShadowFrameData();
       return;
    }
 

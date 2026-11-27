@@ -7,8 +7,15 @@
 
 namespace GameEngine {
 class Object;
+class Camera;
 class SceneWorld;
 class ComponentContainer;
+
+/// @brief 描画キュー作成前にシーンのコンポーネントへ渡す情報。
+struct SceneDrawContext {
+   Camera* camera; ///< 現在フレームの描画カメラ。未設定ならnullptr。
+   bool editing;   ///< シミュレーションを実行していない編集中の描画か。
+};
 
 /// @brief コンポーネント型のエディター表示名
 struct ComponentDisplayName {
@@ -22,8 +29,9 @@ std::string LocalizeObjectComponentTypeName(const char* typeName);
 std::string MakeObjectComponentHeaderLabel(const char* typeName);
 #endif
 
-/// @brief 同じObject内の更新順。力の選択・積分・接触・操作・表示を順に評価する。
+/// @brief シーン全体で共有する更新順。各フェーズは全オブジェクトで完了してから次へ進む。
 enum class ObjectUpdatePhase {
+   Preparation,
    Input,
    TargetSelection,
    Forces,
@@ -31,8 +39,12 @@ enum class ObjectUpdatePhase {
    Contacts,
    Control,
    Default,
+   Triggers,
+   TriggerEvents,
+   Progress,
    Presentation,
    Effects,
+   Count,
 };
 
 /// @brief ゲーム進行と実時間UIを分ける更新区分。
@@ -105,12 +117,19 @@ public:
    /// @brief 更新時間の区分を返す。既定はゲーム進行。
    virtual ObjectUpdateDomain GetUpdateDomain() const { return ObjectUpdateDomain::Gameplay; }
 
+   /// @brief 操作や物理の前に、このフレームのゲーム進行に必要な状態を準備する。
+   virtual void PrepareGameplayFrame() {}
+
    /// @brief 更新フェーズを返す。同じフェーズ内では追加順を維持する。
    virtual ObjectUpdatePhase GetUpdatePhase() const { return ObjectUpdatePhase::Default; }
 
    /// @brief 指定された時間だけ部品の実行状態を更新する。
    /// @param deltaTime 更新時間（秒）。
    virtual void Update([[maybe_unused]] float deltaTime) {}
+
+   /// @brief 描画キューの構築前に、表示状態や提出データを準備する。
+   /// @param context 現在フレームのカメラと編集状態。ここでは部品の追加・削除を行わない。
+   virtual void PrepareDraw([[maybe_unused]] const SceneDrawContext& context) {}
 
    /// @brief コンポーネント設定をJSONへ変換する
    virtual nlohmann::json Serialize() const = 0;

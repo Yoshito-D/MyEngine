@@ -12,7 +12,7 @@ void RearCameraPlanetGuide::UpdatePlanetDirectionGuide(const RearCameraInput& in
    const GameEngine::Vector3& currentBackward, float deltaTime) {
    GameEngine::Vector3 desiredBackward = currentBackward;
 
-   if (input.isAirborne) {
+   if (input.isAirborne && input.hasLandingPlanet) {
       GameEngine::Vector3 toPlanet = input.planetCenter - input.pivotTarget;
       float toPlanetLength = toPlanet.Length();
 
@@ -79,7 +79,7 @@ float RearCameraPlanetGuide::ComputePlanetDirectionFollowSpeed(
 ///          開始閾値未満では惑星方向補間を始めず、最大閾値で最大係数になる。
 float RearCameraPlanetGuide::ComputePlanetDirectionGravityFactorTarget(
    const RearCameraInput& input, const RearCameraSettings& settings) const {
-   if (!settings.enableAirbornePlanetDirectionGuide || !input.isAirborne) {
+   if (!settings.enableAirbornePlanetDirectionGuide || !input.isAirborne || !input.hasLandingPlanet) {
       return 0.0f;
    }
 
@@ -120,7 +120,7 @@ float RearCameraPlanetGuide::ComputePlanetDirectionGravityFactorTarget(
 float RearCameraPlanetGuide::ComputePlanetDirectionBlend(const RearCameraInput& input,
    const RearCameraSettings& settings, const RearCameraTransitionState& transition,
    const GameEngine::Vector3& trackedBackward) const {
-   if (!settings.enableAirbornePlanetDirectionGuide) {
+   if (!settings.enableAirbornePlanetDirectionGuide || !input.hasLandingPlanet) {
       return 0.0f;
    }
 
@@ -176,7 +176,7 @@ void RearCameraPlanetGuide::AdvanceTakeoffTimer(const RearCameraInput& input, co
    float jumpPlanetDirectionControlSeconds = std::max(0.0f, settings.jumpPlanetDirectionDelaySeconds) +
                                              std::max(0.0f, settings.jumpPlanetDirectionRestoreSeconds);
 
-   if (input.isAirborne) {
+   if (input.isAirborne && input.hasLandingPlanet) {
       // 離陸直後はガイド方向を動かさず、待機終了後に追従速度そのものを徐々に戻す。
       state_.jumpPlanetDirectionSpeedElapsed = std::min(
          state_.jumpPlanetDirectionSpeedElapsed + std::max(0.0f, deltaTime), jumpPlanetDirectionControlSeconds);

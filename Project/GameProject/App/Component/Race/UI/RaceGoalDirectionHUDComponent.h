@@ -4,6 +4,10 @@
 #include "GameEngine/UI/Text/TextTypes.h"
 #include <string_view>
 
+namespace GameEngine {
+class Camera;
+}
+
 namespace App {
 
 /// @brief ゴールを示す3D矢印を、ミニマップの距離表示に並べる。
@@ -20,8 +24,9 @@ public:
    /// @param captionOffset 画面右下から距離表示の下端中央への差分（UIピクセル、Yは下向き）。
    /// @param caption ミニマップの距離文字列。
    /// @param style 距離文字列のフォントと表示設定。
-   void ShowBesideDistance(const GameEngine::Vector3& directionToGoal, GameEngine::Vector2 captionOffset,
-      std::string_view caption, const GameEngine::TextStyle& style);
+   /// @param camera このフレームの描画カメラ。未設定の場合は矢印を隠す。
+   void ShowBesideDistance(const GameEngine::Camera* camera, const GameEngine::Vector3& directionToGoal,
+      GameEngine::Vector2 captionOffset, std::string_view caption, const GameEngine::TextStyle& style);
 
    /// @brief この矢印の描画を止める。
    void Hide();

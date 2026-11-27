@@ -41,10 +41,9 @@ float MeasureArrowDiameter(const GameEngine::ModelAsset& asset, const GameEngine
 
 namespace App {
 
-void RaceGoalDirectionHUDComponent::ShowBesideDistance(const GameEngine::Vector3& directionToGoal,
-   GameEngine::Vector2 captionOffset, std::string_view caption, const GameEngine::TextStyle& style) {
-   const auto* camera = GameEngine::EngineContext::GetActiveCamera();
-
+void RaceGoalDirectionHUDComponent::ShowBesideDistance(const GameEngine::Camera* camera,
+   const GameEngine::Vector3& directionToGoal, GameEngine::Vector2 captionOffset, std::string_view caption,
+   const GameEngine::TextStyle& style) {
    if (!IsEnabled() || !camera || directionToGoal.LengthSquared() < kDirectionEpsilonSquared) {
       Hide();
       return;

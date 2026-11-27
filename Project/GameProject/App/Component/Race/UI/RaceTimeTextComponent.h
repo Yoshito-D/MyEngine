@@ -26,6 +26,9 @@ public:
    /// @param deltaTime 未使用
    void Update(float deltaTime) override;
 
+   /// @brief シーン全体の更新フェーズを返す。
+   GameEngine::ObjectUpdatePhase GetUpdatePhase() const override { return GameEngine::ObjectUpdatePhase::Presentation; }
+
    /// @brief 参照設定をJSONへ保存する
    /// @return 保存用JSON
    nlohmann::json Serialize() const override;

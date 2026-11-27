@@ -37,9 +37,15 @@ public:
    /// @param deltaTime ゲームのシミュレーション経過時間（秒）。
    void Update(float deltaTime) override;
 
-   /// @brief ゲームの更新完了後に、そのフレームのミニマップを提出する。
-   /// @param goalDirection 距離表示に並べる矢印。シーンに矢印がない場合はnullptr。
-   void Submit(RaceGoalDirectionHUDComponent* goalDirection);
+   /// @brief シーン全体の更新フェーズを返す。
+   GameEngine::ObjectUpdatePhase GetUpdatePhase() const override { return GameEngine::ObjectUpdatePhase::Presentation; }
+
+   /// @brief ゲームとカメラの更新完了後に、ミニマップと距離表示を提出する。
+   /// @param context 描画カメラと編集状態。
+   void PrepareDraw(const GameEngine::SceneDrawContext& context) override;
+
+   /// @brief 無効化時に距離表示用の矢印を隠す。
+   void OnDisable() override;
 
    /// @brief 地図の表示中に対象プレイヤーの視点入力を受け持つかを返す。
    /// @param player 視点入力を使うプレイヤー。
@@ -63,6 +69,7 @@ public:
 
 private:
    bool ShouldShow() const;
+   RaceGoalDirectionHUDComponent* FindHudArrow() const;
    GameEngine::Vector3 ToView(const GameEngine::Vector3& worldPosition) const;
    GameEngine::Vector3 ToViewDirection(const GameEngine::Vector3& worldDirection) const;
    void AddGoalPoint(const GameEngine::Vector3& viewPosition);
@@ -70,6 +77,7 @@ private:
    std::string playerId_;
    std::string goalId_;
    std::string raceManagerId_;
+   std::string goalDirectionId_; ///< 距離表示横に配置可能な矢印の安定ID。空なら矢印なし。
    float initialPitch_ = 0.f;  ///< 初期視点の見下ろし角（rad）。
    float yaw_ = 0.f;           ///< プレイヤーの開始方向を基準とした水平角（rad）。
    float pitch_ = 0.f;         ///< 現在の視点の見下ろし角（rad）。

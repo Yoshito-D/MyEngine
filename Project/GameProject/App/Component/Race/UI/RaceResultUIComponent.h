@@ -29,6 +29,9 @@ public:
    /// @brief 結果表示、選択移動、決定入力を処理して演出を通知する。
    void Update(float deltaTime) override;
 
+   /// @brief シーン全体の更新フェーズを返す。
+   GameEngine::ObjectUpdatePhase GetUpdatePhase() const override { return GameEngine::ObjectUpdatePhase::Presentation; }
+
    /// @brief RaceManager参照とタイトルへの遷移先をJSONへ保存する。
    nlohmann::json Serialize() const override;
 

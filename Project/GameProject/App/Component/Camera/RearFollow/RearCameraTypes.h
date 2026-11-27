@@ -157,6 +157,7 @@ struct RearCameraInput {
 
    /// @brief 空中で画面へ入れる近傍惑星の中心
    GameEngine::Vector3 planetCenter = {0.0f, 0.0f, 0.0f};
+   bool hasLandingPlanet = false; ///< 着地候補の中心が有効か。
 
    /// @brief 追従対象の前方
    GameEngine::Vector3 followForward = {0.0f, 0.0f, 1.0f};

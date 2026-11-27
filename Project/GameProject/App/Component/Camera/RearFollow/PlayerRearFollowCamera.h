@@ -55,9 +55,6 @@ public:
    /// @brief 注視対象（ピボット）を設定する
    void SetPivotTarget(const GameEngine::Vector3& target) { input_.pivotTarget = target; }
 
-   /// @brief 空中時に画面へ入れたい近傍惑星の中心を設定する
-   void SetPlanetCenter(const GameEngine::Vector3& center) { input_.planetCenter = center; }
-
    /// @brief プレイヤー前方を設定する
    void SetFollowForward(const GameEngine::Vector3& forward) { input_.followForward = forward; }
 

@@ -37,7 +37,7 @@ void VehicleAudioController::Update(float) {
    const auto& snapshot = events->GetSnapshot();
    const auto changes = eventCursor_.Read(snapshot);
    const auto* vehicle = GetOwner().GetComponent<VehicleController>();
-   const bool playDrift = snapshot.isDrifting && snapshot.isGrounded && (!vehicle || vehicle->IsEnabled());
+   const bool playDrift = snapshot.isDrifting && snapshot.isGrounded && (!vehicle || (vehicle->IsEnabled() && !vehicle->IsMotionStopped()));
 
    // Playは再生中のスロットを再起動しないため、ドリフトの継続中も音が重ならない。
    // ゴール後など操作停止中に最後のドリフト状態が残っていても、ループを続けない。

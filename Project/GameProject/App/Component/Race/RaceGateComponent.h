@@ -36,7 +36,7 @@ public:
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief 同じオブジェクトのTriggerVolumeが進入・退出を更新した後に通知する。
-   GameEngine::ObjectUpdatePhase GetUpdatePhase() const override { return GameEngine::ObjectUpdatePhase::Presentation; }
+   GameEngine::ObjectUpdatePhase GetUpdatePhase() const override { return GameEngine::ObjectUpdatePhase::TriggerEvents; }
 
    /// @brief トリガーの侵入・退出をレース管理へ通知する
    /// @param deltaTime 未使用

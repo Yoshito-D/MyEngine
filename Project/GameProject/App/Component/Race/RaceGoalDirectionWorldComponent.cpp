@@ -123,7 +123,10 @@ bool RaceGoalDirectionWorldComponent::ShouldShow() const {
    return state == RaceManagerComponent::State::Countdown || state == RaceManagerComponent::State::Running;
 }
 
-void RaceGoalDirectionWorldComponent::Present(const GameEngine::Camera* camera) {
+void RaceGoalDirectionWorldComponent::PrepareDraw(const GameEngine::SceneDrawContext& context) {
+   if (context.editing) return;
+
+   const auto* camera = context.camera;
    if (!camera || !ShouldShow()) {
       Hide();
       return;

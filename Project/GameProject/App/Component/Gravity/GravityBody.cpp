@@ -2,6 +2,8 @@
 #include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Object.h"
+#include "GameEngine/Utility/Logger.h"
+#include "GameProject/App/Component/Vehicle/VehicleController.h"
 #include "GameEngine/Math/Functions/MathConstants.h"
 #include "GameEngine/Math/Functions/QuaternionOperations.h"
 #include <algorithm>
@@ -19,7 +21,10 @@ void GravityBody::Update(float deltaTime) {
    // オーナー不在時は更新不可
    if (!HasOwner()) return;
 
-   UpdatePhysics(deltaTime);
+   const auto* controller = GetOwner().GetComponent<VehicleController>();
+   if (!controller || !controller->IsMotionStopped()) {
+      UpdatePhysics(deltaTime);
+   }
 }
 
 void GravityBody::SetTargetUpVector(const Vector3& targetUp) {
@@ -30,11 +35,13 @@ void GravityBody::SetTargetUpVector(const Vector3& targetUp) {
 void GravityBody::ApplyGravityFromSurface(const Vector3& surfaceUp) {
    if (surfaceUp.LengthSquared() < 1e-8f) return;
 
+   hasSurfaceGravity_ = true;
    targetUpVector_ = surfaceUp.Normalize();
    gravityAcceleration_ = -targetUpVector_ * gravityStrength;
 }
 
 void GravityBody::ReleaseGravity() {
+   hasSurfaceGravity_ = false;
    gravityAcceleration_ = {0.0f, 0.0f, 0.0f};
 }
 
@@ -88,7 +95,10 @@ void GravityBody::UpdatePhysics(float deltaTime) {
    }
 
    auto pose = transform->GetLocalPose();
-   pose.translation += velocity_ * deltaTime;
+   pose.translation += TransformNormal(velocity_ * deltaTime, GetOwner().GetParentWorldMatrix().Inverse());
+   if (!pose.IsFinite()) {
+      Logger::Fail("Invalid parent transform for GravityBody: " + GetOwner().GetEntityId(), Logger::LogChannel::Game);
+   }
    transform->ApplyLocalPose(pose);
 }
 

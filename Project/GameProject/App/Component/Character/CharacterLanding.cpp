@@ -1,7 +1,7 @@
 #include "GameProject/App/Component/Character/CharacterLanding.h"
 #include "GameEngine/Math/Functions/CollisionGeometry.h"
 #include "GameEngine/Editor/ParameterAssetEditor.h"
-#include "GameProject/App/Component/Character/CharacterJump.h"
+#include "GameEngine/Utility/Logger.h"
 #include "GameProject/App/Component/Character/CharacterWalker.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
@@ -10,6 +10,8 @@
 #include <cmath>
 #include "GameProject/App/Component/Gravity/PlanetSwitcher.h"
 #include "GameProject/App/Component/Vehicle/VehicleEvents.h"
+#include "GameProject/App/Component/Vehicle/VehicleMover.h"
+#include "GameProject/App/Component/Vehicle/VehicleController.h"
 
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/ImGui/ImGuiManager.h"
@@ -18,99 +20,93 @@
 namespace App {
 
 void CharacterLanding::Update(float) {
-   // オーナー不在時は処理しない
+   landedThisFrame_ = false;
+
    if (!HasOwner()) return;
 
-   // 必須コンポーネント取得
    auto* transform = GetOwner().GetComponent<GameEngine::TransformComponent>();
-   auto* gravityBody = GetOwner().GetComponent<GravityBody>();
-
-   if (!transform || !gravityBody) return;
-
-   auto* jump = GetOwner().GetComponent<CharacterJump>();
-   bool isJumping = jump && jump->IsJumping();
+   auto* body = GetOwner().GetComponent<GravityBody>();
    auto* switcher = GetOwner().GetComponent<PlanetSwitcher>();
+   float radius = 0.0f;
+   GameEngine::Vector3 center{};
 
-   GameEngine::Vector3 landingCenter = planetCenter_;
-   float landingSurfaceRadius = surfaceRadius_;
+   const bool initialPlacement = !evaluatedContact_;
+   evaluatedContact_ = true;
 
-   if (switcher && switcher->IsEnabled()) {
-      if (!switcher->TryGetLandingPlanet(landingCenter, landingSurfaceRadius)) {
-         isGrounded_ = false;
-         return;
-      }
+   if (!transform || !body || !body->HasSurfaceGravity() || !switcher ||
+       !switcher->TryGetLandingPlanet(center, radius)) {
+      contact_.reset();
+      return;
    }
 
-   // 惑星中心からの距離と重力Upを算出
-   GameEngine::Vector3 toSelf = transform->GetLocalPose().translation - landingCenter;
-   float dist = toSelf.Length();
+   const auto* controller = GetOwner().GetComponent<VehicleController>();
+   if (controller && controller->IsMotionStopped() && !initialPlacement) return;
 
-   if (dist < 1e-4f) return;
+   const auto position = GameEngine::TransformCoordinate({}, GetOwner().GetWorldMatrix());
+   const auto radial = position - center;
+   const float distance = radial.Length();
+   constexpr float kMinNormalDistance = 1.0e-4f; ///< 法線を求める距離の下限（m）。
 
-   GameEngine::Vector3 gravityUp = toSelf * (1.0f / dist);
-   float upComp = gravityBody->GetVelocity().Dot(gravityUp);
-
-   // 判定とカメラ予測で同じOBB支持半径を使い、接触位置のずれを防ぐ。
-   const float obbSupportRadius =
-      GameEngine::ComputeObbSupportRadius(transform->GetLocalPose().GetActiveQuaternion(), obbHalfExtents, gravityUp);
-
-   float snapRadius = landingSurfaceRadius + landingOffset + obbSupportRadius;
-
-   if (isJumping) {
-      // 落下中かつ地表到達で着地
-      if (dist <= snapRadius && upComp <= 0.0f) {
-         if (switcher) {
-            switcher->CommitPendingSwitch();
-         }
-
-         // 位置を地表にスナップ
-         {
-            auto pose = transform->GetLocalPose();
-            pose.translation = landingCenter + gravityUp * snapRadius;
-            transform->ApplyLocalPose(pose);
-         }
-
-         // OBB の下端が惑星と接した点と、その地点の外向き法線を保存する。
-         // landingOffset は実際の接地面として扱われているため接触点にも反映する。
-         lastLandingContactPoint_ = landingCenter + gravityUp * (landingSurfaceRadius + landingOffset);
-         lastLandingNormal_ = gravityUp;
-         hasLandingContact_ = true;
-
-         if (auto* events = GetOwner().GetComponent<VehicleEvents>()) {
-            events->PublishLanding(lastLandingContactPoint_, lastLandingNormal_);
-         }
-
-         // 垂直速度のみ除去し、水平成分は維持
-         gravityBody->CancelNormalVelocity(gravityUp);
-
-         // 積分後の接触地点の法線を通知し、姿勢と着地品質の判定に同じ法線を使う。
-         gravityBody->SetTargetUpVector(gravityUp);
-
-         // ジャンプ状態解除
-         if (jump) {
-            jump->NotifyLanded();
-         }
-
-         // 歩行慣性も着地時にリセット
-         if (auto* walker = GetOwner().GetComponent<CharacterWalker>()) {
-            walker->ResetHorizontalVelocity();
-         }
-
-         isGrounded_ = true;
-      } else {
-         isGrounded_ = false;
-      }
-   } else {
-      // 非ジャンプ時は常に地表へ固定し、速度を完全停止
-      {
-         auto pose = transform->GetLocalPose();
-         pose.translation = landingCenter + gravityUp * snapRadius;
-         transform->ApplyLocalPose(pose);
-      }
-      gravityBody->StopMotion();
-
-      isGrounded_ = true;
+   if (distance < kMinNormalDistance) {
+      contact_.reset();
+      return;
    }
+
+   const auto normal = radial / distance;
+   const float support = GameEngine::ComputeObbSupportRadius(
+      GetOwner().GetWorldRotation(), settings_.obbHalfExtents, normal);
+   const float contactRadius = radius + settings_.landingOffset;
+   const float snapRadius = contactRadius + support;
+   const bool keepContact = IsGrounded() && !switcher->HasPendingPlanetChange();
+
+   // 支持を失った後は、候補を再取得しただけでは地表に移動させない。
+   if (!initialPlacement && !keepContact && (distance > snapRadius || body->GetVelocity().Dot(normal) > 0.0f)) {
+      contact_.reset();
+      return;
+   }
+
+   auto pose = transform->GetLocalPose();
+   const auto worldToParent = GetOwner().GetParentWorldMatrix().Inverse();
+   pose.translation = GameEngine::TransformCoordinate(center + normal * snapRadius, worldToParent);
+
+   if (!pose.IsFinite()) {
+      Logger::Fail("Cannot place vehicle on planet: " + GetOwner().GetEntityId(), Logger::LogChannel::Game);
+   }
+   transform->ApplyLocalPose(pose);
+   switcher->CommitPendingSwitch();
+   contact_ = SurfaceContact{center + normal * contactRadius, normal};
+   body->SetTargetUpVector(normal);
+
+   if (initialPlacement || keepContact) {
+      body->StopMotion();
+      return;
+   }
+
+   landedThisFrame_ = true;
+   body->CancelNormalVelocity(normal);
+   if (auto* walker = GetOwner().GetComponent<CharacterWalker>()) {
+      walker->ResetHorizontalVelocity();
+   }
+
+   // 速度補正・姿勢と着地品質を確定してから、一つの通知として公開する。
+   auto result = LandingResult::Normal;
+   if (auto* mover = GetOwner().GetComponent<VehicleMover>();
+       mover && mover->IsEnabled() && controller && controller->IsEnabled()) {
+      result = mover->ResolveLanding(normal);
+   }
+   if (auto* events = GetOwner().GetComponent<VehicleEvents>(); events && events->IsEnabled()) {
+      events->PublishLanding(*contact_, result);
+   }
+}
+
+std::optional<SurfaceContact> CharacterLanding::Takeoff() {
+   auto previous = contact_;
+   contact_.reset();
+   return previous;
+}
+
+void CharacterLanding::OnDisable() {
+   contact_.reset();
 }
 
 #ifdef USE_IMGUI
@@ -121,23 +117,20 @@ void CharacterLanding::DrawInspector() {
    if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
-   ImGui::DragFloat(Tr("地表半径", "Surface Radius"), &surfaceRadius_, 0.1f, 0.0f, 1000.0f);
-   ImGui::DragFloat(Tr("着地オフセット", "Landing Offset"), &landingOffset, 0.01f, -100.0f, 100.0f);
-   ImGui::DragFloat3(Tr("OBB半径", "OBB Half Extents"), &obbHalfExtents.x, 0.01f, 0.0f, 100.0f);
-   ImGui::Text(
-      "%s: (%.2f, %.2f, %.2f)", Tr("惑星中心", "Planet Center"), planetCenter_.x, planetCenter_.y, planetCenter_.z);
-   ImGui::Text("%s: %s", Tr("接地中", "Is Grounded"), isGrounded_ ? Tr("はい", "true") : Tr("いいえ", "false"));
-   Configure(DescribeSettings());
+   auto settings = DescribeSettings();
+   ImGui::DragFloat(Tr("着地オフセット (m)", "Landing Offset (m)"), &settings.landingOffset, 0.01f, -100.0f, 100.0f);
+   ImGui::DragFloat3(Tr("OBB半サイズ (m)", "OBB Half Extents (m)"), &settings.obbHalfExtents.x, 0.01f, 0.0f, 100.0f);
+   ImGui::Text("%s: %s", Tr("接地中", "Is Grounded"), IsGrounded() ? Tr("はい", "true") : Tr("いいえ", "false"));
+   Configure(settings);
 }
 #endif
 
 nlohmann::json CharacterLanding::Serialize() const {
    nlohmann::json json;
-   json["surfaceRadius"] = surfaceRadius_;
-   json["landingOffset"] = landingOffset;
-   json["obbHalfExtents"]["x"] = obbHalfExtents.x;
-   json["obbHalfExtents"]["y"] = obbHalfExtents.y;
-   json["obbHalfExtents"]["z"] = obbHalfExtents.z;
+   json["landingOffset"] = settings_.landingOffset;
+   json["obbHalfExtents"]["x"] = settings_.obbHalfExtents.x;
+   json["obbHalfExtents"]["y"] = settings_.obbHalfExtents.y;
+   json["obbHalfExtents"]["z"] = settings_.obbHalfExtents.z;
    return json;
 }
 
@@ -154,69 +147,28 @@ void CharacterLanding::ApplySharedParameters(const nlohmann::json& data) {
 }
 
 void CharacterLanding::ReadParameters(const nlohmann::json& data) {
-   if (data.contains("surfaceRadius")) {
-      surfaceRadius_ = data["surfaceRadius"];
-   }
-
+   auto settings = DescribeSettings();
    if (data.contains("landingOffset")) {
-      landingOffset = data["landingOffset"];
+      settings.landingOffset = data.at("landingOffset").get<float>();
    }
-
    if (data.contains("obbHalfExtents")) {
-      const auto& h = data["obbHalfExtents"];
-
-      if (h.contains("x")) {
-         obbHalfExtents.x = h["x"];
-      }
-
-      if (h.contains("y")) {
-         obbHalfExtents.y = h["y"];
-      }
-
-      if (h.contains("z")) {
-         obbHalfExtents.z = h["z"];
-      }
+      const auto& extents = data.at("obbHalfExtents");
+      settings.obbHalfExtents = {extents.at("x").get<float>(), extents.at("y").get<float>(), extents.at("z").get<float>()};
    }
-
-   Configure(DescribeSettings());
+   Configure(settings);
 }
 
-} // namespace App
-
-namespace App {
-
 CharacterLanding::Settings CharacterLanding::DescribeSettings() const {
-   Settings settings;
-   settings.landingOffset = landingOffset;
-   settings.obbHalfExtents = obbHalfExtents;
-   return settings;
+   return settings_;
 }
 
 void CharacterLanding::Configure(const Settings& requested) {
-   auto settings = requested;
-   [[maybe_unused]] const Settings defaults;
-
-   if (!std::isfinite(settings.landingOffset)) {
-      settings.landingOffset = defaults.landingOffset;
+   const auto& extents = requested.obbHalfExtents;
+   if (!std::isfinite(requested.landingOffset) || !std::isfinite(extents.LengthSquared()) ||
+       extents.x < 0.0f || extents.y < 0.0f || extents.z < 0.0f) {
+      Logger::Fail("Invalid CharacterLanding landingOffset or obbHalfExtents", Logger::LogChannel::Game);
    }
-
-   if (!std::isfinite(settings.obbHalfExtents.x)) {
-      settings.obbHalfExtents.x = defaults.obbHalfExtents.x;
-   }
-
-   if (!std::isfinite(settings.obbHalfExtents.y)) {
-      settings.obbHalfExtents.y = defaults.obbHalfExtents.y;
-   }
-
-   if (!std::isfinite(settings.obbHalfExtents.z)) {
-      settings.obbHalfExtents.z = defaults.obbHalfExtents.z;
-   }
-
-   settings.obbHalfExtents.x = std::max(0.0f, settings.obbHalfExtents.x);
-   settings.obbHalfExtents.y = std::max(0.0f, settings.obbHalfExtents.y);
-   settings.obbHalfExtents.z = std::max(0.0f, settings.obbHalfExtents.z);
-   landingOffset = settings.landingOffset;
-   obbHalfExtents = settings.obbHalfExtents;
+   settings_ = requested;
 }
 
 } // namespace App

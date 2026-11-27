@@ -19,12 +19,9 @@ public:
    /// @brief 保存用の型名を返す。
    const char* GetTypeName() const override { return kTypeName; }
 
-   /// @brief 車両制御が無効でも、この車両の着地目印となる影を今フレームのRendererへ送る。
-   /// @param camera 通常シーンの描画に使うカメラ
-   /// @note 物理・惑星選択・アニメーション・カメラ更新後、EndFrame前の描画処理から呼ぶ。
-   /// 実装時はTryBuildPlayerShadowFrameDataで対象を集め、通常描画を省くモデルも行列を更新してから
-   /// EngineContextへ渡す。対象が無効ならClearPlayerShadowFrameDataで以前の送信を取り消す。
-   void SubmitPlayerShadow(GameEngine::Camera* camera);
+   /// @brief 車両停止中も、着地の目印になる影を現在フレームの描画へ提出する。
+   /// @param context 通常シーンの描画カメラ。
+   void PrepareDraw(const GameEngine::SceneDrawContext& context) override;
 
    /// @brief 独自の保存設定はないため空のオブジェクトを返す。
    nlohmann::json Serialize() const override { return nlohmann::json::object(); }

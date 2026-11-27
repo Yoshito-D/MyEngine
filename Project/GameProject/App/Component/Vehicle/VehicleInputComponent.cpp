@@ -3,6 +3,7 @@
 #include "GameEngine/Utility/Logger.h"
 #include "GameEngine/Object/Object.h"
 #include "GameProject/App/Component/Vehicle/VehicleDrift.h"
+#include "GameProject/App/Component/Vehicle/VehicleController.h"
 #include <cstdint>
 
 #include "GameEngine/Input/InputActionService.h"
@@ -83,8 +84,9 @@ VehicleControlLabels VehicleInputComponent::DescribeControlLabels(const VehicleI
 const GameEngine::InputActionState& VehicleInputComponent::GetActionState(const char* actionId) const {
    static const GameEngine::InputActionState emptyState{};
 
-   if (!IsEnabled()) {
-      // 無効化中は車両操作に使うアクションを中立値として扱う。
+   const auto* vehicle = HasOwner() ? GetOwner().GetComponent<VehicleController>() : nullptr;
+   if (!IsEnabled() || (vehicle && vehicle->IsMotionStopped())) {
+      // 走行停止中は操作値を中立化する。UIの決定アクションは対象外。
       return emptyState;
    }
 
@@ -108,7 +110,7 @@ GameEngine::Vector2 VehicleInputComponent::GetViewInput() const {
 }
 
 bool VehicleInputComponent::IsJumpTriggered() const {
-   return jumpEnabled_ && !jumpAwaitingRelease_ && GetActionState(kJumpAction).triggered;
+   return jumpBlocks_.empty() && !jumpAwaitingRelease_ && GetActionState(kJumpAction).triggered;
 }
 
 bool VehicleInputComponent::IsConfirmTriggered() const {
@@ -116,18 +118,19 @@ bool VehicleInputComponent::IsConfirmTriggered() const {
           GameEngine::EngineContext::GetInputActionState(kUiActionMap, kConfirmAction, playerSlot).triggered;
 }
 
-void VehicleInputComponent::SetJumpEnabled(bool enabled) {
-   if (jumpEnabled_ == enabled) return;
-
-   jumpEnabled_ = enabled;
-   // 許可したフレームの更新順にかかわらず、説明の決定入力をジャンプへ持ち越さない。
-   jumpAwaitingRelease_ = enabled;
+void VehicleInputComponent::SetJumpBlocked(const GameEngine::IObjectComponent& requester, bool blocked) {
+   if (blocked) {
+      jumpBlocks_.insert(&requester);
+   } else if (jumpBlocks_.erase(&requester) && jumpBlocks_.empty()) {
+      // 説明を閉じた決定入力をジャンプへ持ち越さない。
+      jumpAwaitingRelease_ = true;
+   }
 }
 
 void VehicleInputComponent::Update(float deltaTime) {
    (void)deltaTime;
 
-   if (!GetActionState(kJumpAction).held) {
+   if (!GameEngine::EngineContext::GetInputActionState(kGameplayActionMap, kJumpAction, playerSlot).held) {
       jumpAwaitingRelease_ = false;
    }
 }

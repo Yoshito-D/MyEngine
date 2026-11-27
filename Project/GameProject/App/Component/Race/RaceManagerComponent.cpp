@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <utility>
 
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/EditorReferenceWidgets.h"
@@ -96,15 +97,22 @@ void RaceManagerComponent::ConfigureStates() {
    stateMachine_.SetTransitionRule(State::Finished, {});
 }
 
-void RaceManagerComponent::Update(float deltaTime) {
-   if (!runtimeInitialized_) {
-      // Edit中のシーン読込ではPlayerを変更せず、最初のランタイム更新でのみレース用ロックを開始する。
-      runtimeInitialized_ = true;
-      Restart();
-      return;
-   }
+void RaceManagerComponent::PrepareGameplayFrame() {
+   if (runtimeInitialized_) return;
 
-   stateMachine_.Update(deltaTime);
+   // 編集シーンを変更せず、最初の操作・物理フェーズより前にロックを適用する。
+   runtimeInitialized_ = true;
+   Restart();
+   startedThisFrame_ = true;
+}
+
+void RaceManagerComponent::Update(float deltaTime) {
+   const auto previousState = GetState();
+
+   // 初期化フレームの経過時間にはシーン読込時間が含まれることがある。
+   if (!std::exchange(startedThisFrame_, false)) {
+      stateMachine_.Update(deltaTime);
+   }
 
    if (restartAfterUpdate_) {
       restartAfterUpdate_ = false;
@@ -112,7 +120,8 @@ void RaceManagerComponent::Update(float deltaTime) {
       return;
    }
 
-   // 状態に入ったフレームでは次の時計を進めず、カウントダウンを走行時間へ混ぜない。
+   // 判定に使った姿勢と同じフレームの走行時間を記録してから、ゲート通過を反映する。
+   ApplyGateEvents(previousState);
    stateMachine_.ResolveRequests();
 }
 
@@ -203,25 +212,35 @@ void RaceManagerComponent::OnDisable() {
 }
 
 void RaceManagerComponent::NotifyStart() {
-   if (GetState() != State::Waiting) return;
-
-   showStartBannerOnEntry_ = true;
-   stateMachine_.RequestState(State::Running);
-   stateMachine_.ResolveRequests();
+   gateEvents_.start = true;
 }
 
 void RaceManagerComponent::NotifyCheckpoint(size_t checkpointIndex) {
-   // 次に期待する番号だけを受理し、逆走やゲートの往復で進捗を飛ばさない。
-   if (GetState() == State::Running && checkpointIndex == nextCheckpointIndex_ && checkpointIndex < checkpointCount_) {
-      ++nextCheckpointIndex_;
-   }
+   gateEvents_.checkpoints.push_back(checkpointIndex);
 }
 
 void RaceManagerComponent::NotifyFinish() {
-   if (GetState() != State::Running || !CanFinish()) return;
+   gateEvents_.finish = true;
+}
 
-   stateMachine_.RequestState(State::Finished);
-   stateMachine_.ResolveRequests();
+void RaceManagerComponent::ApplyGateEvents(State previousState) {
+   if (previousState == State::Waiting && (gateEvents_.start || gateEvents_.startFinish)) {
+      showStartBannerOnEntry_ = true;
+      stateMachine_.RequestState(State::Running);
+   } else if (previousState == State::Running) {
+      // 同じフレームに重なったゲートはコース順に受理し、シーン内の並びに依存させない。
+      std::sort(gateEvents_.checkpoints.begin(), gateEvents_.checkpoints.end());
+      for (const auto index : gateEvents_.checkpoints) {
+         if (index == nextCheckpointIndex_ && index < checkpointCount_) {
+            ++nextCheckpointIndex_;
+         }
+      }
+      startGateExited_ = startGateExited_ || gateEvents_.startExit;
+      if ((gateEvents_.finish || (gateEvents_.startFinish && startGateExited_)) && CanFinish()) {
+         stateMachine_.RequestState(State::Finished);
+      }
+   }
+   gateEvents_ = {};
 }
 
 void RaceManagerComponent::EnterFinished() {
@@ -237,22 +256,11 @@ void RaceManagerComponent::EnterFinished() {
 }
 
 void RaceManagerComponent::NotifyStartFinish() {
-   if (GetState() == State::Waiting) {
-      // 共用ゲートへの最初の進入はスタートとして扱う。
-      NotifyStart();
-      return;
-   }
-
-   if (GetState() == State::Running && startGateExited_) {
-      // スタート後に一度ゲート外へ出るまで、同じ重なりをゴールとして受理しない。
-      NotifyFinish();
-   }
+   gateEvents_.startFinish = true;
 }
 
 void RaceManagerComponent::NotifyStartGateExit() {
-   if (GetState() == State::Running) {
-      startGateExited_ = true;
-   }
+   gateEvents_.startExit = true;
 }
 
 void RaceManagerComponent::Restart() {
@@ -263,6 +271,7 @@ void RaceManagerComponent::Restart() {
    startBannerRemaining_ = 0.0f;
    nextCheckpointIndex_ = 0;
    startGateExited_ = false;
+   gateEvents_ = {};
    finishElapsed_ = 0.0f;
    autoSceneChangeRequested_ = false;
    recordUpdateFailed_ = false;
@@ -461,6 +470,7 @@ void RaceManagerComponent::EnterRunning() {
    startBannerRemaining_ = showStartBannerOnEntry_ ? startTextDuration_ : 0.0f;
    nextCheckpointIndex_ = 0;
    startGateExited_ = false;
+   gateEvents_ = {};
    presentation_.SetPlayerLocked(false);
 }
 

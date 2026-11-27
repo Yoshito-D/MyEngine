@@ -528,6 +528,7 @@ void PlayerRearFollowCamera::ApplyVehicleFollowInput(const VehicleCameraFollowIn
    input_.gravityUp = input.gravityUp;
    input_.pivotTarget = input.target;
    input_.planetCenter = input.landingPlanetCenter;
+   input_.hasLandingPlanet = input.hasLandingPlanet;
    input_.playerSpeed = input.speed;
    input_.autoSpeed = input.autoSpeed;
 }

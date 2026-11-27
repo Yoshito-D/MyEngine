@@ -33,6 +33,9 @@ public:
    /// @brief 重力源との接続を解除し、前フレームの加速度を破棄する
    void ReleaseGravity();
 
+   /// @brief 有効な重力源からこのフレームの地表法線を受け取ったかを返す。
+   bool HasSurfaceGravity() const { return hasSurfaceGravity_; }
+
    /// @brief 仮の地表法線で重力を積分し、予測速度を返す（実際の状態は変更しない）
    /// @param velocity 予測開始時の速度（m/s）
    /// @param surfaceUp 候補地表の単位法線
@@ -40,7 +43,7 @@ public:
    GameEngine::Vector3 PredictVelocity(
       const GameEngine::Vector3& velocity, const GameEngine::Vector3& surfaceUp, float deltaTime) const;
 
-   /// @brief 現在速度（m/s）を取得する
+   /// @brief ワールド空間の速度（m/s）を取得する
    GameEngine::Vector3 GetVelocity() const { return velocity_; }
 
    /// @brief ジャンプなどの瞬間的な速度変化を加える
@@ -111,6 +114,8 @@ private:
 private:
    /// @brief 次に向かうUpベクトル
    GameEngine::Vector3 targetUpVector_ = {0.0f, 1.0f, 0.0f};
+
+   bool hasSurfaceGravity_ = false; ///< 現在、接続中の地表から重力を受けているか。
 
    /// @brief 現在の重力加速度（m/s²）
    GameEngine::Vector3 gravityAcceleration_ = {0.0f, 0.0f, 0.0f};

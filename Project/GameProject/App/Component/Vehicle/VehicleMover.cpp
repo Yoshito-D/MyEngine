@@ -6,7 +6,7 @@
 #include "GameProject/App/Component/Vehicle/VehicleLandingAligner.h"
 #include "GameProject/App/Component/Vehicle/VehicleLandingBoost.h"
 #include "GameProject/App/Component/Vehicle/VehicleDrift.h"
-#include "GameProject/App/Component/Vehicle/VehicleEvents.h"
+#include "GameProject/App/Component/Character/CharacterLanding.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Object.h"
@@ -116,27 +116,16 @@ void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchI
    // 空中でも時間を進め、ジャンプによって禁止時間が延びないようにする。
    auto* groundMover = GetOwner().GetComponent<VehicleGroundMover>();
 
-   if (groundMover && groundMover->IsEnabled()) {
+   const auto* landing = GetOwner().GetComponent<CharacterLanding>();
+   if (groundMover && groundMover->IsEnabled() && (!landing || !landing->DidLandThisFrame())) {
       groundMover->AdvanceAccelerationBlock(deltaTime);
    }
 
    // 現在フレームの回転クォータニオンを取得する。
    // 着地時の目標回転生成 (BuildAlignTargetRotation) と
    // 各サブコンポーネントへの転送のために必要。
-   Quaternion currentRotation = transform->GetLocalPose().GetActiveQuaternion();
+   const auto currentRotation = GetOwner().GetWorldRotation();
 
-   // 接触フェーズの確定通知を一度だけ受け、禁止タイマーを進めた後に品質と姿勢補正を確定する。
-   if (auto* events = GetOwner().GetComponent<VehicleEvents>()) {
-      const auto count = events->GetSnapshot().landingCount;
-
-      if (count > lastLandingCount_) {
-         OnLanded(currentRotation, gravityUp);
-         const auto* boost = GetOwner().GetComponent<VehicleLandingBoost>();
-         events->SetLandingResult(boost && boost->IsEnabled() ? boost->GetLastLandingResult() : LandingResult::Normal);
-      }
-
-      lastLandingCount_ = count;
-   }
    Quaternion rotation = AlignToGravity(currentRotation, gravityUp, deltaTime);
 
    // ----------------------------------------------------------------
@@ -186,7 +175,8 @@ void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchI
 
    // 地上操舵・空中入力・着地補間を選択した後、車体姿勢はここで一度だけ適用する。
    auto pose = transform->GetLocalPose();
-   pose.SetRotationQuaternion(rotation);
+   const auto* parent = GetOwner().GetParent();
+   pose.SetRotationQuaternion(parent ? parent->GetWorldRotation().Inverse() * rotation : rotation);
    transform->ApplyLocalPose(pose);
 }
 
@@ -194,23 +184,15 @@ void VehicleMover::ApplyMovement(float steerInput, float rollInput, float pitchI
 // 内部設定
 // ================================================================
 
-void VehicleMover::OnLanded(const Quaternion& currentRotation, const Vector3& gravityUp) {
-   // 着地時の localUp を一度だけ計算してブースト判定と姿勢補正で共用する。
-   // RotateVector は Y 軸 (0,1,0) を現在のクォータニオンで回した「車の上方向」を返す。
-   Vector3 localUp = RotateVector({0.0f, 1.0f, 0.0f}, currentRotation);
-   NotifyLandingBoost(localUp, gravityUp);
-   ResetAirAngularVelocity();
-   NotifyLandingAligner(currentRotation, gravityUp);
-}
-
-void VehicleMover::NotifyLandingBoost(const Vector3& localUp, const Vector3& gravityUp) {
-   // VehicleLandingBoost は Optional コンポーネントなので
-   // アタッチされていないとき (nullptr) は何もしない。
-   auto* boost = GetOwner().GetComponent<VehicleLandingBoost>();
-
-   if (boost && boost->IsEnabled()) {
-      boost->TryBoost(localUp, gravityUp);
+LandingResult VehicleMover::ResolveLanding(const Vector3& gravityUp) {
+   const auto rotation = GetOwner().GetWorldRotation();
+   auto result = LandingResult::Normal;
+   if (auto* boost = GetOwner().GetComponent<VehicleLandingBoost>(); boost && boost->IsEnabled()) {
+      result = boost->TryBoost(RotateVector({0.0f, 1.0f, 0.0f}, rotation), gravityUp);
    }
+   ResetAirAngularVelocity();
+   NotifyLandingAligner(rotation, gravityUp);
+   return result;
 }
 
 void VehicleMover::ResetAirAngularVelocity() {
@@ -275,7 +257,6 @@ void VehicleMover::DrawInspector() {
       Tr("コーディネーター: サブコンポーネントへ処理を委譲します。", "Coordinator: delegates to sub-components."));
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("最後の移動方向", "Last Move Direction"), lastMoveDirection_.x,
       lastMoveDirection_.y, lastMoveDirection_.z);
-   ImGui::Text("Landing events: %llu", static_cast<unsigned long long>(lastLandingCount_));
 }
 #endif
 
