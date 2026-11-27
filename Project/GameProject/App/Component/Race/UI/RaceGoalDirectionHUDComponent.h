@@ -1,71 +1,43 @@
 #pragma once
 
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
-#include <string>
-
-namespace GameEngine {
-class Object;
-class Model;
-class UIModelComponent;
-}
+#include "GameEngine/UI/Text/TextTypes.h"
+#include <string_view>
 
 namespace App {
 
-class RaceManagerComponent;
-
-/// @brief プレイヤーからゴールへの方向を3D矢印で示す
+/// @brief ゴールを示す3D矢印を、ミニマップの距離表示に並べる。
 class RaceGoalDirectionHUDComponent final : public GameEngine::IObjectComponent {
 public:
-   static constexpr const char* kTypeName = "RaceGoalDirectionHUDComponent"; ///< コンポーネント型名。
-   /// @brief エディターに表示する日本語名と英語名。
+   static constexpr const char* kTypeName = "RaceGoalDirectionHUDComponent"; ///< 保存用の型名。
    static constexpr GameEngine::ComponentDisplayName kDisplayName{"ゴール方向3D矢印", "Goal Direction 3D Arrow"};
 
-   /// @brief コンポーネント型名を取得する
-   /// @return RaceGoalDirectionHUDComponent
+   /// @brief 保存用のコンポーネント型名を返す。
    const char* GetTypeName() const override { return kTypeName; }
 
-   /// @brief レース、プレイヤー、ゴールへの参照を解決する
-   /// @param sceneWorld 所属するシーンワールド
-   void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
+   /// @brief 距離文字列の直前に、ゲームカメラから見たゴール方向を表示する。
+   /// @param directionToGoal プレイヤーからゴールへのワールド変位（m）。
+   /// @param captionOffset 画面右下から距離表示の下端中央への差分（UIピクセル、Yは下向き）。
+   /// @param caption ミニマップの距離文字列。
+   /// @param style 距離文字列のフォントと表示設定。
+   void ShowBesideDistance(const GameEngine::Vector3& directionToGoal, GameEngine::Vector2 captionOffset,
+      std::string_view caption, const GameEngine::TextStyle& style);
 
-   /// @brief レース管理・プレイヤー・ゴールと、矢印モデルのUI描画部品を再解決する。
-   /// @param sceneWorld 参照の解決先となる現在のシーンワールド。
-   /// @details 所有者はModelとUIModelComponentを持つ構成を前提とする。
-   void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
+   /// @brief この矢印の描画を止める。
+   void Hide();
 
-   /// @brief プレイヤーとゴールの位置から3D矢印の向きを更新する
-   /// @param deltaTime ゲーム用デルタタイム（秒）
-   void Update(float deltaTime) override;
+   /// @brief 無効化されたとき、矢印を非表示にする。
+   void OnDisable() override;
 
-   /// @brief 課題の進行に応じて誘導表示を切り替える。空のraceManagerIdではレース状態を参照しない。
-   void SetGuidanceEnabled(bool enabled);
-
-   /// @brief 3D矢印の参照設定をJSONへ保存する
-   /// @return 保存用JSON
+   /// @brief 保存設定を持たないため空のJSONオブジェクトを返す。
    nlohmann::json Serialize() const override;
 
-   /// @brief JSONから3D矢印の参照設定を読み込む
-   /// @param data 3D矢印設定JSON
+   /// @brief 矢印の表示先と参照先はミニマップと共有するため、空の設定を読み込む。
+   /// @param data 矢印の設定を表す空のJSONオブジェクト。
    void Deserialize(const nlohmann::json& data) override;
-
-#ifdef USE_IMGUI
-
-   /// @brief HUD設定と参照状態をインスペクターへ表示する
-   void DrawInspector() override;
-#endif
 
 private:
    void SetVisible(bool visible);
-
-   std::string raceManagerId_ = "Object:RaceManager";         ///< レース進行を参照する管理Objectの安定Entity ID。
-   std::string playerObjectId_ = "Model:Player";              ///< 操作対象プレイヤーの安定Entity ID。
-   std::string goalObjectId_ = "Model:Goal";                  ///< ゴール地点の安定Entity ID。
-   RaceManagerComponent* raceManager_ = nullptr;              ///< 参照解決済みレース管理コンポーネントへの非所有参照。
-   GameEngine::Object* playerObject_ = nullptr;               ///< 参照解決済みプレイヤーObjectへの非所有参照。
-   GameEngine::Object* goalObject_ = nullptr;                 ///< 参照解決済みゴールObjectへの非所有参照。
-   GameEngine::Model* arrowModel_ = nullptr;                  ///< ゴール方向を示す矢印モデルへの非所有参照。
-   GameEngine::UIModelComponent* uiModelComponent_ = nullptr; ///< 矢印モデルの画面上配置を制御するUI部品への参照。
-   bool guidanceEnabled_ = true;                              ///< チュートリアルなどから指定する誘導表示の許可状態。
 };
 
 } // namespace App

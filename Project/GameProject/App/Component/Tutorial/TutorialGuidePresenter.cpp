@@ -235,13 +235,13 @@ std::string TutorialGuidePresenter::BuildGuideText(const TutorialGuideState& sta
                 asLine(controls.AirPrompts()) +
                 "機体を傾けてから最初の惑星へ着地すると、次へ進みます。";
       case Phase::GoalGuidanceIntro:
-         return "画面右下の矢印はゴールの方向、距離表示はゴールまでの残り距離を示しています。\n"
-                "この表示を頼りに、二つ目の惑星にある赤い旗を目指しましょう。" + next;
+         return "画面右下のミニマップで、二つ目の惑星にあるゴールと距離を確認しましょう。\n" +
+                GameEngine::FormatInputPrompt(controls.view, "ミニマップの回転") + next;
       case Phase::PlanetTransfer:
-         return "二つ目の惑星へ向かいましょう。矢印の方向へジャンプ！\n" + asLine(controls.JumpPrompt()) +
+         return "二つ目の惑星に向けてジャンプしましょう。\n" + asLine(controls.JumpPrompt()) +
                 "空中で姿勢を調整し、車体の底を地表に合わせて着地しましょう。";
       case Phase::Goal:
-         return "二つ目の惑星に到着！　矢印と残り距離を見ながら、赤い旗を目指しましょう。";
+         return "二つ目の惑星に到着！　ミニマップを見ながら、赤い旗を目指しましょう。";
       case Phase::Complete:
          return "ゴールに到着しました。ドリフト・ジャンプ・姿勢操作を使ってレースへ！\n"
                 "まもなくゲームを開始します。";
@@ -257,6 +257,6 @@ void TutorialGuidePresenter::ShowDriftResult(bool fired) {
 }
 
 void TutorialGuidePresenter::ShowReturnToSource() {
-   landingFeedback_ += "\n元の惑星に戻りました。矢印の方向へ、もう一度ジャンプしましょう。";
+   landingFeedback_ += "\n元の惑星に戻りました。ミニマップを見て、二つ目の惑星へもう一度ジャンプしましょう。";
 }
 }

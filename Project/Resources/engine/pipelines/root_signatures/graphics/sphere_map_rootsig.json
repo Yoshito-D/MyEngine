@@ -1,0 +1,13 @@
+{
+  "name": "SphereMap",
+  "parameters": [
+    {
+      "type": "32BitConstants",
+      "visibility": "Vertex",
+      "descriptorCount": 28,
+      "shaderRegister": 0,
+      "semantic": "mapitem"
+    }
+  ],
+  "samplers": []
+}

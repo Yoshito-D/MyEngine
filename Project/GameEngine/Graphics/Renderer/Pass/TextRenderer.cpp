@@ -149,7 +149,7 @@ std::vector<TextDrawData> TextRenderer::QueueText(const TextLayoutResult& layout
 }
 
 TextDrawData TextRenderer::QueueQuad(Vector2 size, const Matrix4x4& matrix, Vector2 uvMin, Vector2 uvMax, Vector4 color,
-   D3D12_GPU_DESCRIPTOR_HANDLE texture, Vector2 viewportSize, const Matrix4x4& uvTransform) {
+   D3D12_GPU_DESCRIPTOR_HANDLE texture, Vector2 viewportSize, const Matrix4x4& uvTransform, QuadFill fill) {
    viewportWidth_ = viewportSize.x;
    viewportHeight_ = viewportSize.y;
    TextDrawData data{};
@@ -161,7 +161,6 @@ TextDrawData TextRenderer::QueueQuad(Vector2 size, const Matrix4x4& matrix, Vect
    const std::array<Vector2, 4> coordinates{{uvMin, {uvMax.x, uvMin.y}, {uvMin.x, uvMax.y}, uvMax}};
    const auto& m = matrix.m;
    const auto& uv = uvTransform.m;
-   constexpr float kColorTextureAtlasType = 3.0f;
    for (size_t i = 0; i < positions.size(); ++i) {
       const auto point = positions[i];
       const Vector2 position{
@@ -169,7 +168,7 @@ TextDrawData TextRenderer::QueueQuad(Vector2 size, const Matrix4x4& matrix, Vect
       const auto coordinate = coordinates[i];
       const Vector2 texCoord{coordinate.x * uv[0][0] + coordinate.y * uv[1][0] + uv[3][0],
          coordinate.x * uv[0][1] + coordinate.y * uv[1][1] + uv[3][1]};
-      vertices_.push_back({position, texCoord, color, {1.0f, 1.0f, 0.0f, kColorTextureAtlasType}});
+      vertices_.push_back({position, texCoord, color, {1.0f, 1.0f, 0.0f, static_cast<float>(fill)}});
    }
    indices_.insert(indices_.end(), {base, base + 1, base + 2, base + 1, base + 3, base + 2});
    return data;
@@ -225,7 +224,7 @@ void TextRenderer::DrawUIText(
    const TextDrawData& textData, const std::function<void(const std::string&, BlendMode)>& setPipelineFunc) {
    if (!device_ || !psoManager_ || !setPipelineFunc || textData.indexCount == 0 || textData.atlasSrv.ptr == 0) return;
 
-   setPipelineFunc("Text", BlendMode::kBlendModeNormal);
+   setPipelineFunc("Text", textData.blendMode);
    const auto viewportSlot = psoManager_->ResolvePipelineRootParameter("Text", "viewport");
    const auto atlasSlot = psoManager_->ResolvePipelineRootParameter("Text", "fontatlas");
 

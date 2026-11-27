@@ -3,7 +3,7 @@
   "vertexShader": "Text",
   "pixelShader": "Text",
   "rootSignature": "Text",
-  "supportBlendModes": false,
+  "supportBlendModes": true,
   "defaultBlendMode": "Normal",
   "cullMode": "None",
   "fillMode": "Solid",

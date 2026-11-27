@@ -60,10 +60,15 @@ class AssetManager;
 class Skybox;
 class PlayerShadowPass;
 struct PlayerShadowFrameData;
+class SphereMapRenderer;
+struct SphereMapFrame;
 
 /// @brief 描画コマンドの収集・レンダーパス実行・エディター描画を統括する
 class Renderer {
 public:
+   /// @brief サブレンダラーを未接続の状態で構築する。
+   Renderer();
+
    ~Renderer();
 
    /// @brief レンダラーの初期化
@@ -102,6 +107,10 @@ public:
    /// @brief 今フレームの影を取り消し、借用している対象参照を解除する。
    /// @note フレーム途中で対象モデルやシーンを破棄する場合は、破棄前に呼ぶ。
    void ClearPlayerShadowFrameData();
+
+   /// @brief 今フレームの球体マップをUI合成用に提出する。
+   /// @param frame 位置と表示設定が確定済みのマップ。内容を値で保持する。
+   void SubmitSphereMap(const SphereMapFrame& frame);
 
    /// @brief モデルを描画する
    /// @param model 描画するモデル
@@ -386,6 +395,7 @@ private:
    bool gameUIWasPlaying_ = false; ///< Play開始時にGameタブへフォーカスを移すための前状態。
    void DrawManagedUI(SceneWorld& world);
    void DrawCameraLetterbox();
+   void QueueSphereMap();
    Vector2 uiViewportSize_ = {
       static_cast<float>(Window::kUiReferenceWidth), static_cast<float>(Window::kUiReferenceHeight)};
 
@@ -448,6 +458,7 @@ private:
 
    // 所有権はrenderPasses_。対象データの受け渡しにだけ使い、ClearPassesで必ず解除する。
    PlayerShadowPass* playerShadowPass_ = nullptr; ///< renderPassesが所有するプレイヤー影パスへの非所有参照。
+   std::unique_ptr<SphereMapRenderer> sphereMapRenderer_;
 
    // 毎フレーム構築するフレームコンテキスト
    FrameContext frameCtx_; ///< 各描画パスへ渡す現在フレームの共有コンテキスト。

@@ -31,21 +31,6 @@ constexpr float kFlightTrailLengthTime = 0.085f;       ///< 速度に掛けて�
 constexpr float kFlightTrailMaxLength = 3.0f;          ///< 飛行中のトレイルの最大長（m）。
 constexpr float kFlightSmokeDiameterTravelTime = 1.0f; ///< 放出のしきい値として球の直径を進む基準時間（秒）。
 
-GameEngine::Collider::AABB CalculateModelBounds(const GameEngine::ModelAsset& model) {
-   const float limit = std::numeric_limits<float>::max();
-   GameEngine::Collider::AABB bounds{{limit, limit, limit}, {-limit, -limit, -limit}};
-
-   for (const auto& mesh : model.GetMeshData()) {
-      for (const auto& vertex : mesh.vertices) {
-         const auto& p = vertex.position;
-         bounds.min = {std::min(bounds.min.x, p.x), std::min(bounds.min.y, p.y), std::min(bounds.min.z, p.z)};
-         bounds.max = {std::max(bounds.max.x, p.x), std::max(bounds.max.y, p.y), std::max(bounds.max.z, p.z)};
-      }
-   }
-
-   return bounds.min.x <= bounds.max.x ? bounds : GameEngine::Collider::AABB{};
-}
-
 GameEngine::Quaternion AlignUpToNormal(const GameEngine::Vector3& normal) {
    const GameEngine::Vector3 localUp{0.0f, 1.0f, 0.0f};
    const auto surfaceNormal = normal.Normalize();
@@ -291,11 +276,6 @@ std::optional<GameEngine::Transform> VehicleEffectController::CalculateFlightSmo
    const auto model = mesh ? mesh->GetModelAssetHandle() : nullptr;
    if (!body || !body->IsEnabled() || !transform || !model) return std::nullopt;
 
-   if (flightSmokeModel_.lock() != model) {
-      flightSmokeModelBounds_ = CalculateModelBounds(*model);
-      flightSmokeModel_ = model;
-   }
-
    // 描画と同じ変換を使い、タイヤを含む全メッシュの境界をワールド空間へ移す。
    auto modelWorld = transform->HasWorldMatrixOverride() ? transform->GetWorldMatrixOverride()
                                                          : GameEngine::MakeAffineMatrix(transform->GetLocalPose());
@@ -304,8 +284,9 @@ std::optional<GameEngine::Transform> VehicleEffectController::CalculateFlightSmo
    }
    modelWorld = transform->ComposeWorldMatrix(modelWorld);
 
-   const auto center = (flightSmokeModelBounds_.min + flightSmokeModelBounds_.max) * 0.5f;
-   const auto halfSize = (flightSmokeModelBounds_.max - flightSmokeModelBounds_.min) * 0.5f;
+   const auto& bounds = model->GetLocalBounds();
+   const auto center = (bounds.min + bounds.max) * 0.5f;
+   const auto halfSize = (bounds.max - bounds.min) * 0.5f;
    const auto x = GameEngine::TransformNormal({halfSize.x, 0.0f, 0.0f}, modelWorld);
    const auto y = GameEngine::TransformNormal({0.0f, halfSize.y, 0.0f}, modelWorld);
    const auto z = GameEngine::TransformNormal({0.0f, 0.0f, halfSize.z}, modelWorld);

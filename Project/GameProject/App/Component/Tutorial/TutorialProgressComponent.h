@@ -21,8 +21,8 @@ class CharacterJump;
 class CharacterLanding;
 class GravityBody;
 class PlanetSwitcher;
-class RaceGoalDirectionHUDComponent;
-class RaceGoalDistanceTextComponent;
+class RaceGoalDirectionWorldComponent;
+class RaceMinimapHUDComponent;
 class VehicleController;
 class VehicleDrift;
 class VehicleInputComponent;
@@ -123,8 +123,6 @@ private:
    std::string goalObjectId_ = "Model:Goal";                       ///< 目標惑星の地表へ配置するゴール。
    std::string feedbackObjectId_ = "UIText:TutorialFeedback";      ///< 操作結果を即座に表示するUI。
    std::string promptObjectId_ = "UIText:TutorialPrompt";          ///< 本文より小さく表示する決定操作のUI。
-   std::string goalDistanceObjectId_ = "UIText:GoalDistanceText";  ///< ゴール距離のUI。
-   std::string goalDirectionObjectId_ = "Model:GoalDirectionHUD";  ///< ゴール方向のUI。
    std::string nextScene_ = "GameTest";                            ///< クリア表示後の自動遷移先。
    float completionDelay_ = 2.5f;                                  ///< クリア表示から自動遷移までの待機時間（秒）。
    float guideFadeDuration_ = 0.2f;                                ///< 課題の案内を切り替えるフェード時間（秒）。
@@ -145,8 +143,8 @@ private:
    GameEngine::UITextComponent* guideText_ = nullptr;       ///< 現在の課題と説明文。
    GameEngine::UITextComponent* feedbackText_ = nullptr;    ///< 練習の即時フィードバック。
    GameEngine::UITextComponent* promptText_ = nullptr;      ///< 次へ進むための操作案内。
-   RaceGoalDistanceTextComponent* goalDistance_ = nullptr;  ///< 距離誘導の表示制御。
-   RaceGoalDirectionHUDComponent* goalDirection_ = nullptr; ///< 方向誘導の表示制御。
+   RaceMinimapHUDComponent* minimap_ = nullptr; ///< 地図と距離の表示制御。
+   RaceGoalDirectionWorldComponent* goalArrow_ = nullptr; ///< 車体上のゴール矢印の表示制御。
 
    TutorialGuidePresenter guidePresenter_;        ///< 案内文面とフェードの所有者。
    GameEngine::StateMachine<Phase> phaseMachine_; ///< 課題の開始・更新と許可された遷移の管理。

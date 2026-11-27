@@ -16,8 +16,8 @@
 #include "GameProject/App/Component/Gravity/GravityBody.h"
 #include "GameProject/App/Component/Gravity/PlanetSwitcher.h"
 #include "GameProject/App/Component/Gravity/SphericalGravityAttractor.h"
-#include "GameProject/App/Component/Race/UI/RaceGoalDirectionHUDComponent.h"
-#include "GameProject/App/Component/Race/UI/RaceGoalDistanceTextComponent.h"
+#include "GameProject/App/Component/Race/RaceGoalDirectionWorldComponent.h"
+#include "GameProject/App/Component/Race/UI/RaceMinimapHUDComponent.h"
 #include "GameProject/App/Component/Vehicle/VehicleController.h"
 #include "GameProject/App/Component/Vehicle/VehicleDrift.h"
 #include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
@@ -56,10 +56,10 @@ void TutorialProgressComponent::OnReferencesChanged(GameEngine::SceneWorld& scen
    feedbackText_ = feedback ? feedback->GetComponent<GameEngine::UITextComponent>() : nullptr;
    auto* prompt = sceneWorld.FindObjectById(promptObjectId_);
    promptText_ = prompt ? prompt->GetComponent<GameEngine::UITextComponent>() : nullptr;
-   auto* distance = sceneWorld.FindObjectById(goalDistanceObjectId_);
-   goalDistance_ = distance ? distance->GetComponent<RaceGoalDistanceTextComponent>() : nullptr;
-   auto* direction = sceneWorld.FindObjectById(goalDirectionObjectId_);
-   goalDirection_ = direction ? direction->GetComponent<RaceGoalDirectionHUDComponent>() : nullptr;
+   auto* minimap = sceneWorld.FindObjectById(RaceMinimapHUDComponent::kObjectId);
+   minimap_ = minimap ? minimap->GetComponent<RaceMinimapHUDComponent>() : nullptr;
+   auto* arrow = sceneWorld.FindObjectById(RaceGoalDirectionWorldComponent::kObjectId);
+   goalArrow_ = arrow ? arrow->GetComponent<RaceGoalDirectionWorldComponent>() : nullptr;
 }
 
 void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
@@ -115,7 +115,7 @@ void TutorialProgressComponent::UpdatePresentation(float deltaTime) {
 bool TutorialProgressComponent::HasRequiredReferences() const {
    return guideText_ && feedbackText_ && promptText_ && playerObject_ && targetPlanet_ && goalObject_ &&
           characterJump_ && characterLanding_ && gravityBody_ && planetSwitcher_ && vehicleController_ &&
-          vehicleInput_ && vehicleDrift_ && vehicleEvents_ && landingBoost_ && goalDistance_ && goalDirection_ &&
+          vehicleInput_ && vehicleDrift_ && vehicleEvents_ && landingBoost_ && minimap_ &&
           playerObject_->GetComponent<GameEngine::TransformComponent>() &&
           targetPlanet_->GetComponent<GameEngine::TransformComponent>() &&
           targetPlanet_->GetComponent<SphericalGravityAttractor>() &&
@@ -368,12 +368,12 @@ void TutorialProgressComponent::SetTargetPlanetEnabled(bool enabled) {
 }
 
 void TutorialProgressComponent::SetGoalGuidanceEnabled(bool enabled) {
-   if (goalDistance_) {
-      goalDistance_->SetGuidanceEnabled(enabled);
+   if (minimap_) {
+      minimap_->SetGuidanceEnabled(enabled);
    }
 
-   if (goalDirection_) {
-      goalDirection_->SetGuidanceEnabled(enabled);
+   if (goalArrow_) {
+      goalArrow_->SetGuidanceEnabled(enabled);
    }
 
    if (goalObject_) {
@@ -417,14 +417,13 @@ bool TutorialProgressComponent::RevealTargetPlanet() {
 nlohmann::json TutorialProgressComponent::Serialize() const {
    return nlohmann::json{{"playerObjectId", playerObjectId_}, {"targetPlanetObjectId", targetPlanetObjectId_},
       {"goalObjectId", goalObjectId_}, {"feedbackObjectId", feedbackObjectId_}, {"promptObjectId", promptObjectId_},
-      {"goalDistanceObjectId", goalDistanceObjectId_}, {"goalDirectionObjectId", goalDirectionObjectId_},
       {"nextScene", nextScene_}, {"completionDelay", completionDelay_}, {"guideFadeDuration", guideFadeDuration_},
       {"transferSurfaceGap", transferSurfaceGap_}};
 }
 
 nlohmann::json TutorialProgressComponent::GetSharedParameters() const {
    return ExtractSharedParameters({"playerObjectId", "targetPlanetObjectId", "goalObjectId", "feedbackObjectId",
-      "promptObjectId", "goalDistanceObjectId", "goalDirectionObjectId", "nextScene"});
+      "promptObjectId", "nextScene"});
 }
 
 void TutorialProgressComponent::Deserialize(const nlohmann::json& data) {
@@ -448,8 +447,6 @@ void TutorialProgressComponent::ReadParameters(const nlohmann::json& data) {
    readId("goalObjectId", goalObjectId_);
    readId("feedbackObjectId", feedbackObjectId_);
    readId("promptObjectId", promptObjectId_);
-   readId("goalDistanceObjectId", goalDistanceObjectId_);
-   readId("goalDirectionObjectId", goalDirectionObjectId_);
    readId("nextScene", nextScene_);
 
    if (data.contains("completionDelay") && data.at("completionDelay").is_number()) {
@@ -508,8 +505,6 @@ void TutorialProgressComponent::DrawInspector() {
    GameEngine::EditorUI::ObjectReference("Goal", goalObjectId_, "TriggerVolumeComponent");
    GameEngine::EditorUI::ObjectReference("Feedback Text", feedbackObjectId_, "UITextComponent");
    GameEngine::EditorUI::ObjectReference("Prompt Text", promptObjectId_, "UITextComponent");
-   GameEngine::EditorUI::ObjectReference("Goal Distance", goalDistanceObjectId_, "RaceGoalDistanceTextComponent");
-   GameEngine::EditorUI::ObjectReference("Goal Direction", goalDirectionObjectId_, "RaceGoalDirectionHUDComponent");
    GameEngine::EditorUI::SceneReference("Next Scene", nextScene_);
    ImGui::DragFloat("Completion Delay", &completionDelay_, 0.1f, 0.0f, 10.0f, "%.1f s");
    ImGui::DragFloat("Guide Fade Duration", &guideFadeDuration_, 0.01f, 0.01f, 1.0f, "%.2f s");

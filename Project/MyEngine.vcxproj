@@ -276,6 +276,7 @@
     <ClCompile Include="GameEngine\UI\Text\Utf8Decoder.cpp" />
     <ClCompile Include="GameEngine\Graphics\Renderer\Pass\OpaquePass.cpp" />
     <ClCompile Include="GameEngine\Graphics\Renderer\Pass\PlayerShadowPass.cpp" />
+    <ClCompile Include="GameEngine\Graphics\Renderer\Pass\SphereMapRenderer.cpp" />
     <ClCompile Include="GameEngine\Graphics\Renderer\Pass\PostEffectPass.cpp" />
     <ClCompile Include="GameEngine\Graphics\Renderer\Pass\TransparentPass.cpp" />
     <ClCompile Include="GameEngine\Graphics\PostProcess\AntiAliasing.cpp" />
@@ -510,8 +511,9 @@
     <ClCompile Include="GameProject\App\Component\Race\UI\GamepadGuideTextComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\UI\RaceCountdownTextComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\RaceGateComponent.cpp" />
-    <ClCompile Include="GameProject\App\Component\Race\UI\RaceGoalDistanceTextComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\RaceGoalDirectionWorldComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\UI\RaceGoalDirectionHUDComponent.cpp" />
+    <ClCompile Include="GameProject\App\Component\Race\UI\RaceMinimapHUDComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\RaceManagerComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\UI\RaceResultUIComponent.cpp" />
     <ClCompile Include="GameProject\App\Component\Race\UI\RaceTimeFormatting.cpp" />
@@ -616,6 +618,7 @@
     <ClInclude Include="GameEngine\Graphics\Renderer\Pass\IRenderPass.h" />
     <ClInclude Include="GameEngine\Graphics\Renderer\Pass\OpaquePass.h" />
     <ClInclude Include="GameEngine\Graphics\Renderer\Pass\PlayerShadowPass.h" />
+    <ClInclude Include="GameEngine\Graphics\Renderer\Pass\SphereMapRenderer.h" />
     <ClInclude Include="GameEngine\Graphics\Renderer\Pass\PostEffectPass.h" />
     <ClInclude Include="GameEngine\Graphics\Renderer\Pass\TransparentPass.h" />
     <ClInclude Include="GameEngine\Graphics\PostProcess\AntiAliasing.h" />
@@ -810,8 +813,9 @@
     <ClInclude Include="GameProject\App\Component\Race\UI\GamepadGuideTextComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\UI\RaceCountdownTextComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\RaceGateComponent.h" />
-    <ClInclude Include="GameProject\App\Component\Race\UI\RaceGoalDistanceTextComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Race\RaceGoalDirectionWorldComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\UI\RaceGoalDirectionHUDComponent.h" />
+    <ClInclude Include="GameProject\App\Component\Race\UI\RaceMinimapHUDComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\RaceManagerComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\UI\RaceResultUIComponent.h" />
     <ClInclude Include="GameProject\App\Component\Race\UI\RaceTimeFormatting.h" />
@@ -922,6 +926,7 @@
     <None Include="Resources\engine\pipelines\root_signatures\graphics\particle_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\player_shadow_mask_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\player_shadow_project_rootsig.json" />
+    <None Include="Resources\engine\pipelines\root_signatures\graphics\sphere_map_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\skybox_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\graphics\text_rootsig.json" />
     <None Include="Resources\engine\pipelines\root_signatures\postprocess\fullscreen_triangle_rootsig.json" />
@@ -941,6 +946,7 @@
     <None Include="Resources\engine\pipelines\pso\graphics\particle_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\player_shadow_mask_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\player_shadow_project_pipeline.json" />
+    <None Include="Resources\engine\pipelines\pso\graphics\sphere_map_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\skybox_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\sprite_pipeline.json" />
     <None Include="Resources\engine\pipelines\pso\graphics\text_pipeline.json" />
@@ -1010,6 +1016,9 @@
     <None Include="Resources\engine\shaders\graphics\object3d\Object3DCommon.hlsli" />
     <None Include="Resources\engine\shaders\graphics\particle\Particle.hlsli" />
     <None Include="Resources\engine\shaders\graphics\player_shadow\PlayerShadow.hlsli" />
+    <None Include="Resources\engine\shaders\graphics\sphere_map\SphereMap.PS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\sphere_map\SphereMap.VS.hlsl" />
+    <None Include="Resources\engine\shaders\graphics\sphere_map\SphereMap.hlsli" />
     <None Include="Resources\engine\shaders\graphics\skybox\Skybox.hlsli" />
     <None Include="Resources\engine\shaders\postprocess\FullscreenTriangle.hlsli" />
   </ItemGroup>

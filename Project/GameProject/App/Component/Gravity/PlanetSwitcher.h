@@ -36,13 +36,6 @@ public:
    /// @brief 近傍惑星を選び、重力と着地の参照先を公開する
    void Update(float) override;
 
-   /// @brief 惑星1件分の切替情報
-   struct PlanetEntry {
-      std::string objectId;            ///< 安定Entity ID
-      GameEngine::Vector3 center = {}; ///< 惑星中心座標
-      float surfaceRadius = 15.0f;     ///< 地表半径
-   };
-
    /// @brief 切り替え候補の惑星を安定IDで追加する
    /// @param objectId 追加する惑星のEntity ID
    void AddPlanet(std::string objectId);
@@ -53,21 +46,25 @@ public:
    /// @brief 候補を並べ替え、現在選択中の惑星との対応を維持する
    bool MovePlanet(size_t from, size_t to);
 
-   /// @brief 参照設定の変更後に、指定ワールドから依存先を解決し直す。
-   /// @param sceneWorld 参照先を検索するシーン。
-   void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
-
    /// @brief 現在選択中の惑星インデックスを返す
    std::int32_t GetCurrentPlanetIndex() const { return currentIndex_; }
 
    /// @brief 切り替え候補として登録された惑星数を返す
    /// @return 登録済みの惑星候補数
-   std::int32_t GetPlanetCount() const { return static_cast<std::int32_t>(entries_.size()); }
+   std::int32_t GetPlanetCount() const { return static_cast<std::int32_t>(planetIds_.size()); }
+
+   /// @brief 候補インデックスに対応する惑星モデルを取得する。
+   /// @param index GetPlanetCountの範囲内の候補インデックス。
+   /// @return 借用した惑星モデル。無効なインデックスや解決できないIDの場合はnullptr。
+   GameEngine::Model* GetPlanetModel(std::int32_t index) const;
 
    /// @brief 現在の重力適用先を返す。選択が無効な場合はnullptr。
    GravityAttractor* GetSelectedAttractor() const;
 
    /// @brief 着地済みの惑星の中心と半径を取得する。
+   /// @param center 惑星中心の座標（m）。取得できた場合だけ更新する。
+   /// @param radius 惑星の地表半径（m）。取得できた場合だけ更新する。
+   /// @return 有効な着地済み惑星から地表情報を取得できた場合true。
    bool TryGetCurrentPlanet(GameEngine::Vector3& center, float& radius) const;
 
    /// @brief 着地済み惑星のモデル・中心（m）・半径（m）を取得する。空中の着地候補は使用しない。
@@ -82,9 +79,9 @@ public:
 
    /// @brief 着地判定に使う惑星情報を取得する
    /// @details 空中で保留中の候補があれば候補を、なければ現在の惑星を返す。
-   /// @param outCenter 惑星中心の出力先
-   /// @param outSurfaceRadius 地表半径の出力先
-   /// @return 取得できた場合は true
+   /// @param outCenter 惑星中心（m）。取得できた場合だけ更新する。
+   /// @param outSurfaceRadius 地表半径（m）。取得できた場合だけ更新する。
+   /// @return 現在のモデルから有効な地表情報を取得できた場合true。
    bool TryGetLandingPlanet(GameEngine::Vector3& outCenter, float& outSurfaceRadius) const;
 
    /// @brief 影の受け面モデルと、同じ着地候補の中心・半径を取得する。
@@ -92,8 +89,7 @@ public:
    /// @param outCenter 惑星中心のワールド座標。失敗時はゼロ。
    /// @param outSurfaceRadius 地表半径のワールド単位。失敗時はゼロ。
    /// @return 同じ候補からすべての情報を取得できた場合true。
-   /// @note 実装時は既存の2引数版と同様にpendingIndex_を優先し、候補の安定IDからモデルを再解決する。
-   /// モデルが消えていた場合はfalseとし、古いモデル参照を保存しない。
+   /// @note 空中で保留中の候補を優先し、候補の安定IDから現在のモデルを解決する。
    bool TryGetLandingPlanet(
       GameEngine::Model*& outReceiver, GameEngine::Vector3& outCenter, float& outSurfaceRadius) const;
 
@@ -142,6 +138,8 @@ public:
    void Configure(const Settings& requested);
 
 private:
+   std::int32_t GetLandingPlanetIndex() const;
+
    void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
 
    float switchHysteresis = 1.0f; ///< 惑星切替に必要な距離差のヒステリシス（小さいほど敏感）。
@@ -149,7 +147,7 @@ private:
 
 private:
    /// @brief 登録済み惑星候補
-   std::vector<PlanetEntry> entries_;
+   std::vector<std::string> planetIds_;
 #ifdef USE_IMGUI
    std::string newPlanetId_; ///< 惑星リンクへ追加する候補の安定Entity ID。
 #endif
@@ -164,17 +162,11 @@ private:
    std::int32_t selectedGravityIndex_ = -1;
 
 private:
-   std::int32_t SelectBestPlanetIndex(const GameEngine::Vector3& pos, const GameEngine::Quaternion& obbRot);
+   std::int32_t SelectBestPlanetIndex(const GameEngine::Vector3& pos, const GameEngine::Quaternion& obbRot) const;
 
    bool IsOwnerAirborne() const;
 
    bool HasPlanet(const std::string& objectId) const;
-
-   GravityAttractor* GetAttractorByObjectId(const std::string& objectId) const;
-
-   GameEngine::Vector3 GetPlanetCenter(const std::string& objectId) const;
-
-   float GetPlanetSurfaceRadius(const std::string& objectId) const;
 };
 
 } // namespace App

@@ -344,7 +344,7 @@
       "Skybox:Skybox",
       "Model:Goal",
       "Model:GoalDirectionHUD",
-      "UIText:GoalDistanceText",
+      "Object:RaceMinimapHUD",
       "Sprite:SpeedGaugeFill",
       "Sprite:SpeedGaugeFrame",
       "UIText:SpeedGaugeText",
@@ -1556,7 +1556,7 @@
          "components": [
             {
                "data": {
-                  "name": "GoalDirectionHUD"
+                  "name": "GoalDirectionArrow"
                },
                "enabled": true,
                "typeName": "ObjectNameComponent"
@@ -1621,7 +1621,7 @@
                            1.0,
                            1.0
                         ],
-                        "rimLightIntensity": 8.239999771118164,
+                        "rimLightIntensity": 0.2,
                         "rimLightPower": 4.0,
                         "shininess": 40.0,
                         "textureName": "",
@@ -1732,9 +1732,9 @@
             },
             {
                "data": {
-                  "applyPostProcess": false,
+                  "applyPostProcess": true,
                   "autoRender": true,
-                  "renderSpace": "Screen",
+                  "renderSpace": "World",
                   "visible": false
                },
                "enabled": true,
@@ -1743,29 +1743,36 @@
             {
                "data": {
                   "anchorPoint": "BottomRight",
-                  "depth": 2.5,
+                  "depth": 20.0,
                   "localPivot": [
                      0.0,
                      0.0,
                      1.5
                   ],
-                  "projectionType": "Perspective",
+                  "projectionType": "Orthographic",
                   "screenOffset": [
-                     -112.0,
-                     112.0
-                  ]
+                       0.0,
+                       0.0
+                    ]
                },
-               "enabled": true,
+               "enabled": false,
                "typeName": "UIModelComponent"
+            },
+            {
+               "data": {},
+               "enabled": true,
+               "typeName": "RaceGoalDirectionHUDComponent"
             },
             {
                "data": {
                   "goalObjectId": "Model:Goal",
+                  "heightAboveVehicleMeters": 0.8,
+                  "modelScale": 0.28,
                   "playerObjectId": "Model:Player",
                   "raceManagerId": ""
                },
                "enabled": true,
-               "typeName": "RaceGoalDirectionHUDComponent"
+               "typeName": "RaceGoalDirectionWorldComponent"
             }
          ],
          "id": "Model:GoalDirectionHUD",
@@ -1776,76 +1783,25 @@
          "components": [
             {
                "data": {
-                  "name": "GoalDistanceText"
+                  "name": "RaceMinimapHUD"
                },
                "enabled": true,
                "typeName": "ObjectNameComponent"
             },
             {
                "data": {
-                  "parentEntityId": "",
-                  "rotation": [
-                     0.0,
-                     0.0,
-                     0.0
-                  ],
-                  "rotationQuaternion": [
-                     0.0,
-                     0.0,
-                     0.0,
-                     1.0
-                  ],
-                  "rotationSource": "euler",
-                  "scale": [
-                     1.0,
-                     1.0,
-                     1.0
-                  ],
-                  "translation": [
-                     -110.8499984741211,
-                     -36.0,
-                     1.0
-                  ]
-               },
-               "enabled": true,
-               "typeName": "TransformComponent"
-            },
-            {
-               "data": {
-                  "color": [
-                     1.0,
-                     1.0,
-                     1.0,
-                     1.0
-                  ],
                   "fontId": "851Gkktt",
-                  "fontSize": 32,
-                  "horizontalAlignment": "Center",
-                  "lineSpacing": 1.0,
-                  "maxWidth": 200.0,
-                  "pivot": [
-                     0.5,
-                     0.5
-                  ],
-                  "screenAnchor": "BottomRight",
-                  "sortingOrder": 101,
-                  "text": ""
-               },
-               "enabled": true,
-               "typeName": "UITextComponent"
-            },
-            {
-               "data": {
                   "goalObjectId": "Model:Goal",
                   "playerObjectId": "Model:Player",
-                  "raceManagerId": ""
+                  "raceManagerId": "",
+                  "viewPitch": 0.7330383
                },
                "enabled": true,
-               "typeName": "RaceGoalDistanceTextComponent"
+               "typeName": "RaceMinimapHUDComponent"
             }
          ],
-         "id": "UIText:GoalDistanceText",
-         "objectType": "UIText",
+         "id": "Object:RaceMinimapHUD",
+         "objectType": "Generic",
          "parentId": ""
       },
       {
@@ -2522,8 +2478,6 @@
                "data": {
                   "completionDelay": 2.5,
                   "feedbackObjectId": "UIText:TutorialFeedback",
-                  "goalDirectionObjectId": "Model:GoalDirectionHUD",
-                  "goalDistanceObjectId": "UIText:GoalDistanceText",
                   "goalObjectId": "Model:Goal",
                   "guideFadeDuration": 0.20000000298023224,
                   "nextScene": "GameTest",

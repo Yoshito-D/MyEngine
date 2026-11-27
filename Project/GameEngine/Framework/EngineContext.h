@@ -652,6 +652,10 @@ public:
    /// @note 実装時はsRenderer_の存在を確認して委譲する。シーンや対象モデルの破棄前にも呼ぶ。
    static void ClearPlayerShadowFrameData();
 
+   /// @brief 所有権を移さず、今フレームの球体マップをHUDへ提出する。
+   /// @param frame 配置済みの球体マップデータ。レンダラーへコピーする。
+   static void SubmitSphereMap(const struct SphereMapFrame& frame);
+
    /// @brief モデルを描画する
    /// @param model 描画するモデル
    /// @param texture テクスチャ

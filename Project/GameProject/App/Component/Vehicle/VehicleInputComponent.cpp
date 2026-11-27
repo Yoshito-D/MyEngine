@@ -74,6 +74,7 @@ VehicleControlLabels VehicleInputComponent::DescribeControlLabels(const VehicleI
       .pitch = EngineContext::DescribeInputActionBindings(kGameplayActionMap, kPitchAction, playerSlot),
       .roll = EngineContext::DescribeInputActionBindings(kGameplayActionMap, kRollAction, playerSlot),
       .jump = EngineContext::DescribeInputActionBindings(kGameplayActionMap, kJumpAction, playerSlot),
+      .view = EngineContext::DescribeInputActionBindings(kGameplayActionMap, kCameraLookAction, playerSlot),
       .confirm = EngineContext::DescribeInputActionBindings(kUiActionMap, kConfirmAction, playerSlot)};
 }
 
@@ -81,7 +82,7 @@ const GameEngine::InputActionState& VehicleInputComponent::GetActionState(const 
    static const GameEngine::InputActionState emptyState{};
 
    if (!IsEnabled()) {
-      // 無効化中は入力サービスの状態を漏らさず、全アクションを中立値として扱う。
+      // 無効化中は車両操作に使うアクションを中立値として扱う。
       return emptyState;
    }
 
@@ -100,8 +101,8 @@ float VehicleInputComponent::GetRollInput() const {
    return GetActionState(kRollAction).value.x;
 }
 
-GameEngine::Vector2 VehicleInputComponent::GetCameraLookInput() const {
-   return GetActionState(kCameraLookAction).value;
+GameEngine::Vector2 VehicleInputComponent::GetViewInput() const {
+   return GameEngine::EngineContext::GetInputActionState(kGameplayActionMap, kCameraLookAction, playerSlot).value;
 }
 
 bool VehicleInputComponent::IsJumpTriggered() const {
