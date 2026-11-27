@@ -13,6 +13,7 @@ namespace GameEngine {
 
 class UISystem;
 class Object;
+struct SceneDrawContext;
 class ParticleSystem;
 class ParticleSubEmitterRuntime;
 class VirtualCamera;
@@ -32,6 +33,10 @@ public:
    /// @param deltaTime ゲーム時間の経過秒数。
    /// @param uiDeltaTime UI更新に使用する経過秒数。
    void Update(float deltaTime, float uiDeltaTime);
+
+   /// @brief 描画キュー構築前にシーン内の有効な描画データを準備する。
+   /// @param context 現在フレームの描画情報。
+   void PrepareDraw(const SceneDrawContext& context);
 
    /// @brief 直置き・コンポーネント所有・子エフェクトを含む、現在フレームのパーティクル一覧。
    /// @details システムの追加・解除まで有効な非所有ビュー。

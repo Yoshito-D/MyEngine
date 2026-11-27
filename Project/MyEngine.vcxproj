@@ -877,11 +877,13 @@
   <ItemGroup>
     <ClCompile Include="GameEngine\Scene\Scene.cpp" />
     <ClCompile Include="GameEngine\Scene\SceneCatalog.cpp" />
+    <ClCompile Include="GameEngine\Editor\EditorPlaySession.cpp" />
     <ClCompile Include="GameEngine\Editor\EditorSceneSession.cpp" />
     <ClCompile Include="GameEngine\Editor\EditorSceneGeometry.cpp" />
     <ClInclude Include="GameEngine\Scene\Scene.h" />
     <ClInclude Include="GameEngine\Scene\SceneDefinition.h" />
     <ClInclude Include="GameEngine\Scene\SceneCatalog.h" />
+    <ClInclude Include="GameEngine\Editor\EditorPlaySession.h" />
     <ClInclude Include="GameEngine\Editor\EditorSceneSession.h" />
     <ClInclude Include="GameEngine\Editor\EditorSceneGeometry.h" />
   </ItemGroup>

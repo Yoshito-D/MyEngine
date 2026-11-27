@@ -54,6 +54,12 @@ public:
    /// @param deltaTime ゲーム用デルタタイム（秒）
    void Update(float deltaTime) override;
 
+   /// @brief シーン全体の更新フェーズを返す。
+   GameEngine::ObjectUpdatePhase GetUpdatePhase() const override { return GameEngine::ObjectUpdatePhase::Progress; }
+
+   /// @brief 車両を動かす前にレースの初期状態を適用する。
+   void PrepareGameplayFrame() override;
+
    /// @brief シーン内のプレイヤー参照と記録を復元し、開始状態へリセットする
    /// @param sceneWorld 所属するシーンワールド
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
@@ -140,6 +146,16 @@ private:
    void ReadParameters(const nlohmann::json& data);
 
    void ConfigureStates();
+   void ApplyGateEvents(State previousState);
+
+   struct GateEvents {
+      bool start = false;
+      bool finish = false;
+      bool startFinish = false;
+      bool startExit = false;
+      std::vector<size_t> checkpoints;
+   };
+   GateEvents gateEvents_;
    void EnterCountdown();
    void EnterRunning();
    void EnterFinished();
@@ -186,6 +202,7 @@ private:
    bool autoSceneChangeRequested_ = false;              ///< 自動遷移の予約が受理されたか。
    bool restartRequested_ = false;                      ///< リトライのシーン切り替えを要求済みかどうか。
    bool runtimeInitialized_ = false;                    ///< 最初の実行時更新に必要な初期化が完了したかどうか。
+   bool startedThisFrame_ = false; ///< 初期状態を適用したフレームではレースの時計を進めない。
    bool restartAfterUpdate_ = false;                    ///< 状態更新中に要求された再開始をコールバック終了後に行うか。
    bool showStartBannerOnEntry_ = true;                 ///< Runningへの入場時にSTART表示を開始するか。
    StageIntroSettings introSettings_;                   ///< ステージ固有の俯瞰構図と再生時間。

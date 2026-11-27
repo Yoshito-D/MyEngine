@@ -317,18 +317,31 @@ void SceneWorld::UnregisterParticle(ParticleSystem& particle) {
    std::erase(particles_, &particle);
 }
 
+void SceneWorld::PrepareDraw(const SceneDrawContext& context) {
+   for (auto* object : objectStore_.GetObjects()) {
+      if (objectStore_.Contains(object)) {
+         object->PrepareDraw(context);
+      }
+   }
+}
+
 void SceneWorld::Update(float deltaTime, float uiDeltaTime) {
    const auto objects = objectStore_.GetObjects();
    const bool gameplay = !uiSystem_->PausesGameplay();
+   if (gameplay) {
+      for (auto index = static_cast<int>(ObjectUpdatePhase::Preparation);
+           index < static_cast<int>(ObjectUpdatePhase::Count); ++index) {
+         const auto phase = static_cast<ObjectUpdatePhase>(index);
+         for (auto* object : objects) {
+            if (objectStore_.Contains(object)) {
+               object->UpdateComponents(deltaTime, ObjectUpdateDomain::Gameplay, phase);
+            }
+         }
+      }
+   }
    for (auto* object : objects) {
-      if (!objectStore_.Contains(object)) {
-         continue;
-      }
-      if (gameplay) {
-         object->UpdateComponents(deltaTime, ObjectUpdateDomain::Gameplay);
-      }
       if (objectStore_.Contains(object) && uiSystem_->IsUpdateVisible(*object)) {
-         object->UpdateComponents(uiDeltaTime, ObjectUpdateDomain::UI);
+         object->UpdateComponents(uiDeltaTime, ObjectUpdateDomain::UI, std::nullopt);
       }
    }
    if (!gameplay) return;

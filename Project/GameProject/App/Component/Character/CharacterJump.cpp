@@ -1,4 +1,5 @@
 #include "GameProject/App/Component/Character/CharacterJump.h"
+#include "GameProject/App/Component/Character/CharacterLanding.h"
 #include "GameEngine/Editor/ParameterAssetEditor.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
 #include "GameProject/App/Component/Vehicle/VehicleDrift.h"
@@ -11,26 +12,23 @@
 
 namespace App {
 
-void CharacterJump::Jump(const GameEngine::Vector3& gravityUp) {
-   // 空中での多重ジャンプを防止
-   if (isJumping_) return;
+void CharacterJump::Jump() {
+   if (!HasOwner()) return;
 
-   // 重力ボディへ上向き速度を加算
-   auto* gravityBody = GetOwner().GetComponent<GravityBody>();
+   auto* landing = GetOwner().GetComponent<CharacterLanding>();
+   auto* body = GetOwner().GetComponent<GravityBody>();
+   if (!landing || !landing->IsEnabled() || !body || !body->IsEnabled() || jumpStrength <= 0.0f) return;
 
-   if (!gravityBody) return;
+   const auto contact = landing->Takeoff();
+   if (!contact) return;
 
-   gravityBody->AddVelocityImpulse(gravityUp * jumpStrength);
-
-   // ジャンプ状態を記録
-   isJumping_ = true;
+   body->AddVelocityImpulse(contact->normal * jumpStrength);
 
    if (auto* drift = GetOwner().GetComponent<VehicleDrift>()) {
       drift->ResetMiniTurboCharge();
    }
-
-   if (auto* events = GetOwner().GetComponent<VehicleEvents>()) {
-      events->PublishTakeoff();
+   if (auto* events = GetOwner().GetComponent<VehicleEvents>(); events && events->IsEnabled()) {
+      events->PublishTakeoff(*contact);
    }
 }
 
@@ -43,7 +41,6 @@ void CharacterJump::DrawInspector() {
 
    ImGui::Separator();
    ImGui::DragFloat(Tr("ジャンプ力 (m/s)", "Jump Strength (m/s)"), &jumpStrength, 0.1f, 0.0f, 30.0f);
-   ImGui::Text("%s: %s", Tr("ジャンプ中", "Is Jumping"), isJumping_ ? Tr("はい", "true") : Tr("いいえ", "false"));
    Configure(DescribeSettings());
 }
 #endif

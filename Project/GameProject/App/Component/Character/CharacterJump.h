@@ -19,15 +19,8 @@ public:
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }
 
-   /// @brief 未ジャンプ時のみジャンプ速度を付与する
-   /// @param gravityUp 現在の重力Up方向
-   void Jump(const GameEngine::Vector3& gravityUp);
-
-   /// @brief ジャンプ中かどうかを返す
-   bool IsJumping() const { return isJumping_; }
-
-   /// @brief 着地通知を受けてジャンプ状態を解除する
-   void NotifyLanded() { isJumping_ = false; }
+   /// @brief 有効な地表に接地している場合、地表法線に沿ってジャンプする。
+   void Jump();
 
 #ifdef USE_IMGUI
 
@@ -67,7 +60,6 @@ private:
 
 private:
    /// @brief ジャンプ中フラグ
-   bool isJumping_ = false;
 };
 
 } // namespace App

@@ -6,6 +6,7 @@
 #include <cstdint>
 
 namespace App {
+struct SurfaceContact;
 
 /// @brief 一台の車両が発行したイベント連番と、操作更新後に確定した走行状態。
 struct VehicleEventSnapshot {
@@ -13,8 +14,8 @@ struct VehicleEventSnapshot {
    std::uint64_t landingCount = 0;                      ///< 物理接触で確定した着地の連番。
    std::uint64_t miniTurboCount = 0;                    ///< 実際に加速したミニターボの連番。
    std::uint64_t driftEndCount = 0;                     ///< ドリフト終了の連番。
-   bool isAirborne = false;                             ///< 現在ジャンプ中か。
-   bool isGrounded = true;                              ///< 接触判定が接地を認め、ジャンプ中ではないか。
+   bool isAirborne = false;                             ///< 接触判定が空中と認めたか。
+   bool isGrounded = false;                              ///< 接触判定が接地と認めたか。
    float groundSpeed = 0.0f;                            ///< 操作更新後の地上前進速度（m/s）。
    bool isDrifting = false;                             ///< 操作更新後のドリフト状態。
    bool miniTurboReady = false;                         ///< 現在ミニターボを発動可能か。
@@ -66,14 +67,14 @@ public:
    /// @brief 操作更新済みの走行状態を確定する。経過秒数は使用しない。
    void Update(float deltaTime) override;
 
-   /// @brief 成立したジャンプと積分前の地表接触点を記録する。CharacterJumpだけが呼び出す。
-   void PublishTakeoff();
+   /// @brief 成立したジャンプと積分前の地表接触点を記録する。
+   /// @param contact 踏み切り地点（m）と地表の単位法線。
+   void PublishTakeoff(const SurfaceContact& contact);
 
-   /// @brief 物理接触で確定した着地を発行する。位置はm、法線は単位ベクトル。
-   void PublishLanding(const GameEngine::Vector3& point, const GameEngine::Vector3& normal);
-
-   /// @brief 直近の着地に対し、操作フェーズで確定した品質を追記する。
-   void SetLandingResult(LandingResult result);
+   /// @brief 接触と品質が確定した着地を発行する。
+   /// @param contact ワールド位置（m）と地表の単位法線。
+   /// @param result この接触に対する着地品質。
+   void PublishLanding(const SurfaceContact& contact, LandingResult result);
 
    /// @brief 実際に加速したミニターボを一度発行する。
    void PublishMiniTurbo();

@@ -36,6 +36,9 @@ public:
    /// @param deltaTime 回転・拡大・フェードの進行に使うゲーム用デルタタイム（秒）
    void Update(float deltaTime) override;
 
+   /// @brief シーン全体の更新フェーズを返す。
+   GameEngine::ObjectUpdatePhase GetUpdatePhase() const override { return GameEngine::ObjectUpdatePhase::Presentation; }
+
    /// @brief 参照先、START文字列、表示アニメーション設定をJSONへ保存する
    /// @return 保存用JSON
    nlohmann::json Serialize() const override;

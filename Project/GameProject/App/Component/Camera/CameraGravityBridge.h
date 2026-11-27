@@ -30,7 +30,7 @@ public:
    /// @brief 型名を返す
    const char* GetTypeName() const override { return kTypeName; }
 
-   /// @brief オーナー位置から重力Upを算出し、接続先カメラへ反映する
+   /// @brief 車体の位置・接地状態と重力を接続先カメラへ反映する。
    void Update(float) override;
 
    /// @brief JSONに保存されたカメラ名から通知先を解決する
@@ -40,9 +40,6 @@ public:
    /// @brief 参照設定の変更後に、指定ワールドから依存先を解決し直す。
    /// @param sceneWorld 参照先を検索するシーン。
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
-
-   /// @brief 惑星中心座標を設定する
-   void SetPlanetCenter(const GameEngine::Vector3& center) { planetCenter_ = center; }
 
 #ifdef USE_IMGUI
 
@@ -77,9 +74,6 @@ private:
 
    Settings settings_;
    VehicleCameraEffects effects_;
-
-   /// @brief 重力方向を算出するための惑星中心
-   GameEngine::Vector3 planetCenter_ = {0.0f, 0.0f, 0.0f};
 
    /// @brief プレイヤー後方追従カメラへの通知先
    PlayerRearFollowCamera* playerRearFollowCamera_ = nullptr;

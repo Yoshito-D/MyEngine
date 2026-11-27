@@ -160,6 +160,10 @@ bool PlayerShadowPass::Initialize(GraphicsDevice* device, const PlayerShadowSett
 }
 
 void PlayerShadowPass::SetFrameData(const PlayerShadowFrameData& frameData) {
+   if (hasFrameData_) {
+      Logger::Fail("A scene can submit only one PlayerShadowComponent per frame");
+   }
+
    frameData_ = frameData;
    hasFrameData_ = true;
 }

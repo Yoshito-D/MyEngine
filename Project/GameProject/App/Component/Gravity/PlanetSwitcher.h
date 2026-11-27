@@ -96,11 +96,6 @@ public:
    /// @brief 空中で保留していた惑星切り替えを着地時に確定する
    void CommitPendingSwitch();
 
-   /// @brief 惑星切替に必要な距離差のヒステリシス（小さいほど敏感）
-
-   /// @brief 車体OBBの半サイズ（各軸を個別指定）
-   /// Transformのscaleではなくこの値を距離判定に使用する
-
 #ifdef USE_IMGUI
 
    /// @brief デバッグ表示（Inspector）
@@ -126,9 +121,6 @@ public:
       /// @brief 惑星切替に必要な距離差のヒステリシス（小さいほど敏感）
       float switchHysteresis = 1.0f;
 
-      /// @brief 車体OBBの半サイズ（各軸を個別指定）
-      /// Transformのscaleではなくこの値を距離判定に使用する
-      GameEngine::Vector3 obbHalfExtents = {0.35f, 0.175f, 0.75f};
    };
 
    /// @brief 表示・編集用の設定値をコピーする。
@@ -145,7 +137,6 @@ private:
    void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
 
    float switchHysteresis = 1.0f; ///< 惑星切替に必要な距離差のヒステリシス（小さいほど敏感）。
-   GameEngine::Vector3 obbHalfExtents = {0.35f, 0.175f, 0.75f}; ///< OBBの半サイズ（各軸を個別指定）。
 
 private:
    /// @brief 登録済み惑星候補
@@ -165,8 +156,6 @@ private:
 
 private:
    std::int32_t SelectBestPlanetIndex(const GameEngine::Vector3& pos, const GameEngine::Quaternion& obbRot) const;
-
-   bool IsOwnerAirborne() const;
 
    bool HasPlanet(const std::string& objectId) const;
 };

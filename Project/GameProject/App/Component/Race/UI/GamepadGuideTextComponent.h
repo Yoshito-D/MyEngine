@@ -5,7 +5,7 @@
 
 namespace App {
 
-class CharacterJump;
+class CharacterLanding;
 class RaceManagerComponent;
 class VehicleInputComponent;
 
@@ -25,6 +25,9 @@ public:
    /// @brief 接続状態と地上・空中・導入の状態に合わせて操作ガイドを切り替え、リザルト中は非表示にする。
    void Update(float deltaTime) override;
 
+   /// @brief シーン全体の更新フェーズを返す。
+   GameEngine::ObjectUpdatePhase GetUpdatePhase() const override { return GameEngine::ObjectUpdatePhase::Presentation; }
+
    nlohmann::json Serialize() const override;
    void Deserialize(const nlohmann::json& data) override;
 
@@ -36,7 +39,7 @@ private:
    std::string raceManagerId_;                     ///< レース進行を参照する管理Objectの安定Entity ID。
    std::string playerObjectId_;                    ///< 操作対象プレイヤーの安定Entity ID。
    RaceManagerComponent* raceManager_ = nullptr;   ///< 参照解決済みレース管理コンポーネントへの非所有参照。
-   CharacterJump* characterJump_ = nullptr;        ///< プレイヤーのジャンプ入力と空中状態を扱うコンポーネントへの参照。
+   CharacterLanding* characterLanding_ = nullptr;        ///< プレイヤーの接地状態を照会するための非所有参照。
    VehicleInputComponent* vehicleInput_ = nullptr; ///< 接続確認に使うプレイヤースロットを保持する非所有参照。
 };
 

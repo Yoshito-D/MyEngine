@@ -5,7 +5,19 @@
 
 #include "GameProject/App/Component/Gravity/GravityAttractor.h"
 
+#include <optional>
+
 namespace App {
+
+/// @brief 惑星メッシュを包含するワールド空間の球。
+struct PlanetSurface {
+   GameEngine::Vector3 center; ///< 中心座標（m）。
+   float radius;              ///< 球半径（m）。
+
+   /// @brief 親の変換を含めて球を求める。変換が未設定または不正なら値を返さない。
+   /// @param planet 惑星のオブジェクト。
+   static std::optional<PlanetSurface> From(const GameEngine::Object& planet);
+};
 
 /// @brief 中心から放射状に重力Upを返す球状重力発生源
 class SphericalGravityAttractor final : public GravityAttractor {

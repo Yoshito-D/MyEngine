@@ -3,6 +3,7 @@
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Object/Component/Base/ComponentRegistry.h"
 #include <memory>
+#include <optional>
 #include <vector>
 #include <typeindex>
 #include <type_traits>
@@ -136,11 +137,16 @@ public:
    /// @return 削除できた場合はtrue
    bool RemoveByTypeName(const std::string& typeName);
 
-   /// @brief 指定の区分に属する有効な部品をフェーズ順に更新する。
+   /// @brief 指定の時間区分とフェーズに属する有効な部品を更新する。
    /// @param deltaTime 更新時間（秒）。
    /// @param domain 更新する部品の区分。
-   /// @details 更新中の追加は次の更新から対象となり、取り外した実体は現在の更新終了まで保持する。
-   void Update(float deltaTime, ObjectUpdateDomain domain = ObjectUpdateDomain::Gameplay);
+   /// @param phase 指定した場合はそのフェーズだけ、未指定の場合は追加順に全対象を更新する。
+   /// @details 実行中に取り外した実体はコールバックから戻るまで保持する。
+   void Update(float deltaTime, ObjectUpdateDomain domain, std::optional<ObjectUpdatePhase> phase);
+
+   /// @brief 有効な部品に描画データ準備を通知する。
+   /// @param context 現在フレームの描画情報。
+   void PrepareDraw(const SceneDrawContext& context);
 
    /// @brief 無効な部品も含め共通設定の変更を適用する。
    void SynchronizeParameters();

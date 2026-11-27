@@ -71,7 +71,7 @@ void ComponentContainer::SynchronizeParameters() {
    }
 }
 
-void ComponentContainer::Update(float deltaTime, ObjectUpdateDomain domain) {
+void ComponentContainer::Update(float deltaTime, ObjectUpdateDomain domain, std::optional<ObjectUpdatePhase> phase) {
    if (updating_) return;
 
    updating_ = true;
@@ -85,24 +85,33 @@ void ComponentContainer::Update(float deltaTime, ObjectUpdateDomain domain) {
       }
    } scope{updating_, detachedDuringUpdate_};
 
-   // 保存・Inspectorの並びは変更せず、依存関係に沿った非所有ビューだけを整列する。
+   // 保存・Inspectorの並びは変更せず、このフェーズに属する部品だけを別の一覧に取る。
    std::vector<IObjectComponent*> updates;
-   updates.reserve(components_.size());
    for (const auto& component : components_) {
-      if (component) {
+      if (component && component->GetUpdateDomain() == domain &&
+          (!phase || phase == ObjectUpdatePhase::Preparation || component->GetUpdatePhase() == phase)) {
          updates.push_back(component.get());
       }
    }
-   std::stable_sort(updates.begin(), updates.end(),
-      [](const auto* left, const auto* right) { return left->GetUpdatePhase() < right->GetUpdatePhase(); });
    // 無効Componentは状態を保持したまま更新だけ停止し、再有効化時に同じインスタンスを再利用する。
    for (auto* component : updates) {
       // 同じ型が再追加されても、更新開始時の実体が取り外されていれば実行しない。
       const auto entry = typeIndex_.find(std::type_index(typeid(*component)));
 
-      if (entry != typeIndex_.end() && entry->second == component && component->IsEnabled() &&
-          component->GetUpdateDomain() == domain) {
+      if (entry == typeIndex_.end() || entry->second != component || !component->IsEnabled()) continue;
+
+      if (phase == ObjectUpdatePhase::Preparation) {
+         component->PrepareGameplayFrame();
+      } else {
          component->Update(deltaTime);
+      }
+   }
+}
+
+void ComponentContainer::PrepareDraw(const SceneDrawContext& context) {
+   for (const auto& component : components_) {
+      if (component->IsEnabled()) {
+         component->PrepareDraw(context);
       }
    }
 }

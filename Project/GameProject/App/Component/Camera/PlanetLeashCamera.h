@@ -108,6 +108,7 @@ private:
 
    /// @brief 惑星中心座標
    GameEngine::Vector3 sphereCenter_ = {0.0f, 0.0f, 0.0f};
+   float planetSurfaceRadius_ = 0.0f; ///< 追従中の惑星の地表半径（m）。
 
    /// @brief 外部から供給される重力Up
    GameEngine::Vector3 gravityUp_ = {0.0f, 1.0f, 0.0f};

@@ -40,6 +40,9 @@ public:
    /// @param deltaTime ゲーム用デルタタイム（秒）
    void Update(float deltaTime) override;
 
+   /// @brief シーン全体の更新フェーズを返す。
+   GameEngine::ObjectUpdatePhase GetUpdatePhase() const override { return GameEngine::ObjectUpdatePhase::Presentation; }
+
    /// @brief 参照先、ゲージ寸法、応答速度、単位変換係数をJSONへ保存する
    /// @return 保存用JSON
    nlohmann::json Serialize() const override;

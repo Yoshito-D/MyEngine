@@ -112,10 +112,15 @@ void PlanetLeashCamera::MutateCameraState(CameraState& state, float deltaTime) {
 
    // 惑星内部へ侵入しないよう最小半径でクランプ
    const auto ClampToPlanetRadius = [this](const Vector3& eye) {
+      if (planetSurfaceRadius_ <= 0.0f) {
+         return eye;
+      }
+
+      const float minimumRadius = std::max(minPlanetDistance, planetSurfaceRadius_);
       const Vector3 fromCenter = eye - sphereCenter_;
       const float fromCenterDist = fromCenter.Length();
-      return fromCenterDist < minPlanetDistance && fromCenterDist > 1e-6f
-                ? sphereCenter_ + fromCenter * (minPlanetDistance / fromCenterDist)
+      return fromCenterDist < minimumRadius && fromCenterDist > 1e-6f
+                ? sphereCenter_ + fromCenter * (minimumRadius / fromCenterDist)
                 : eye;
    };
    eyePos_ = ClampToPlanetRadius(eyePos_);
@@ -233,6 +238,7 @@ void PlanetLeashCamera::ApplyVehicleFollowInput(const VehicleCameraFollowInput& 
    gravityUp_ = input.gravityUp;
    pivotTarget_ = input.target;
    sphereCenter_ = input.planetCenter;
+   planetSurfaceRadius_ = input.planetSurfaceRadius;
 }
 
 void PlanetLeashCamera::ApplyVehicleEffectInput(const VehicleCameraEffectInput& input) {

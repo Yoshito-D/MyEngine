@@ -3,9 +3,9 @@
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameEngine/Math/Types/Vector3.h"
 #include "GameEngine/Math/Types/Quaternion.h"
-#include <cstdint>
 
 namespace App {
+enum class LandingResult;
 
 /// @brief 車移動の coordinator コンポーネント
 ///
@@ -41,6 +41,10 @@ public:
    void ApplyMovement(float steerInput, float rollInput, float pitchInput, bool driftInput, bool isGrounded,
       const GameEngine::Vector3& gravityUp, float deltaTime);
 
+   /// @brief 接触に伴う速度・姿勢補正を開始し、通知へ含める着地品質を返す。
+   /// @param gravityUp ワールド空間の地表の単位法線。
+   LandingResult ResolveLanding(const GameEngine::Vector3& gravityUp);
+
    /// @brief 重力への姿勢追従速度を共有パラメータとして返す。
    nlohmann::json GetSharedParameters() const override;
 
@@ -68,12 +72,6 @@ private:
    float gravityAlignmentSpeed_ = 5.0f;                  ///< 地表法線の変化へ追従する速度。
    GameEngine::Vector3 orientationUp_{0.0f, 1.0f, 0.0f}; ///< 姿勢追従に使用した前回の上方向。
 
-   /// @brief 着地遷移時に各サブコンポーネントへ通知する
-   void OnLanded(const GameEngine::Quaternion& currentRotation, const GameEngine::Vector3& gravityUp);
-
-   /// @brief VehicleLandingBoost へブースト試行を通知する
-   void NotifyLandingBoost(const GameEngine::Vector3& localUp, const GameEngine::Vector3& gravityUp);
-
    /// @brief VehicleAirController の角速度をリセットする
    void ResetAirAngularVelocity();
 
@@ -87,8 +85,6 @@ private:
    /// @brief 直近の移動方向
    GameEngine::Vector3 lastMoveDirection_ = {0.0f, 0.0f, 1.0f};
 
-   /// @brief 操作フェーズで品質判定・姿勢補正まで処理した着地通知の連番。
-   std::uint64_t lastLandingCount_ = 0;
 };
 
 } // namespace App

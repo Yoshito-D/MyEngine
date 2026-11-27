@@ -52,6 +52,9 @@ public:
    /// @return 親がない場合は単位行列
    Matrix4x4 GetParentWorldMatrix() const;
 
+   /// @brief 親の回転を合成したワールド回転を返す。拡縮を姿勢に含めない。
+   Quaternion GetWorldRotation() const;
+
    /// @brief 実体のオブジェクト種別を取得する
    /// @return コンポーネント互換性の判定に使用する種別
    virtual ObjectType GetObjectType() const { return ObjectType::Generic; }
@@ -133,7 +136,12 @@ public:
    virtual void OnRemovedFromScene() {}
 
    /// @brief 有効な全コンポーネントを更新する
-   void UpdateComponents(float deltaTime, ObjectUpdateDomain domain = ObjectUpdateDomain::Gameplay);
+   /// @param phase 未指定の場合は、指定された区分の部品を追加順に更新する。
+   void UpdateComponents(float deltaTime, ObjectUpdateDomain domain, std::optional<ObjectUpdatePhase> phase);
+
+   /// @brief 所有する部品の描画用データを準備する。
+   /// @param context 現在フレームの描画情報。
+   void PrepareDraw(const SceneDrawContext& context);
 
    /// @brief 全コンポーネントを有効化し、描画を再開する
    void Activate();

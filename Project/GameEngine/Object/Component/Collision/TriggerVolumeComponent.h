@@ -40,6 +40,9 @@ public:
    /// @param deltaTime 未使用
    void Update(float deltaTime) override;
 
+   /// @brief シーン内の移動が完了した後に重なりを判定する。
+   ObjectUpdatePhase GetUpdatePhase() const override { return ObjectUpdatePhase::Triggers; }
+
    /// @brief 今フレームにトリガーへ侵入したか取得する
    /// @return 侵入したフレームだけtrue
    bool WasEnteredThisFrame() const { return enteredThisFrame_; }

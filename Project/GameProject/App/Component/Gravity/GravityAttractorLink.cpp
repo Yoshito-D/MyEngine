@@ -23,7 +23,7 @@ void GravityAttractorLink::Update(float) {
    const auto* selector = GetOwner().GetComponent<PlanetSwitcher>();
    auto* attractor = selector ? selector->GetSelectedAttractor() : nullptr;
 
-   if (!attractor || !attractor->ApplyTo(*gravityBody, transform->GetLocalPose().translation)) {
+   if (!attractor || !attractor->ApplyTo(*gravityBody, GameEngine::TransformCoordinate({}, GetOwner().GetWorldMatrix()))) {
       gravityBody->ReleaseGravity();
    }
 }

@@ -236,8 +236,7 @@ void VehicleEffectController::UpdateFlightTrail(bool isAirborne) {
    }
 
    // 速度のしきい値はワールド空間で評価する。
-   const auto parentWorld = GetOwner().GetParentWorldMatrix();
-   const auto velocity = GameEngine::TransformNormal(body->GetVelocity(), parentWorld);
+   const auto velocity = body->GetVelocity();
    const float speedSquared = velocity.LengthSquared();
 
    if (!std::isfinite(speedSquared) || speedSquared < kFlightTrailMinSpeed * kFlightTrailMinSpeed) {
@@ -313,7 +312,7 @@ std::optional<GameEngine::Transform> VehicleEffectController::CalculateFlightSmo
       (x - y + z).LengthSquared(), (x - y - z).LengthSquared()});
    if (!std::isfinite(radiusSquared) || radiusSquared <= 0.0f) return std::nullopt;
 
-   const auto velocity = GameEngine::TransformNormal(body->GetVelocity(), GetOwner().GetParentWorldMatrix());
+   const auto velocity = body->GetVelocity();
    const float speedSquared = velocity.LengthSquared();
    const float radius = std::sqrt(radiusSquared);
    const float minSpeed = 2.0f * radius / kFlightSmokeDiameterTravelTime;

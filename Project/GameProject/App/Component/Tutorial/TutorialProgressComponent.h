@@ -52,6 +52,18 @@ public:
    /// @param deltaTime ゲーム用の経過秒数。状態の時計では負・非有限の値を0秒として扱う。
    void Update(float deltaTime) override;
 
+   /// @brief シーン全体の更新フェーズを返す。
+   GameEngine::ObjectUpdatePhase GetUpdatePhase() const override { return GameEngine::ObjectUpdatePhase::Progress; }
+
+   /// @brief 入力取得前にチュートリアルの初期状態を適用する。
+   void PrepareGameplayFrame() override;
+
+   /// @brief このチュートリアル自身の走行停止とジャンプ制限を解除する。
+   void OnDisable() override;
+
+   /// @brief 再有効化時に、現在の課題に対応する走行と入力の制限を戻す。
+   void OnEnable() override;
+
    /// @brief コンポーネントの保存対象設定をJSONで返す。
    nlohmann::json Serialize() const override;
 
@@ -109,7 +121,8 @@ private:
    Phase GetPhase() const { return phaseMachine_.GetCurrentState().value_or(Phase::DrivingIntro); }
 
    void UpdatePresentation(float deltaTime);
-   void SetPlayerPaused(bool paused);
+   void ApplyPlayerRestrictions();
+   void ReleasePlayerRestrictions(GameEngine::SceneWorld& world);
    void SetTargetPlanetEnabled(bool enabled);
    void SetGoalGuidanceEnabled(bool enabled);
    bool RevealTargetPlanet();
@@ -158,8 +171,7 @@ private:
    GameEngine::Vector3 airControlStartUp_{};  ///< 練習ジャンプの離陸時の機体上方向。
    bool airControlInputReceived_ = false;     ///< 今回のジャンプ中に姿勢操作を入力したか。
    bool airRotationPerformed_ = false;        ///< 今回のジャンプ中に機体を十分に傾けたか。
-   bool controllerEnabledWhenPlaying_ = true; ///< シーン読込時の走行制御の有効状態。
-   bool gravityEnabledWhenPlaying_ = true;    ///< シーン読込時の物理の有効状態。
+   std::string boundPlayerId_; ///< 走行・ジャンプ制限を解除する対象の安定ID。
    bool completionTransitionRequested_ = false; ///< 遷移要求が受理されたか。
 };
 

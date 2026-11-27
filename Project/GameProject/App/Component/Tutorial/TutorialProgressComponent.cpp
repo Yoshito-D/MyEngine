@@ -40,7 +40,11 @@ TutorialProgressComponent::TutorialProgressComponent() {
 }
 
 void TutorialProgressComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
-   playerObject_ = sceneWorld.FindObjectById(playerObjectId_);
+   if (boundPlayerId_ != playerObjectId_) {
+      ReleasePlayerRestrictions(sceneWorld);
+      boundPlayerId_ = playerObjectId_;
+   }
+   playerObject_ = sceneWorld.FindObjectById(boundPlayerId_);
    targetPlanet_ = sceneWorld.FindObjectById(targetPlanetObjectId_);
    goalObject_ = sceneWorld.FindObjectById(goalObjectId_);
    characterJump_ = playerObject_ ? playerObject_->GetComponent<CharacterJump>() : nullptr;
@@ -61,13 +65,15 @@ void TutorialProgressComponent::OnReferencesChanged(GameEngine::SceneWorld& scen
    minimap_ = minimap ? minimap->GetComponent<RaceMinimapHUDComponent>() : nullptr;
    auto* arrow = sceneWorld.FindObjectById(RaceGoalDirectionWorldComponent::kObjectId);
    goalArrow_ = arrow ? arrow->GetComponent<RaceGoalDirectionWorldComponent>() : nullptr;
+   if (IsEnabled() && phaseMachine_.GetCurrentState()) {
+      ApplyPlayerRestrictions();
+   }
 }
 
 void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+   ReleasePlayerRestrictions(sceneWorld);
    phaseMachine_.Stop();
    OnReferencesChanged(sceneWorld);
-   controllerEnabledWhenPlaying_ = vehicleController_ && vehicleController_->IsEnabled();
-   gravityEnabledWhenPlaying_ = gravityBody_ && gravityBody_->IsEnabled();
    miniTurboCount_ = 0;
    lastMiniTurboFireCount_ = vehicleEvents_ ? vehicleEvents_->GetSnapshot().miniTurboCount : 0;
    eventCursor_.Reset(vehicleEvents_ ? vehicleEvents_->GetSnapshot() : VehicleEventSnapshot{});
@@ -82,10 +88,6 @@ void TutorialProgressComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld
    guidePresenter_.Reset(
       guideText_ ? guideText_->GetStyle().color.w : 1.0f, feedbackText_ ? feedbackText_->GetStyle().color.w : 1.0f);
    SetTargetPlanetEnabled(false);
-   if (vehicleInput_) {
-      vehicleInput_->SetJumpEnabled(false);
-   }
-
    SetGoalGuidanceEnabled(false);
    UpdatePresentation(0.0f);
 
@@ -106,7 +108,7 @@ void TutorialProgressComponent::UpdatePresentation(float deltaTime) {
    state.airRotationPerformed = airRotationPerformed_;
    const auto* transform = playerObject_ ? playerObject_->GetComponent<GameEngine::TransformComponent>() : nullptr;
    if (transform && gravityBody_) {
-      const auto up = GameEngine::RotateVector({0.0f, 1.0f, 0.0f}, transform->GetLocalPose().GetActiveQuaternion());
+      const auto up = GameEngine::RotateVector({0.0f, 1.0f, 0.0f}, playerObject_->GetWorldRotation());
       state.aligned = up.Dot(gravityBody_->GetTargetUpVector()) >= 0.95f;
    }
    guidePresenter_.UpdateGuideText(state, guideText_, promptText_, feedbackText_, deltaTime, guideFadeDuration_);
@@ -126,8 +128,7 @@ bool TutorialProgressComponent::HasRequiredReferences() const {
 }
 
 bool TutorialProgressComponent::IsOnTargetPlanet() const {
-   if (!planetSwitcher_ || !characterLanding_ || !characterJump_ || characterJump_->IsJumping() ||
-       !characterLanding_->IsGrounded()) {
+   if (!planetSwitcher_ || !characterLanding_ || !characterLanding_->IsGrounded()) {
       return false;
    }
 
@@ -214,16 +215,11 @@ void TutorialProgressComponent::RegisterPhase(
 
 void TutorialProgressComponent::ApplyPhaseSettings() {
    // 説明中も自動走行を続け、ゴール到達後のクリア表示で停止する。
-   SetPlayerPaused(phaseSettings_.playerPaused);
-
-   if (vehicleInput_) {
-      vehicleInput_->SetJumpEnabled(phaseSettings_.jumpEnabled);
-   }
-
+   ApplyPlayerRestrictions();
    SetGoalGuidanceEnabled(phaseSettings_.goalGuidanceEnabled);
 }
 
-void TutorialProgressComponent::Update(float deltaTime) {
+void TutorialProgressComponent::PrepareGameplayFrame() {
    if (!HasRequiredReferences()) {
       Logger::Fail("Tutorial player, planet, goal, or HUD references are missing.", Logger::LogChannel::Game);
    }
@@ -232,7 +228,9 @@ void TutorialProgressComponent::Update(float deltaTime) {
       // 編集用のシーンに実行時の有効状態の変更を混入させない。
       phaseMachine_.Start(Phase::DrivingIntro);
    }
+}
 
+void TutorialProgressComponent::Update(float deltaTime) {
    const auto& snapshot = vehicleEvents_->GetSnapshot();
    const auto changes = eventCursor_.Read(snapshot);
    frameInput_ = {
@@ -278,8 +276,7 @@ void TutorialProgressComponent::UpdateJumpPractice() {
 }
 
 void TutorialProgressComponent::UpdateAirControlPractice() {
-   const auto* transform = playerObject_->GetComponent<GameEngine::TransformComponent>();
-   const auto up = GameEngine::RotateVector({0.0f, 1.0f, 0.0f}, transform->GetLocalPose().GetActiveQuaternion());
+   const auto up = GameEngine::RotateVector({0.0f, 1.0f, 0.0f}, playerObject_->GetWorldRotation());
 
    if (frameInput_.tookOff) {
       airControlStartUp_ = up;
@@ -348,18 +345,36 @@ void TutorialProgressComponent::UpdateComplete(float deltaTime) {
    }
 }
 
-void TutorialProgressComponent::SetPlayerPaused(bool paused) {
-   // クリア表示中や参照不足時は、位置を保ったまま走行制御と物理を止める。
-   if (gravityBody_) {
-      if (paused) {
-         gravityBody_->StopMotion();
-      }
-
-      gravityBody_->SetEnabled(!paused && gravityEnabledWhenPlaying_);
-   }
-
+void TutorialProgressComponent::ApplyPlayerRestrictions() {
    if (vehicleController_) {
-      vehicleController_->SetEnabled(!paused && controllerEnabledWhenPlaying_);
+      vehicleController_->SetMotionStopped(this, phaseSettings_.playerPaused);
+   }
+   if (vehicleInput_) {
+      vehicleInput_->SetJumpBlocked(*this, !phaseSettings_.jumpEnabled);
+   }
+}
+
+void TutorialProgressComponent::OnEnable() {
+   if (phaseMachine_.GetCurrentState()) {
+      ApplyPlayerRestrictions();
+   }
+}
+
+void TutorialProgressComponent::OnDisable() {
+   if (auto* world = HasOwner() ? GetOwner().GetWorld() : nullptr) {
+      ReleasePlayerRestrictions(*world);
+   }
+}
+
+void TutorialProgressComponent::ReleasePlayerRestrictions(GameEngine::SceneWorld& world) {
+   // 破棄・再読込時は、古いプレイヤーへの非所有ポインターを使わずに解除する。
+   if (auto* player = world.FindObjectById(boundPlayerId_)) {
+      if (auto* controller = player->GetComponent<VehicleController>()) {
+         controller->SetMotionStopped(this, false);
+      }
+      if (auto* input = player->GetComponent<VehicleInputComponent>()) {
+         input->SetJumpBlocked(*this, false);
+      }
    }
 }
 
@@ -412,11 +427,38 @@ bool TutorialProgressComponent::RevealTargetPlanet() {
       return false;
    }
 
+   const auto targetSurface = PlanetSurface::From(*targetPlanet_);
+   if (!targetSurface) {
+      return false;
+   }
+
+   auto playerPose = playerTransform->GetLocalPose();
+   playerPose.translation = GameEngine::TransformCoordinate({}, playerObject_->GetWorldMatrix());
+   playerPose.SetRotationQuaternion(playerObject_->GetWorldRotation());
    auto targetPose = targetTransform->GetLocalPose();
    auto goalPose = goalTransform->GetLocalPose();
-   if (!PlaceTutorialDestination(
-          playerTransform->GetLocalPose(), sourceCenter, sourceRadius, transferSurfaceGap_, targetPose, goalPose))
+   if (!PlaceTutorialDestination(playerPose, sourceCenter, sourceRadius, targetSurface->radius, transferSurfaceGap_,
+          targetPose, goalPose)) {
       return false;
+   }
+
+   // 旗が出現先の惑星の子孫なら、その親階層ごと移動する差分を先に除く。
+   for (auto* parent = goalObject_->GetParent(); parent; parent = parent->GetParent()) {
+      if (parent == targetPlanet_) {
+         goalPose.translation -= targetPose.translation - targetSurface->center;
+         break;
+      }
+   }
+   targetPose.translation = GameEngine::TransformCoordinate(
+      targetPose.translation, targetPlanet_->GetParentWorldMatrix().Inverse());
+   goalPose.translation = GameEngine::TransformCoordinate(
+      goalPose.translation, goalObject_->GetParentWorldMatrix().Inverse());
+   if (const auto* parent = goalObject_->GetParent()) {
+      goalPose.SetRotationQuaternion(parent->GetWorldRotation().Inverse() * goalPose.GetActiveQuaternion());
+   }
+   if (!targetPose.IsFinite() || !goalPose.IsFinite()) {
+      Logger::Fail("Invalid parent transform for tutorial destination", Logger::LogChannel::Game);
+   }
    targetTransform->ApplyLocalPose(targetPose);
    goalTransform->ApplyLocalPose(goalPose);
    guidePresenter_.ClearLandingFeedback();

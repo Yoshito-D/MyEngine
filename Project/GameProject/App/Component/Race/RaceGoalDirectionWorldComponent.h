@@ -29,8 +29,8 @@ public:
    void OnDisable() override;
 
    /// @brief シミュレーション更新後の姿勢から車体上の矢印を配置する。
-   /// @param camera 描画に使うカメラ。未設定の場合は矢印を非表示にする。
-   void Present(const GameEngine::Camera* camera);
+   /// @param context 描画カメラと編集中かどうか。編集中は保存された配置を維持する。
+   void PrepareDraw(const GameEngine::SceneDrawContext& context) override;
 
    /// @brief チュートリアルの進行に合わせて矢印の表示可否を更新する。
    /// @param enabled 誘導を許可する場合true。

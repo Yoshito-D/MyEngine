@@ -15,6 +15,8 @@ struct VehicleCameraFollowInput {
    GameEngine::Vector3 target{};                    ///< 追従対象のワールド位置（m）。
    GameEngine::Vector3 planetCenter{};              ///< 追従の基準となる惑星の中心（m）。
    GameEngine::Vector3 landingPlanetCenter{};       ///< 空中時に予測対象となる惑星の中心（m）。
+   float planetSurfaceRadius = 0.0f;                ///< 追従の基準となる惑星の半径（m）。0は基準なし。
+   bool hasLandingPlanet = false;                  ///< 着地候補の中心が有効か。
    float speed = 0.0f;                              ///< 現在速度（m/s）。
    float autoSpeed = 13.0f;                         ///< 通常走行速度（m/s）。
 };

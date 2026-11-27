@@ -428,6 +428,9 @@
     <ClCompile Include="GameEngine\Editor\EditorSceneGeometry.cpp">
       <Filter>GameEngine\Editor</Filter>
     </ClCompile>
+    <ClCompile Include="GameEngine\Editor\EditorPlaySession.cpp">
+      <Filter>GameEngine\Editor</Filter>
+    </ClCompile>
     <ClCompile Include="GameEngine\Editor\EditorSceneSession.cpp">
       <Filter>GameEngine\Editor</Filter>
     </ClCompile>
@@ -1248,6 +1251,9 @@
       <Filter>GameEngine\Editor</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Editor\EditorSceneGeometry.h">
+      <Filter>GameEngine\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="GameEngine\Editor\EditorPlaySession.h">
       <Filter>GameEngine\Editor</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine\Editor\EditorSceneSession.h">

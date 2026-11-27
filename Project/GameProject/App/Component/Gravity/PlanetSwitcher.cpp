@@ -2,7 +2,7 @@
 #include "GameEngine/Editor/ParameterAssetEditor.h"
 #include <cstdint>
 #include "GameProject/App/Component/Gravity/PlanetSwitcher.h"
-#include "GameProject/App/Component/Character/CharacterJump.h"
+#include "GameProject/App/Component/Character/CharacterLanding.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Math/Functions/QuaternionOperations.h"
@@ -24,26 +24,13 @@ namespace App {
 namespace {
 
 bool TryReadPlanetSurface(const GameEngine::Model& planet, GameEngine::Vector3& center, float& radius) {
-   const auto* transform = planet.GetComponent<GameEngine::TransformComponent>();
-
-   if (!transform) {
+   const auto surface = PlanetSurface::From(planet);
+   if (!surface) {
       return false;
    }
 
-   const auto& pose = transform->GetLocalPose();
-   const auto& scale = pose.scale;
-
-   // 非一様・負スケールでも地表距離が負や過小にならないよう最大軸を球半径に使う。
-   constexpr float kUnscaledPlanetRadius = 0.5f; ///< 拡縮前の惑星メッシュの半径（m）。
-   const float surfaceRadius =
-      std::max({std::abs(scale.x), std::abs(scale.y), std::abs(scale.z)}) * kUnscaledPlanetRadius;
-
-   if (!pose.IsFinite() || !std::isfinite(surfaceRadius) || surfaceRadius <= 0.f) {
-      return false;
-   }
-
-   center = pose.translation;
-   radius = surfaceRadius;
+   center = surface->center;
+   radius = surface->radius;
    return true;
 }
 
@@ -80,8 +67,8 @@ void PlanetSwitcher::Update(float) {
    auto* transform = GetOwner().GetComponent<GameEngine::TransformComponent>();
    if (!transform) return;
 
-   const auto& pose = transform->GetLocalPose();
-   const auto selected = SelectBestPlanetIndex(pose.translation, pose.GetActiveQuaternion());
+   const auto position = GameEngine::TransformCoordinate({}, GetOwner().GetWorldMatrix());
+   const auto selected = SelectBestPlanetIndex(position, GetOwner().GetWorldRotation());
    selectedGravityIndex_ = selected;
    if (selected < 0) {
       currentIndex_ = -1;
@@ -90,17 +77,17 @@ void PlanetSwitcher::Update(float) {
    }
 
    // 選択結果だけを公開する。重力・接触・カメラは各フェーズで必要な結果を読む。
-   if (IsOwnerAirborne()) {
-      pendingIndex_ = selected;
-   } else {
-      currentIndex_ = selected;
-      pendingIndex_ = -1;
-   }
+   pendingIndex_ = selected != currentIndex_ ? selected : -1;
 }
 
 std::int32_t PlanetSwitcher::SelectBestPlanetIndex(
    const GameEngine::Vector3& pos, const GameEngine::Quaternion& obbRot) const {
-   const GameEngine::Vector3 halfExtents = obbHalfExtents;
+   const auto* landing = HasOwner() ? GetOwner().GetComponent<CharacterLanding>() : nullptr;
+   if (!landing || !landing->IsEnabled()) {
+      return -1;
+   }
+
+   const auto halfExtents = landing->DescribeSettings().obbHalfExtents;
 
    // 空中では着地済み惑星ではなく、現在実際に接続中の重力先を基準にする。
    const std::int32_t referenceIndex = selectedGravityIndex_ >= 0 ? selectedGravityIndex_ : currentIndex_;
@@ -248,15 +235,6 @@ bool PlanetSwitcher::TryGetCurrentPlanet(GameEngine::Model*& model, GameEngine::
    return true;
 }
 
-bool PlanetSwitcher::IsOwnerAirborne() const {
-   if (!HasOwner()) {
-      return false;
-   }
-
-   auto* jump = GetOwner().GetComponent<CharacterJump>();
-   return jump && jump->IsJumping();
-}
-
 bool PlanetSwitcher::HasPlanet(const std::string& objectId) const {
    return std::find(planetIds_.begin(), planetIds_.end(), objectId) != planetIds_.end();
 }
@@ -264,7 +242,6 @@ bool PlanetSwitcher::HasPlanet(const std::string& objectId) const {
 nlohmann::json PlanetSwitcher::Serialize() const {
    nlohmann::json json;
    json["switchHysteresis"] = switchHysteresis;
-   json["obbHalfExtents"] = GameEngine::JsonValue::WriteVector3(obbHalfExtents);
 
    auto planets = nlohmann::json::array();
 
@@ -293,10 +270,6 @@ void PlanetSwitcher::ReadParameters(const nlohmann::json& data, [[maybe_unused]]
 
    if (data.contains("switchHysteresis") && data.at("switchHysteresis").is_number()) {
       switchHysteresis = std::max(data.at("switchHysteresis").get<float>(), 0.0f);
-   }
-
-   if (data.contains("obbHalfExtents")) {
-      obbHalfExtents = GameEngine::JsonValue::ReadVector3(data.at("obbHalfExtents"));
    }
 
    if (initializeRuntime) {
@@ -338,7 +311,6 @@ void PlanetSwitcher::DrawInspector() {
    ImGui::Text("%s: %d", Tr("惑星数", "Planets"), GetPlanetCount());
    ImGui::Text("%s: %d", Tr("現在の惑星インデックス", "Current Planet Index"), currentIndex_);
    ImGui::DragFloat(Tr("切り替えヒステリシス", "Switch Hysteresis"), &switchHysteresis, 0.05f, 0.0f, 20.0f);
-   ImGui::DragFloat3(Tr("OBB半径", "OBB Half Extents"), &obbHalfExtents.x, 0.01f, 0.0f, 100.0f);
 
    for (size_t i = 0; i < planetIds_.size(); ++i) {
       ImGui::PushID(static_cast<std::int32_t>(i));
@@ -416,7 +388,6 @@ namespace App {
 PlanetSwitcher::Settings PlanetSwitcher::DescribeSettings() const {
    Settings settings;
    settings.switchHysteresis = switchHysteresis;
-   settings.obbHalfExtents = obbHalfExtents;
    return settings;
 }
 
@@ -428,20 +399,7 @@ void PlanetSwitcher::Configure(const Settings& requested) {
       settings.switchHysteresis = defaults.switchHysteresis;
    }
 
-   if (!std::isfinite(settings.obbHalfExtents.x)) {
-      settings.obbHalfExtents.x = defaults.obbHalfExtents.x;
-   }
-
-   if (!std::isfinite(settings.obbHalfExtents.y)) {
-      settings.obbHalfExtents.y = defaults.obbHalfExtents.y;
-   }
-
-   if (!std::isfinite(settings.obbHalfExtents.z)) {
-      settings.obbHalfExtents.z = defaults.obbHalfExtents.z;
-   }
-
    switchHysteresis = settings.switchHysteresis;
-   obbHalfExtents = settings.obbHalfExtents;
 }
 
 } // namespace App

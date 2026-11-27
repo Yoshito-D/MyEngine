@@ -1,6 +1,7 @@
 #include "GameProject/App/Component/Vehicle/VehicleController.h"
 #include "GameEngine/Object/Object.h"
 #include "GameProject/App/Component/Character/CharacterJump.h"
+#include "GameProject/App/Component/Character/CharacterLanding.h"
 #include "GameProject/App/Component/Gravity/GravityBody.h"
 #include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
 #include "GameProject/App/Component/Vehicle/VehicleMover.h"
@@ -13,8 +14,23 @@ using namespace GameEngine;
 
 namespace App {
 
+void VehicleController::SetMotionStopped(const void* requester, bool stopped) {
+   if (!stopped) {
+      stopRequests_.erase(requester);
+      return;
+   }
+
+   const bool wasStopped = IsMotionStopped();
+   stopRequests_.insert(requester);
+   if (!wasStopped && HasOwner()) {
+      if (auto* body = GetOwner().GetComponent<GravityBody>()) {
+         body->StopMotion();
+      }
+   }
+}
+
 void VehicleController::Update(float deltaTime) {
-   if (!HasOwner()) return;
+   if (!HasOwner() || IsMotionStopped()) return;
 
    // Inspectorで依存Componentが削除・再追加されるため、利用する更新ごとに解決する。
    auto* input = GetOwner().GetComponent<VehicleInputComponent>();
@@ -31,11 +47,12 @@ void VehicleController::Update(float deltaTime) {
 
    // ジャンプ入力
    if (jump && jump->IsEnabled() && input && input->IsJumpTriggered()) {
-      jump->Jump(gravityUp);
+      jump->Jump();
    }
 
    // 同じフレームに離陸した場合は、地上の操舵やドリフトを適用しない。
-   const bool isGrounded = !(jump && jump->IsJumping());
+   const auto* landing = GetOwner().GetComponent<CharacterLanding>();
+   const bool isGrounded = landing && landing->IsGrounded();
 
    // 移動・姿勢入力を VehicleMover へ委譲
    if (mover && mover->IsEnabled()) {

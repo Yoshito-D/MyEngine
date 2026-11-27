@@ -46,7 +46,7 @@ void CameraModeSwitcher::Update(float deltaTime) {
    // 走行停止中は視点操作も止める。手動切替は従来どおり非Releaseだけで受け付ける。
    const auto* controller = GetOwner().GetComponent<VehicleController>();
 
-   if (controller && controller->IsEnabled()) {
+   if (controller && controller->IsEnabled() && !controller->IsMotionStopped()) {
       auto* selected = GetSelectedCamera();
       auto* vehicleCamera = selected ? selected->GetComponent<IVehicleCamera>() : nullptr;
 
