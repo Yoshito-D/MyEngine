@@ -6,6 +6,7 @@
 #include <cassert>
 #include <algorithm>
 #include <cstring>
+#include <limits>
 #include <string_view>
 #include <stdexcept>
 #include "GameEngine/Math/MathUtils.h"
@@ -13,6 +14,21 @@
 namespace GameEngine {
 namespace {
 constexpr size_t kConstantBufferAlignment = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
+
+Collider::AABB CalculateModelBounds(const std::vector<MeshData>& meshes) {
+   const float limit = std::numeric_limits<float>::max();
+   Collider::AABB bounds{{limit, limit, limit}, {-limit, -limit, -limit}};
+
+   for (const auto& mesh : meshes) {
+      for (const auto& vertex : mesh.vertices) {
+         const auto& p = vertex.position;
+         bounds.min = {std::min(bounds.min.x, p.x), std::min(bounds.min.y, p.y), std::min(bounds.min.z, p.z)};
+         bounds.max = {std::max(bounds.max.x, p.x), std::max(bounds.max.y, p.y), std::max(bounds.max.z, p.z)};
+      }
+   }
+
+   return bounds.min.x <= bounds.max.x ? bounds : Collider::AABB{};
+}
 
 size_t AlignConstantBufferSize(size_t size) {
    // D3D12のCBVは配置サイズを256バイト境界に揃える必要がある。
@@ -194,6 +210,7 @@ bool ModelAsset::LoadFile(GraphicsDevice* device, const std::string& modelPath, 
 
    // 再ロード時に旧モデルの骨情報やGPUリソースを引き継がないよう、CPUデータから作り直す。
    modelData_ = std::move(modelData);
+   localBounds_ = CalculateModelBounds(modelData_.meshes);
    hasSkinningData_ = !modelData_.skinClusterData.empty();
    skeleton_ = CreateSkeleton(modelData_.rootNode, modelData_);
    skinCluster_.reset();

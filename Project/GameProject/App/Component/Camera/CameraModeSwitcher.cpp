@@ -6,6 +6,7 @@
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Scene/Camera/Core/VirtualCamera.h"
 #include "GameEngine/Scene/SceneWorld.h"
+#include "GameProject/App/Component/Race/UI/RaceMinimapHUDComponent.h"
 #include "GameProject/App/Component/Vehicle/VehicleController.h"
 #include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
 #include <algorithm>
@@ -18,6 +19,8 @@
 namespace App {
 
 void CameraModeSwitcher::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
+   const auto* map = sceneWorld.FindObjectById(RaceMinimapHUDComponent::kObjectId);
+   minimap_ = map ? map->GetComponent<RaceMinimapHUDComponent>() : nullptr;
    cameras_.clear();
    cameras_.reserve(cameraIds_.size());
 
@@ -48,7 +51,10 @@ void CameraModeSwitcher::Update(float deltaTime) {
       auto* vehicleCamera = selected ? selected->GetComponent<IVehicleCamera>() : nullptr;
 
       if (vehicleCamera && vehicleCamera->GetVehicleCameraComponent().IsEnabled()) {
-         vehicleCamera->ApplyVehicleLookInput(input->GetCameraLookInput(), deltaTime);
+         // 地図が開いている間だけ同じ視点入力をミニマップが使う。
+         const bool controlsCamera = input->IsEnabled() && !(minimap_ && minimap_->HandlesViewInputFor(GetOwner()));
+         const auto look = controlsCamera ? input->GetViewInput() : GameEngine::Vector2{};
+         vehicleCamera->ApplyVehicleLookInput(look, deltaTime);
       }
    }
 

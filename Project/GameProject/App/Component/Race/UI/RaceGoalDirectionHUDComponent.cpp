@@ -1,207 +1,130 @@
 #include "GameProject/App/Component/Race/UI/RaceGoalDirectionHUDComponent.h"
 
-#include "GameProject/App/Component/Race/RaceManagerComponent.h"
+#include "GameEngine/Assets/Model/ModelAsset.h"
 #include "GameEngine/Framework/EngineContext.h"
-#include "GameEngine/Utility/Logger.h"
+#include "GameEngine/Math/Functions/MatrixOperations.h"
+#include "GameEngine/Math/Functions/QuaternionOperations.h"
+#include "GameEngine/Math/Functions/VectorOperations.h"
+#include "GameEngine/Object/Component/Rendering/MeshComponent.h"
 #include "GameEngine/Object/Component/Rendering/RenderComponent.h"
 #include "GameEngine/Object/Component/UI/UIModelComponent.h"
 #include "GameEngine/Object/Model/Model.h"
-#include "GameEngine/Object/Object.h"
 #include "GameEngine/Scene/Camera/Camera.h"
-#include "GameEngine/Scene/SceneWorld.h"
-#include "GameEngine/Math/Functions/QuaternionOperations.h"
+#include "GameEngine/Utility/Logger.h"
 #include <algorithm>
 #include <cmath>
 
-#ifdef USE_IMGUI
-#include "GameEngine/Editor/EditorReferenceWidgets.h"
-#include "GameEngine/Editor/ImGui/ImGuiManager.h"
-#include "GameEngine/Editor/ImGui/ImGuiHelper.h"
-#endif
-
 namespace {
-constexpr float kDirectionEpsilonSquared = 1.0e-12f;
-constexpr float kPi = 3.14159265358979323846f;
 
-GameEngine::Vector3 GetWorldPosition(const GameEngine::Object& object) {
-   // Object の行列規約では最終行の xyz がワールド平行移動成分となる。
-   // ローカル Transform ではなく合成済み行列を使い、親子付けされた対象にも追従する。
-   const GameEngine::Matrix4x4 worldMatrix = object.GetWorldMatrix();
-   return {worldMatrix.m[3][0], worldMatrix.m[3][1], worldMatrix.m[3][2]};
-}
+constexpr float kDirectionEpsilonSquared = 1.0e-12f; ///< 方向を定義できる変位の下限の二乗（m²）。
+constexpr float kCaptionGapRatio = 0.25f;            ///< 文字と矢印の間隔の行高に対する比率。
 
-GameEngine::Quaternion MakeArrowRotation(const GameEngine::Vector3& normalizedDirection) {
-   constexpr GameEngine::Vector3 kModelForward{0.0f, 0.0f, 1.0f};
+float MeasureArrowDiameter(const GameEngine::ModelAsset& asset, const GameEngine::Vector3& pivot) {
+   const auto& bounds = asset.GetLocalBounds();
+   const auto meshToModel = asset.HasSkinningData() ? GameEngine::MakeIdentity4x4() : asset.GetRootNode().localMatrix;
+   float radiusSquared = 0.f;
 
-   // 浮動小数点誤差で acos の定義域を外れないよう、内積を正規化範囲へ制限する。
-   const float directionDot = std::clamp(kModelForward.Dot(normalizedDirection), -1.0f, 1.0f);
-
-   if (directionDot > 1.0f - 1.0e-6f) {
-      return GameEngine::Quaternion::Identity();
+   // UIの回転中心から全ての境界頂点を囲む球を求め、回転中も文字との間隔を保つ。
+   for (const float x : {bounds.min.x, bounds.max.x}) {
+      for (const float y : {bounds.min.y, bounds.max.y}) {
+         for (const float z : {bounds.min.z, bounds.max.z}) {
+            const auto corner = GameEngine::TransformPosition(meshToModel, {x, y, z});
+            radiusSquared = std::max(radiusSquared, (corner - pivot).LengthSquared());
+         }
+      }
    }
 
-   if (directionDot < -1.0f + 1.0e-6f) {
-      // 真後ろでは外積から回転軸を決められないため、モデルの上方向を明示して 180 度回転させる。
-      return GameEngine::MakeRotateAxisAngleQuaternion({0.0f, 1.0f, 0.0f}, kPi);
-   }
-
-   // 一般ケースでは forward と目標方向の外積を最短回転軸、内積の逆余弦を回転角として使う。
-   const GameEngine::Vector3 rotationAxis = kModelForward.Cross(normalizedDirection).Normalize();
-   return GameEngine::MakeRotateAxisAngleQuaternion(rotationAxis, std::acos(directionDot));
+   return 2.f * std::sqrt(radiusSquared);
 }
 
-}
+} // namespace
 
 namespace App {
 
-void RaceGoalDirectionHUDComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) {
-   // 保存された安定 ID を実体ポインターへ解決するのは、全オブジェクトの復元が済んだこの時点で行う。
-   // HUD 自身は Model を所有者とし、UIModelComponent が画面空間で描画する構成を必須とする。
-   raceManager_ = nullptr;
-   playerObject_ = nullptr;
-   goalObject_ = nullptr;
-   arrowModel_ = HasOwner() ? dynamic_cast<GameEngine::Model*>(&GetOwner()) : nullptr;
-   uiModelComponent_ = arrowModel_ ? arrowModel_->GetComponent<GameEngine::UIModelComponent>() : nullptr;
+void RaceGoalDirectionHUDComponent::ShowBesideDistance(const GameEngine::Vector3& directionToGoal,
+   GameEngine::Vector2 captionOffset, std::string_view caption, const GameEngine::TextStyle& style) {
+   const auto* camera = GameEngine::EngineContext::GetActiveCamera();
 
-   if (auto* managerObject = sceneWorld.FindObjectById(raceManagerId_)) {
-      raceManager_ = managerObject->GetComponent<RaceManagerComponent>();
+   if (!IsEnabled() || !camera || directionToGoal.LengthSquared() < kDirectionEpsilonSquared) {
+      Hide();
+      return;
    }
 
-   playerObject_ = sceneWorld.FindObjectById(playerObjectId_);
-   goalObject_ = sceneWorld.FindObjectById(goalObjectId_);
+   auto* arrow = HasOwner() ? dynamic_cast<GameEngine::Model*>(&GetOwner()) : nullptr;
+   auto* uiModel = arrow ? arrow->GetComponent<GameEngine::UIModelComponent>() : nullptr;
+   auto* render = arrow ? arrow->GetComponent<GameEngine::RenderComponent>() : nullptr;
+   const auto* mesh = arrow ? arrow->GetComponent<GameEngine::MeshComponent>() : nullptr;
+   const auto* asset = mesh ? mesh->GetModelAsset() : nullptr;
 
-   if (!raceManagerId_.empty() && !raceManager_) {
-      Logger::Warning("Goal direction arrow race manager was not found: " + raceManagerId_, Logger::LogChannel::Game);
+   if (!uiModel || !render || !asset) {
+      Logger::Fail("Goal direction HUD requires a loaded model with UIModelComponent and RenderComponent",
+         Logger::LogChannel::Game);
    }
 
-   if (!playerObject_) {
-      Logger::Warning("Goal direction arrow player was not found: " + playerObjectId_, Logger::LogChannel::Game);
+   // UIカメラは回転しないので、平行移動を除いたゲームカメラ空間で矢印の向きを求める。
+   const auto direction = GameEngine::TransformNormal(directionToGoal.Normalize(), camera->GetViewMatrix()).Normalize();
+   const auto textSize = GameEngine::EngineContext::MeasureText(caption, style);
+
+   if (direction.LengthSquared() <= 0.f || textSize.y <= 0.f) {
+      Hide();
+      return;
    }
 
-   if (!goalObject_) {
-      Logger::Warning("Goal direction arrow goal was not found: " + goalObjectId_, Logger::LogChannel::Game);
+   auto layout = uiModel->DescribeSettings();
+   const float diameter = MeasureArrowDiameter(*asset, layout.localPivot);
+
+   if (!std::isfinite(diameter) || diameter <= 0.f) {
+      Logger::Fail("Goal direction HUD: invalid model bounds for " + arrow->GetEntityId(), Logger::LogChannel::Game);
    }
 
-   if (!arrowModel_) {
-      Logger::Warning("Goal direction arrow must be attached to a Model.", Logger::LogChannel::Game);
-   }
+   // モデルを包む球の直径を行高に合わせ、矢印の向きが変わっても表示倍率を一定に保つ。
+   const float scale = textSize.y / diameter;
+   arrow->SetRotationQuaternion(GameEngine::LookRotation(direction));
+   arrow->SetScale({scale, scale, scale});
 
-   if (!uiModelComponent_) {
-      Logger::Warning("Goal direction arrow requires a UIModelComponent.", Logger::LogChannel::Game);
-   }
+   layout.projectionType = GameEngine::UIModelComponent::ProjectionType::Orthographic;
+   layout.anchorPoint = GameEngine::UIModelComponent::AnchorPoint::BottomRight;
+   layout.screenOffset = {captionOffset.x - textSize.x * 0.5f - textSize.y * (0.5f + kCaptionGapRatio),
+      -captionOffset.y + textSize.y * 0.5f};
+   layout.depth = textSize.y;
+   uiModel->Configure(layout);
+   uiModel->SetEnabled(true);
+   auto renderSettings = render->DescribeSettings();
+   renderSettings.renderSpace = GameEngine::RenderComponent::RenderSpace::Screen;
+   renderSettings.applyPostProcess = false;
+   renderSettings.visible = true;
+   render->Configure(renderSettings);
 }
 
-void RaceGoalDirectionHUDComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
-   OnReferencesChanged(sceneWorld);
+void RaceGoalDirectionHUDComponent::Hide() {
    SetVisible(false);
 }
 
-void RaceGoalDirectionHUDComponent::Update(float deltaTime) {
-   (void)deltaTime;
-
-   // カウントダウン中も含め、レース開始前から全依存先が解決済みの場合に表示する。
-   // 不完全なシーンでも前フレームの矢印が残らないよう、失敗経路では必ず非表示へ戻す。
-   const RaceManagerComponent::State raceState =
-      raceManager_ ? raceManager_->GetState() : RaceManagerComponent::State::Finished;
-   const bool isRaceStarted =
-      raceState == RaceManagerComponent::State::Countdown || raceState == RaceManagerComponent::State::Running;
-   const bool shouldShow = guidanceEnabled_ && (raceManagerId_.empty() || isRaceStarted) && playerObject_ &&
-                           goalObject_ && arrowModel_ && uiModelComponent_;
-
-   if (!shouldShow) {
-      SetVisible(false);
-      return;
-   }
-
-   const auto* camera = GameEngine::EngineContext::GetActiveCamera();
-
-   if (!camera) {
-      SetVisible(false);
-      return;
-   }
-
-   const GameEngine::Vector3 playerPosition = GetWorldPosition(*playerObject_);
-   const GameEngine::Vector3 directionToGoal = GetWorldPosition(*goalObject_) - playerPosition;
-
-   if (directionToGoal.LengthSquared() < kDirectionEpsilonSquared) {
-      // 始点と終点がほぼ同じ場合は方向が定義できず、正規化すると数値誤差を増幅するため描画しない。
-      SetVisible(false);
-      return;
-   }
-
-   // UI専用カメラは回転しないため、ワールド方向をゲームカメラ空間へ移して見た目を一致させる。
-   const GameEngine::Vector3 normalizedGoalDirection = directionToGoal.Normalize();
-
-   // w=0 の方向ベクトルとして変換し、ビュー行列のカメラ平行移動を矢印の向きへ混ぜない。
-   const GameEngine::Vector4 viewDirection = GameEngine::TransformVectorByMatrix(
-      {normalizedGoalDirection.x, normalizedGoalDirection.y, normalizedGoalDirection.z, 0.0f}, camera->GetViewMatrix());
-   const GameEngine::Vector3 uiGoalDirection{viewDirection.x, viewDirection.y, viewDirection.z};
-
-   if (uiGoalDirection.LengthSquared() < kDirectionEpsilonSquared) {
-      SetVisible(false);
-      return;
-   }
-
-   arrowModel_->SetRotationQuaternion(MakeArrowRotation(uiGoalDirection.Normalize()));
-   SetVisible(true);
+void RaceGoalDirectionHUDComponent::OnDisable() {
+   Hide();
 }
 
-void RaceGoalDirectionHUDComponent::SetGuidanceEnabled(bool enabled) {
-   guidanceEnabled_ = enabled;
+nlohmann::json RaceGoalDirectionHUDComponent::Serialize() const {
+   return nlohmann::json::object();
+}
 
-   if (!enabled) {
-      SetVisible(false);
+void RaceGoalDirectionHUDComponent::Deserialize(const nlohmann::json& data) {
+   if (!data.is_object() || !data.empty()) {
+      Logger::Fail("Goal direction HUD expects an empty settings object", Logger::LogChannel::Game);
    }
 }
 
 void RaceGoalDirectionHUDComponent::SetVisible(bool visible) {
-   if (!arrowModel_) return;
+   auto* render = HasOwner() ? GetOwner().GetComponent<GameEngine::RenderComponent>() : nullptr;
 
-   // コンポーネント自体は更新を続け、描画参加だけを切り替えることでレース状態やカメラ条件を次フレームにも再評価できる。
-   if (auto* renderComponent = arrowModel_->GetComponent<GameEngine::RenderComponent>()) {
-      {
-         auto settings = renderComponent->DescribeSettings();
-         settings.visible = visible;
-         renderComponent->Configure(settings);
-      }
+   if (!render) return;
+
+   auto settings = render->DescribeSettings();
+
+   if (settings.visible != visible) {
+      settings.visible = visible;
+      render->Configure(settings);
    }
 }
-
-nlohmann::json RaceGoalDirectionHUDComponent::Serialize() const {
-   return nlohmann::json{
-      {"raceManagerId", raceManagerId_}, {"playerObjectId", playerObjectId_}, {"goalObjectId", goalObjectId_}};
-}
-
-void RaceGoalDirectionHUDComponent::Deserialize(const nlohmann::json& data) {
-   if (!data.is_object()) return;
-
-   // キーごとの部分更新にして、未指定の参照IDは現在値を維持する。
-   if (data.contains("raceManagerId") && data.at("raceManagerId").is_string()) {
-      raceManagerId_ = data.at("raceManagerId").get<std::string>();
-   }
-
-   if (data.contains("playerObjectId") && data.at("playerObjectId").is_string()) {
-      playerObjectId_ = data.at("playerObjectId").get<std::string>();
-   }
-
-   if (data.contains("goalObjectId") && data.at("goalObjectId").is_string()) {
-      goalObjectId_ = data.at("goalObjectId").get<std::string>();
-   }
-}
-
-#ifdef USE_IMGUI
-void RaceGoalDirectionHUDComponent::DrawInspector() {
-   const std::string header = GameEngine::MakeObjectComponentHeaderLabel(kTypeName);
-
-   if (!ImGui::CollapsingHeader(header.c_str())) return;
-
-   GameEngine::EditorUI::ObjectReference("Race Manager", raceManagerId_, "RaceManagerComponent");
-   GameEngine::EditorUI::ObjectReference("Player", playerObjectId_, "TransformComponent");
-   GameEngine::EditorUI::ObjectReference("Goal", goalObjectId_, "TransformComponent");
-   ImGui::Text("Resolved: Race=%s Player=%s Goal=%s Model=%s UI Model=%s", raceManager_ ? "true" : "false",
-      playerObject_ ? "true" : "false", goalObject_ ? "true" : "false", arrowModel_ ? "true" : "false",
-      uiModelComponent_ ? "true" : "false");
-}
-#endif
 
 } // namespace App

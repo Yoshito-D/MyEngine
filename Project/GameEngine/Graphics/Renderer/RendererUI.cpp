@@ -9,11 +9,49 @@
 #include "GameEngine/Assets/Texture/TextureManager.h"
 #include "GameEngine/Assets/Font/FontManager.h"
 #include "GameEngine/Graphics/Resources/Material.h"
+#include "GameEngine/Graphics/Renderer/Pass/SphereMapRenderer.h"
 #include "GameEngine/Object/Component/UI/UITextComponent.h"
 #include "GameEngine/Object/Component/Rendering/MaterialComponent.h"
 #include <algorithm>
 
 namespace GameEngine {
+
+void Renderer::QueueSphereMap() {
+   const auto* frame = sphereMapRenderer_ ? sphereMapRenderer_->GetFrame() : nullptr;
+
+   if (!frame) return;
+
+   const auto texture = sphereMapRenderer_->Render(*device_, *psoManager_, offscreenRenderTarget_->GetFormat());
+   // 球体マップの描画先から、描画途中のシーンの色・深度へ戻す。
+   offscreenRenderTarget_->BindPreservingContents(true);
+   InvalidatePipelineBinding();
+
+   // 合成時だけ同じ倍率を使い、投影と画面上の円形背景を揃える。
+   const auto size = Vector2{static_cast<float>(frame->width), static_cast<float>(frame->height)} * frame->displayScale;
+   const Vector2 bottomRight{(uiViewportSize_.x + Window::kUiReferenceWidth) * 0.5f,
+      (uiViewportSize_.y + Window::kUiReferenceHeight) * 0.5f};
+   const Vector2 origin{bottomRight.x - frame->margin - size.x, bottomRight.y - frame->margin - size.y};
+   const auto identity = MakeIdentity4x4();
+   const float radius = frame->apertureRadius * frame->displayScale;
+   const auto center = origin + frame->projectionCenter * frame->displayScale;
+   const auto background = textRenderer_->QueueQuad({2.f * radius, 2.f * radius},
+      MakeTranslateMatrix({center.x - radius, center.y - radius, 0.f}), {}, {1.f, 1.f},
+      frame->backgroundColor, texture, uiViewportSize_, identity, TextRenderer::QuadFill::SolidCircle);
+   SubmitDrawCommand(DrawCommand(RenderPass::PostProcess, background));
+
+   // 背景だけを通常合成し、その上の線と光点は発光を加算する。
+   const auto matrix = MakeTranslateMatrix({origin.x, origin.y, 0.f});
+   auto command = textRenderer_->QueueQuad(size, matrix, {}, {1.f, 1.f}, {1.f, 1.f, 1.f, 1.f},
+      texture, uiViewportSize_, identity);
+   command.blendMode = BlendMode::kBlendModeAdd;
+   SubmitDrawCommand(DrawCommand(RenderPass::PostProcess, command));
+
+   auto style = frame->captionStyle;
+   style.screenAnchor = UIAnchor::BottomRight;
+   style.pivot = {0.5f, 1.f};
+   DrawUIText(frame->caption, frame->GetCaptionOffset(), style);
+}
+
 UIInputFrame Renderer::ReadUIInput(Input& input, InputActionService& actions, bool mouseEnabled) {
    UIInputFrame frame;
    frame.gamepadConnected = input.GetConnectedGamePadCount() != 0;

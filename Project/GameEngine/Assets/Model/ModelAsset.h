@@ -6,6 +6,7 @@
 #include <optional>
 #include <map>
 #include <array>
+#include "GameEngine/Collision/Collider.h"
 #include "GameEngine/Graphics/Resources/Mesh.h"
 #include "GameEngine/Math/MathUtils.h"
 #include "GameEngine/Assets/Animation/Skeleton.h"
@@ -229,6 +230,10 @@ public:
    /// @brief メッシュデータ一覧を取得する
    const std::vector<MeshData>& GetMeshData() const { return modelData_.meshes; }
 
+   /// @brief 読み込んだ全メッシュを囲むモデル空間の境界を返す。
+   /// @return ルートノード変換とスキニングを適用する前の軸平行境界。
+   const Collider::AABB& GetLocalBounds() const { return localBounds_; }
+
    /// @brief マテリアルアセット一覧を取得する
    const std::vector<MaterialAsset>& GetMaterialAssets() const { return modelData_.materials; }
 
@@ -249,6 +254,7 @@ public:
 private:
    std::string assetId_;                                     ///< このモデルの完全なアセットID。
    ModelData modelData_;                                     ///< 読み込み済みのメッシュ・マテリアル・スキニング情報。
+   Collider::AABB localBounds_{};                             ///< 読み込み時に計算した全メッシュの境界。
    std::vector<ComPtr<ID3D12Resource>> vertexResources_;     // 複数リソース
    std::vector<D3D12_VERTEX_BUFFER_VIEW> vertexBufferViews_; // 複数ビュー
    std::vector<Mesh::VertexData*> mappedVertexData_;         // 複数マップデータ

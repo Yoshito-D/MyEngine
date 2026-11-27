@@ -14,7 +14,7 @@ struct InputActionState;
 
 namespace App {
 
-/// @brief 車両操作と決定に現在割り当てられているゲーム内案内用の入力名。
+/// @brief 車両操作・視点操作・決定に現在割り当てられているゲーム内案内用の入力名。
 struct VehicleControlLabels {
    std::string steer;          ///< 左右の旋回操作。
    std::string drift;          ///< 専用ボタン方式のドリフト操作。
@@ -22,6 +22,7 @@ struct VehicleControlLabels {
    std::string pitch;   ///< 空中での前後姿勢操作。
    std::string roll;    ///< 空中での左右姿勢操作。
    std::string jump;    ///< ジャンプ操作。
+   std::string view;    ///< 視点を回転する操作。
    std::string confirm; ///< 説明などを進める決定操作。
 
    /// @brief 車両のドリフト方式に合った操作案内を返す。
@@ -65,9 +66,9 @@ public:
    /// @return -1.0から1.0のロール入力
    float GetRollInput() const;
 
-   /// @brief カメラ視点入力を取得する
-   /// @return Xが左右、Yが上下の入力
-   GameEngine::Vector2 GetCameraLookInput() const;
+   /// @brief このプレイヤーの視点入力を取得する。走行操作のロック中もミニマップから読める。
+   /// @return Xが左右、Yが上下。ポーズなどでゲーム入力を遮断している場合はゼロ。
+   GameEngine::Vector2 GetViewInput() const;
 
    /// @brief ジャンプがこのフレームに押されたかを取得する
    /// @return 押された瞬間ならtrue

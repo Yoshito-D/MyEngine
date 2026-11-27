@@ -42,10 +42,15 @@ public:
       const Transform& transform, size_t visibleGlyphCount, uint32_t layoutWidth, uint32_t layoutHeight,
       float viewportWidth, float viewportHeight, const Matrix4x4* matrix = nullptr);
 
-   /// @brief 共通UI変換を適用した画像矩形を文字と同じキューへ追加する。
+   /// @brief 画像や単色図形を描く四角形の内容。
+   enum class QuadFill { Image = 3, SolidCircle = 4 };
+
+   /// @brief 共通UI変換を適用した画像や円を文字と同じキューへ追加する。
    /// @param uvTransform マテリアルのUV座標変換。位置・寸法やヒット判定には影響しない。
+   /// @param fill 円の場合は単位UVの中央に半径0.5の単色図形を描く。
    TextDrawData QueueQuad(Vector2 size, const Matrix4x4& matrix, Vector2 uvMin, Vector2 uvMax, Vector4 color,
-      D3D12_GPU_DESCRIPTOR_HANDLE texture, Vector2 viewportSize, const Matrix4x4& uvTransform);
+      D3D12_GPU_DESCRIPTOR_HANDLE texture, Vector2 viewportSize, const Matrix4x4& uvTransform,
+      QuadFill fill = QuadFill::Image);
 
    /// @brief CPU上で構築した頂点とインデックスをGPU可視バッファへ反映する
    /// @return 転送に成功した場合はtrue

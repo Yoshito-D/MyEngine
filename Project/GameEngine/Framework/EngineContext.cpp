@@ -938,6 +938,12 @@ void EngineContext::ClearPlayerShadowFrameData() {
    }
 }
 
+void EngineContext::SubmitSphereMap(const SphereMapFrame& frame) {
+   if (sRenderer_) {
+      sRenderer_->SubmitSphereMap(frame);
+   }
+}
+
 void EngineContext::Draw(Model* model, Texture* texture, std::optional<BlendMode> blendMode, bool applyPostProcess) {
    if (!sRenderer_) return;
 

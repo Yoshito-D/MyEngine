@@ -4,6 +4,9 @@
 #include <cstdint>
 #include "GameEngine/Utility/Logger.h"
 #include "GameProject/App/Component/Rendering/PlayerShadowComponent.h"
+#include "GameProject/App/Component/Race/RaceGoalDirectionWorldComponent.h"
+#include "GameProject/App/Component/Race/UI/RaceGoalDirectionHUDComponent.h"
+#include "GameProject/App/Component/Race/UI/RaceMinimapHUDComponent.h"
 #include "GameEngine/Object/Model/Model.h"
 
 #ifdef USE_IMGUI
@@ -219,12 +222,36 @@ void Game::Draw() {
    editorSession_->Draw();
 #endif
 
+   auto& world = scene->GetSceneWorld();
    auto* camera = GameEngine::EngineContext::GetActiveCamera();
+#ifdef USE_IMGUI
+   if (!GameEngine::EngineContext::IsPlayModeEdit())
+#endif
+   {
+      auto* map = world.FindObjectById(App::RaceMinimapHUDComponent::kObjectId);
+      auto* minimap = map ? map->GetComponent<App::RaceMinimapHUDComponent>() : nullptr;
+      auto* arrow = world.FindObjectById(App::RaceGoalDirectionWorldComponent::kObjectId);
+      auto* worldArrow = arrow ? arrow->GetComponent<App::RaceGoalDirectionWorldComponent>() : nullptr;
+      App::RaceGoalDirectionHUDComponent* hudArrow = nullptr;
+
+      // 車体上の表示が有効なら同じモデルをHUDへ送らない。無効に切り替えると距離表示の横に戻せる。
+      if (worldArrow && worldArrow->IsEnabled()) {
+         worldArrow->Present(camera);
+      } else if (arrow) {
+         hudArrow = arrow->GetComponent<App::RaceGoalDirectionHUDComponent>();
+      }
+
+      if (minimap) {
+         minimap->Submit(hudArrow);
+      } else if (hudArrow) {
+         hudArrow->Hide();
+      }
+   }
 
    if (!camera) return;
 
    // 影描画コンポーネントを持つプレイヤーが1体の構成。
-   for (auto* model : scene->GetSceneWorld().GetObjectStore().GetModels()) {
+   for (auto* model : world.GetObjectStore().GetModels()) {
       if (!model) {
          continue;
       }

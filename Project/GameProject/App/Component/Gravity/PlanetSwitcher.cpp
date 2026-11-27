@@ -9,9 +9,9 @@
 #include <algorithm>
 #include <limits>
 #include <cmath>
+#include <utility>
 #include "GameEngine/Object/Model/Model.h"
 #include "GameProject/App/Component/Gravity/SphericalGravityAttractor.h"
-#include "GameEngine/Scene/SceneWorld.h"
 
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/EditorReferenceWidgets.h"
@@ -24,6 +24,30 @@ namespace {
 
 GameEngine::Model* FindPlanetById(const std::string& objectId) {
    return dynamic_cast<GameEngine::Model*>(GameEngine::Object::FindByEntityId(objectId));
+}
+
+bool TryReadPlanetSurface(const GameEngine::Model& planet, GameEngine::Vector3& center, float& radius) {
+   const auto* transform = planet.GetComponent<GameEngine::TransformComponent>();
+
+   if (!transform) {
+      return false;
+   }
+
+   const auto& pose = transform->GetLocalPose();
+   const auto& scale = pose.scale;
+
+   // 非一様・負スケールでも地表距離が負や過小にならないよう最大軸を球半径に使う。
+   constexpr float kUnscaledPlanetRadius = 0.5f; ///< 拡縮前の惑星メッシュの半径（m）。
+   const float surfaceRadius =
+      std::max({std::abs(scale.x), std::abs(scale.y), std::abs(scale.z)}) * kUnscaledPlanetRadius;
+
+   if (!pose.IsFinite() || !std::isfinite(surfaceRadius) || surfaceRadius <= 0.f) {
+      return false;
+   }
+
+   center = pose.translation;
+   radius = surfaceRadius;
+   return true;
 }
 
 }
@@ -78,95 +102,66 @@ void PlanetSwitcher::Update(float) {
 }
 
 std::int32_t PlanetSwitcher::SelectBestPlanetIndex(
-   const GameEngine::Vector3& pos, const GameEngine::Quaternion& obbRot) {
+   const GameEngine::Vector3& pos, const GameEngine::Quaternion& obbRot) const {
    const GameEngine::Vector3 halfExtents = obbHalfExtents;
+
+   // 空中では着地済み惑星ではなく、現在実際に接続中の重力先を基準にする。
+   const std::int32_t referenceIndex = selectedGravityIndex_ >= 0 ? selectedGravityIndex_ : currentIndex_;
+   float referenceDistance = std::numeric_limits<float>::infinity();
 
    // 実際に重力を適用できる惑星の中から、OBBと地表の距離が最短のものを探索する。
    std::int32_t bestIndex = -1;
    float bestDistance = std::numeric_limits<float>::max();
 
-   for (std::int32_t i = 0; i < static_cast<std::int32_t>(entries_.size()); ++i) {
-      auto& e = entries_[i];
-
-      if (e.objectId.empty()) {
-         continue;
-      }
-
-      // 位置と半径を更新
-      e.center = GetPlanetCenter(e.objectId);
-      e.surfaceRadius = GetPlanetSurfaceRadius(e.objectId);
-
-      auto* attractor = GetAttractorByObjectId(e.objectId);
+   for (std::int32_t i = 0; i < GetPlanetCount(); ++i) {
+      const auto* planet = GetPlanetModel(i);
+      const auto* attractor = planet ? planet->GetComponent<SphericalGravityAttractor>() : nullptr;
 
       if (!attractor || !attractor->IsEnabled() || !attractor->IsInRange(pos)) {
          continue;
       }
 
-      const float distance = DistancePlanetSurfaceToOBB(e.center, e.surfaceRadius, pos, obbRot, halfExtents);
+      GameEngine::Vector3 center{};
+      float radius = 0.f;
+
+      if (!TryReadPlanetSurface(*planet, center, radius)) {
+         continue;
+      }
+
+      const float distance = DistancePlanetSurfaceToOBB(center, radius, pos, obbRot, halfExtents);
 
       if (distance < bestDistance) {
          bestDistance = distance;
          bestIndex = i;
       }
-   }
-
-   if (bestIndex < 0) {
-      return -1;
-   }
-
-   std::int32_t newIndex = bestIndex;
-
-   // 空中では着地済み惑星ではなく、現在実際に接続中の重力先を基準にする。
-   const std::int32_t referenceIndex = selectedGravityIndex_ >= 0 ? selectedGravityIndex_ : currentIndex_;
-
-   if (newIndex != referenceIndex && referenceIndex >= 0 &&
-       referenceIndex < static_cast<std::int32_t>(entries_.size())) {
-      const auto& reference = entries_[referenceIndex];
-      auto* referenceAttractor = GetAttractorByObjectId(reference.objectId);
 
       // 圏外・無効な旧惑星をヒステリシスで維持すると重力が適用されないため、保持対象から外す。
-      if (referenceAttractor && referenceAttractor->IsEnabled() && referenceAttractor->IsInRange(pos)) {
-         const float referenceDistance =
-            DistancePlanetSurfaceToOBB(reference.center, reference.surfaceRadius, pos, obbRot, halfExtents);
-
-         if (referenceDistance - bestDistance < std::max(switchHysteresis, 0.0f)) {
-            newIndex = referenceIndex;
-         }
+      if (i == referenceIndex) {
+         referenceDistance = distance;
       }
    }
 
-   return newIndex;
+   if (bestIndex >= 0 && referenceDistance - bestDistance < std::max(switchHysteresis, 0.0f)) {
+      return referenceIndex;
+   }
+
+   return bestIndex;
 }
 
 void PlanetSwitcher::AddPlanet(std::string objectId) {
    if (objectId.empty() || HasPlanet(objectId)) return;
 
-   if (auto* model = FindPlanetById(objectId)) {
-      objectId = model->GetEntityId();
-
-      if (HasPlanet(objectId)) return;
-
-      GameEngine::Vector3 modelPos = model->GetPosition();
-      float surfaceRadius = GetPlanetSurfaceRadius(objectId);
-      entries_.push_back({objectId, modelPos, surfaceRadius});
-   }
-}
-
-void PlanetSwitcher::OnReferencesChanged(GameEngine::SceneWorld&) {
-   for (auto& entry : entries_) {
-      if (auto* model = FindPlanetById(entry.objectId)) {
-         entry.center = GetPlanetCenter(entry.objectId);
-         entry.surfaceRadius = GetPlanetSurfaceRadius(entry.objectId);
-      }
+   if (FindPlanetById(objectId)) {
+      planetIds_.push_back(std::move(objectId));
    }
 }
 
 bool PlanetSwitcher::RemovePlanet(size_t index) {
-   if (index >= entries_.size()) {
+   if (index >= planetIds_.size()) {
       return false;
    }
 
-   entries_.erase(entries_.begin() + index);
+   planetIds_.erase(planetIds_.begin() + index);
    const auto remap = [index](std::int32_t& selected) {
       if (selected == static_cast<std::int32_t>(index)) {
          selected = -1;
@@ -182,11 +177,11 @@ bool PlanetSwitcher::RemovePlanet(size_t index) {
 }
 
 bool PlanetSwitcher::MovePlanet(size_t from, size_t to) {
-   if (from >= entries_.size() || to >= entries_.size() || from == to) {
+   if (from >= planetIds_.size() || to >= planetIds_.size() || from == to) {
       return false;
    }
 
-   std::swap(entries_[from], entries_[to]);
+   std::swap(planetIds_[from], planetIds_[to]);
    const auto remap = [from, to](std::int32_t& selected) {
       if (selected == static_cast<std::int32_t>(from)) {
          selected = static_cast<std::int32_t>(to);
@@ -201,17 +196,13 @@ bool PlanetSwitcher::MovePlanet(size_t from, size_t to) {
 }
 
 bool PlanetSwitcher::TryGetLandingPlanet(GameEngine::Vector3& outCenter, float& outSurfaceRadius) const {
+   const auto* planet = IsEnabled() ? GetPlanetModel(GetLandingPlanetIndex()) : nullptr;
+   return planet && TryReadPlanetSurface(*planet, outCenter, outSurfaceRadius);
+}
+
+std::int32_t PlanetSwitcher::GetLandingPlanetIndex() const {
    // 空中では保留候補を返し、カメラの着地予測だけを実際の重力先へ先行させる。
-   std::int32_t index = pendingIndex_ >= 0 ? pendingIndex_ : currentIndex_;
-
-   if (!IsEnabled() || index < 0 || index >= static_cast<std::int32_t>(entries_.size())) {
-      return false;
-   }
-
-   const PlanetEntry& entry = entries_[index];
-   outCenter = entry.center;
-   outSurfaceRadius = entry.surfaceRadius;
-   return true;
+   return pendingIndex_ >= 0 ? pendingIndex_ : currentIndex_;
 }
 
 void PlanetSwitcher::CommitPendingSwitch() {
@@ -223,44 +214,35 @@ void PlanetSwitcher::CommitPendingSwitch() {
 }
 
 GravityAttractor* PlanetSwitcher::GetSelectedAttractor() const {
-   if (!IsEnabled() || selectedGravityIndex_ < 0 ||
-       selectedGravityIndex_ >= static_cast<std::int32_t>(entries_.size())) {
+   auto* planet = IsEnabled() ? GetPlanetModel(selectedGravityIndex_) : nullptr;
+   return planet ? planet->GetComponent<SphericalGravityAttractor>() : nullptr;
+}
+
+GameEngine::Model* PlanetSwitcher::GetPlanetModel(std::int32_t index) const {
+   if (index < 0 || index >= GetPlanetCount()) {
       return nullptr;
    }
-   return GetAttractorByObjectId(entries_[selectedGravityIndex_].objectId);
+
+   return FindPlanetById(planetIds_[index]);
 }
 
 bool PlanetSwitcher::TryGetCurrentPlanet(GameEngine::Vector3& center, float& radius) const {
-   if (!IsEnabled() || currentIndex_ < 0 || currentIndex_ >= static_cast<std::int32_t>(entries_.size())) {
-      return false;
-   }
-   const auto& entry = entries_[currentIndex_];
-   center = GetPlanetCenter(entry.objectId);
-   radius = GetPlanetSurfaceRadius(entry.objectId);
-   return radius > 0.0f;
+   const auto* planet = IsEnabled() ? GetPlanetModel(currentIndex_) : nullptr;
+   return planet && TryReadPlanetSurface(*planet, center, radius);
 }
 
 bool PlanetSwitcher::TryGetCurrentPlanet(GameEngine::Model*& model, GameEngine::Vector3& center, float& radius) const {
    model = nullptr;
    center = {};
-   radius = 0.0f;
-   GameEngine::Vector3 planetCenter;
-   float planetRadius = 0.0f;
+   radius = 0.f;
 
-   if (!TryGetCurrentPlanet(planetCenter, planetRadius)) {
-      return false;
-   }
+   auto* planet = IsEnabled() ? GetPlanetModel(currentIndex_) : nullptr;
 
-   auto* planet = FindPlanetById(entries_[currentIndex_].objectId);
-
-   if (!planet || !std::isfinite(planetCenter.x) || !std::isfinite(planetCenter.y) || !std::isfinite(planetCenter.z) ||
-       !std::isfinite(planetRadius)) {
+   if (!planet || !TryReadPlanetSurface(*planet, center, radius)) {
       return false;
    }
 
    model = planet;
-   center = planetCenter;
-   radius = planetRadius;
    return true;
 }
 
@@ -274,8 +256,7 @@ bool PlanetSwitcher::IsOwnerAirborne() const {
 }
 
 bool PlanetSwitcher::HasPlanet(const std::string& objectId) const {
-   return std::any_of(
-      entries_.begin(), entries_.end(), [&objectId](const PlanetEntry& entry) { return entry.objectId == objectId; });
+   return std::find(planetIds_.begin(), planetIds_.end(), objectId) != planetIds_.end();
 }
 
 nlohmann::json PlanetSwitcher::Serialize() const {
@@ -285,12 +266,8 @@ nlohmann::json PlanetSwitcher::Serialize() const {
 
    auto planets = nlohmann::json::array();
 
-   for (const auto& entry : entries_) {
-      if (entry.objectId.empty()) {
-         continue;
-      }
-
-      planets.push_back({{"objectId", entry.objectId}});
+   for (const auto& id : planetIds_) {
+      planets.push_back({{"objectId", id}});
    }
 
    json["planets"] = planets;
@@ -321,7 +298,7 @@ void PlanetSwitcher::ReadParameters(const nlohmann::json& data, [[maybe_unused]]
    }
 
    if (initializeRuntime) {
-      entries_.clear();
+      planetIds_.clear();
 
       // 読み直した配列と旧インデックスの対応は保証できないため、選択状態も同時に破棄する。
       currentIndex_ = -1;
@@ -341,7 +318,7 @@ void PlanetSwitcher::ReadParameters(const nlohmann::json& data, [[maybe_unused]]
             continue;
          }
 
-         entries_.push_back({objectId, GetPlanetCenter(objectId), GetPlanetSurfaceRadius(objectId)});
+         planetIds_.push_back(std::move(objectId));
       }
    }
 
@@ -356,25 +333,25 @@ void PlanetSwitcher::DrawInspector() {
    if (!GameEngine::DrawParameterInspectorHeader(header.c_str())) return;
 
    ImGui::Separator();
-   ImGui::Text("%s: %d", Tr("惑星数", "Planets"), static_cast<std::int32_t>(entries_.size()));
+   ImGui::Text("%s: %d", Tr("惑星数", "Planets"), GetPlanetCount());
    ImGui::Text("%s: %d", Tr("現在の惑星インデックス", "Current Planet Index"), currentIndex_);
    ImGui::DragFloat(Tr("切り替えヒステリシス", "Switch Hysteresis"), &switchHysteresis, 0.05f, 0.0f, 20.0f);
    ImGui::DragFloat3(Tr("OBB半径", "OBB Half Extents"), &obbHalfExtents.x, 0.01f, 0.0f, 100.0f);
 
-   for (size_t i = 0; i < entries_.size(); ++i) {
+   for (size_t i = 0; i < planetIds_.size(); ++i) {
       ImGui::PushID(static_cast<std::int32_t>(i));
-      const std::string previousId = entries_[i].objectId;
+      const std::string previousId = planetIds_[i];
 
-      if (GameEngine::EditorUI::ObjectReference("Planet", entries_[i].objectId, "SphericalGravityAttractor")) {
-         if (entries_[i].objectId.empty()) {
+      if (GameEngine::EditorUI::ObjectReference("Planet", planetIds_[i], "SphericalGravityAttractor")) {
+         if (planetIds_[i].empty()) {
             ImGui::PopID();
             RemovePlanet(i);
             break;
          }
 
-         for (size_t other = 0; other < entries_.size(); ++other) {
-            if (other != i && entries_[other].objectId == entries_[i].objectId) {
-               entries_[i].objectId = previousId;
+         for (size_t other = 0; other < planetIds_.size(); ++other) {
+            if (other != i && planetIds_[other] == planetIds_[i]) {
+               planetIds_[i] = previousId;
                break;
             }
          }
@@ -384,7 +361,7 @@ void PlanetSwitcher::DrawInspector() {
       const bool up = ImGui::SmallButton("Up");
       ImGui::EndDisabled();
       ImGui::SameLine();
-      ImGui::BeginDisabled(i + 1 == entries_.size());
+      ImGui::BeginDisabled(i + 1 == planetIds_.size());
       const bool down = ImGui::SmallButton("Down");
       ImGui::EndDisabled();
       ImGui::SameLine();
@@ -413,33 +390,6 @@ void PlanetSwitcher::DrawInspector() {
 }
 #endif
 
-GravityAttractor* PlanetSwitcher::GetAttractorByObjectId(const std::string& objectId) const {
-   if (auto* model = FindPlanetById(objectId)) {
-      return model->GetComponent<SphericalGravityAttractor>();
-   }
-
-   return nullptr;
-}
-
-GameEngine::Vector3 PlanetSwitcher::GetPlanetCenter(const std::string& objectId) const {
-   if (auto* model = FindPlanetById(objectId)) {
-      return model->GetPosition();
-   }
-
-   return {0.0f, 0.0f, 0.0f};
-}
-
-float PlanetSwitcher::GetPlanetSurfaceRadius(const std::string& objectId) const {
-   if (auto* model = FindPlanetById(objectId)) {
-      const auto scale = model->GetScale();
-
-      // 非一様・負スケールでも地表距離が負や過小にならないよう最大軸を球半径に使う。
-      return std::max({std::abs(scale.x), std::abs(scale.y), std::abs(scale.z)}) * 0.5f;
-   }
-
-   return 0.0f;
-}
-
 bool PlanetSwitcher::TryGetLandingPlanet(
    GameEngine::Model*& outReceiver, GameEngine::Vector3& outCenter, float& outSurfaceRadius) const {
    // 失敗時に呼び出し側へ古い値を残さない。
@@ -447,34 +397,13 @@ bool PlanetSwitcher::TryGetLandingPlanet(
    outCenter = {};
    outSurfaceRadius = 0.0f;
 
-   // 空中で次の着地候補が決まっている場合は、その惑星を優先する。
-   const std::int32_t index = pendingIndex_ >= 0 ? pendingIndex_ : currentIndex_;
+   auto* planet = IsEnabled() ? GetPlanetModel(GetLandingPlanetIndex()) : nullptr;
 
-   if (!IsEnabled() || index < 0 || index >= static_cast<std::int32_t>(entries_.size())) {
+   if (!planet || !TryReadPlanetSurface(*planet, outCenter, outSurfaceRadius)) {
       return false;
    }
 
-   const auto& entry = entries_[index];
-
-   auto* receiver = FindPlanetById(entry.objectId);
-
-   if (!receiver) {
-      return false;
-   }
-
-   // 既存の着地判定と同じ規約で、
-   // 選択した惑星の中心・半径を取得する。
-   const auto center = GetPlanetCenter(entry.objectId);
-   const float radius = GetPlanetSurfaceRadius(entry.objectId);
-
-   if (!std::isfinite(center.x) || !std::isfinite(center.y) || !std::isfinite(center.z) || !std::isfinite(radius) ||
-       radius <= 0.0f) {
-      return false;
-   }
-
-   outReceiver = receiver;
-   outCenter = center;
-   outSurfaceRadius = radius;
+   outReceiver = planet;
    return true;
 }
 

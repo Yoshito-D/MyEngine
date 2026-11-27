@@ -68,6 +68,7 @@ struct TextDrawData {
    std::uint32_t startIndex = 0;           ///< 共有インデックスバッファ内の開始位置。
    std::int32_t baseVertex = 0;            ///< 頂点の基準オフセット。
    std::int32_t sortingOrder = 0;          ///< UI要素を前後に並べる描画順。
+   BlendMode blendMode = BlendMode::kBlendModeNormal; ///< 文字またはUI画像を重ねる方式。
 };
 
 /// @brief 粒子のGPU更新と描画に使うデータ。

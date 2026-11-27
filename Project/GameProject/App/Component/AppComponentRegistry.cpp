@@ -16,9 +16,10 @@
 #include "GameProject/App/Component/Rendering/PlanetDistanceColorComponent.h"
 #include "GameProject/App/Component/Race/UI/GamepadGuideTextComponent.h"
 #include "GameProject/App/Component/Race/RaceGateComponent.h"
+#include "GameProject/App/Component/Race/RaceGoalDirectionWorldComponent.h"
 #include "GameProject/App/Component/Race/UI/RaceCountdownTextComponent.h"
 #include "GameProject/App/Component/Race/UI/RaceGoalDirectionHUDComponent.h"
-#include "GameProject/App/Component/Race/UI/RaceGoalDistanceTextComponent.h"
+#include "GameProject/App/Component/Race/UI/RaceMinimapHUDComponent.h"
 #include "GameProject/App/Component/Race/RaceManagerComponent.h"
 #include "GameProject/App/Component/Race/UI/RaceResultUIComponent.h"
 #include "GameProject/App/Component/Race/UI/RaceTimeTextComponent.h"
@@ -73,10 +74,9 @@ const bool kRegisteredAppComponents[] = {
    RegisterAppComponent<App::RaceGateComponent>(
       GameEngine::ObjectType::Generic | GameEngine::ObjectType::Model | GameEngine::ObjectType::Sprite),
    RegisterAppComponent<App::RaceCountdownTextComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
-   RegisterAppComponent<App::RaceGoalDirectionHUDComponent>(
-      GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Model)),
-   RegisterAppComponent<App::RaceGoalDistanceTextComponent>(
-      GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
+   RegisterAppComponent<App::RaceGoalDirectionHUDComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Model)),
+   RegisterAppComponent<App::RaceGoalDirectionWorldComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Model)),
+   RegisterAppComponent<App::RaceMinimapHUDComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::Generic)),
    RegisterAppComponent<App::RaceResultUIComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
    RegisterAppComponent<App::RaceTimeTextComponent>(GameEngine::ToObjectTypeMask(GameEngine::ObjectType::UIText)),
    RegisterAppComponent<App::VehicleSpeedGaugeUIComponent>(

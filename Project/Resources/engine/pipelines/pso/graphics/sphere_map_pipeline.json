@@ -1,0 +1,13 @@
+{
+  "name": "SphereMap",
+  "vertexShader": "SphereMap",
+  "pixelShader": "SphereMap",
+  "rootSignature": "SphereMap",
+  "supportBlendModes": false,
+  "defaultBlendMode": "Add",
+  "cullMode": "None",
+  "depthEnable": false,
+  "depthWriteMask": "Zero",
+  "depthFunc": "Always",
+  "topologyType": "Triangle"
+}

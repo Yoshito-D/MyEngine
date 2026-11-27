@@ -47,6 +47,7 @@
 #include "GameEngine/Object/Component/UI/UIModelComponent.h"
 #include "GameEngine/Graphics/Renderer/Pass/OpaquePass.h"
 #include "GameEngine/Graphics/Renderer/Pass/PlayerShadowPass.h"
+#include "GameEngine/Graphics/Renderer/Pass/SphereMapRenderer.h"
 #include "GameEngine/Graphics/Renderer/Pass/TransparentPass.h"
 #include "GameEngine/Graphics/Renderer/Pass/PostEffectPass.h"
 #include <nlohmann/json.hpp>
@@ -90,6 +91,8 @@ GameEngine::Vector3 ExtractTranslation(const GameEngine::Matrix4x4& matrix) {
 }
 
 namespace GameEngine {
+Renderer::Renderer() = default;
+
 Renderer::~Renderer() = default;
 #ifdef USE_IMGUI
 void Renderer::SetEditorSceneSession(EditorSceneSession* session) {
@@ -260,6 +263,14 @@ void Renderer::ClearPlayerShadowFrameData() {
    }
 }
 
+void Renderer::SubmitSphereMap(const SphereMapFrame& frame) {
+   if (!sphereMapRenderer_) {
+      sphereMapRenderer_ = std::make_unique<SphereMapRenderer>();
+   }
+
+   sphereMapRenderer_->Submit(frame);
+}
+
 void Renderer::SyncRenderTargetSizeToDevice() {
    if (!device_ || !offscreenRenderTarget_) return;
 
@@ -273,6 +284,10 @@ void Renderer::SyncRenderTargetSizeToDevice() {
 void Renderer::BeginFrame() {
    // 前フレームの描画が中断されても、古いシーンやモデルへの参照を次のフレームへ持ち越さない。
    ClearPlayerShadowFrameData();
+
+   if (sphereMapRenderer_) {
+      sphereMapRenderer_->BeginFrame();
+   }
 
    // 各パスのキューはフレーム単位。テキストだけは全コマンド確定後に一括アップロードするため、
    // CPU側の頂点・インデックス蓄積もここで開始する。
@@ -633,6 +648,7 @@ void Renderer::EndFrame(SceneWorld* world) {
       DrawSceneTrails(*world);
    }
 
+   QueueSphereMap();
    DrawAutoRegisteredTexts(ui);
 
    // ポストエフェクト対象のラインと対象外ラインを別キューへ送り、合成前後の位置を固定する。
@@ -890,6 +906,7 @@ void Renderer::DrawAutoRegisteredTexts(const UISystem* ui) {
 void Renderer::Finalize() {
    // 通常の終了経路ではPostDrawでGPU完了済み。GraphicsDeviceより先に影資源とSRVスロットを返す。
    ClearPasses();
+   sphereMapRenderer_.reset();
 
    if (sceneTransitionHorizontalConstantBuffer_ && sceneTransitionHorizontalConstants_) {
       sceneTransitionHorizontalConstantBuffer_->Unmap(0, nullptr);

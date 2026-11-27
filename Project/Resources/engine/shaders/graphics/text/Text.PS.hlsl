@@ -14,7 +14,14 @@ float Median(float red, float green, float blue) {
 }
 
 float4 main(PixelShaderInput input) : SV_TARGET0 {
-   // 通常画像も同じ頂点・描画順で扱い、フォントの距離場評価と区別する。
+   // 通常画像・円も同じ頂点と描画順で扱い、フォントの距離場評価と区別する。
+   const float kSolidCircleAtlasType = 4.0f;
+   if (input.atlasParameters.w >= kSolidCircleAtlasType) {
+      const float distance = length(input.texCoord * 2.0f - 1.0f);
+      const float coverage = saturate((1.0f - distance) / max(fwidth(distance), 1.0e-6f));
+      return float4(input.color.rgb, input.color.a * coverage);
+   }
+
    const float kColorTextureAtlasType = 3.0f;
    if (input.atlasParameters.w >= kColorTextureAtlasType) {
       return gFontAtlas.Sample(gImageSampler, input.texCoord) * input.color;

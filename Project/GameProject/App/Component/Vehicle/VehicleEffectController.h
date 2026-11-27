@@ -1,15 +1,13 @@
 #pragma once
 
-#include "GameEngine/Collision/Collider.h"
+#include "GameEngine/Math/Types/Transform.h"
 #include "GameEngine/Object/Component/Base/IObjectComponent.h"
 #include "GameProject/App/Component/Vehicle/VehicleEvents.h"
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <vector>
 
 namespace GameEngine {
-class ModelAsset;
 class ParticleEmitterComponent;
 }
 
@@ -90,8 +88,6 @@ private:
    bool wasDriveEffectsActive_ = false;         ///< 前フレームに通常走行の砂埃と小石を放出していたか。
    bool useFlightTrail_ = false;                ///< 飛行煙とトレイルのどちらを使用するかを切り替える。
    std::vector<std::int32_t> activeFlightSmokeSlots_;             ///< 発生中の飛行煙のスロット番号。
-   std::weak_ptr<const GameEngine::ModelAsset> flightSmokeModel_; ///< 境界を計算済みの車体モデル。
-   GameEngine::Collider::AABB flightSmokeModelBounds_{};          ///< 車体全体のモデル空間での境界。
 };
 
 } // namespace App
