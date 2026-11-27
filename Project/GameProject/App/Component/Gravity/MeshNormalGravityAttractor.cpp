@@ -59,14 +59,14 @@ nlohmann::json MeshNormalGravityAttractor::GetSharedParameters() const {
 }
 
 void MeshNormalGravityAttractor::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
+   ReadParameters(data);
 }
 
 void MeshNormalGravityAttractor::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
+   ReadParameters(data);
 }
 
-void MeshNormalGravityAttractor::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
+void MeshNormalGravityAttractor::ReadParameters(const nlohmann::json& data) {
    if (data.contains("fallbackUp")) {
       const auto& up = data.at("fallbackUp");
 

@@ -23,6 +23,9 @@ public:
    /// @brief 現在の attractor を GravityBody へ適用する
    void Update(float) override;
 
+   /// @brief 重力源との接続を無効化したとき、最後に適用した加速度を解除する。
+   void OnDisable() override;
+
 #ifdef USE_IMGUI
 
    /// @brief デバッグ表示（Inspector）

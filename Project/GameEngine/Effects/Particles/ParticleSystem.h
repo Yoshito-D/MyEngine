@@ -473,8 +473,8 @@ private:
 
    bool usePostProcess_ = false;              ///< ポストプロセスを適用するかどうか。
    float emissionTimer_ = 0.0f;               ///< 時間ベースの放出処理に使う経過時間（秒）。
-   float emissionAccumulator_ = 0.0f;         ///< 時間ベースの放出で次フレームへ繰り越す粒子数の端数。
-   float emissionDistanceAccumulator_ = 0.0f; ///< 移動距離ベースの放出で繰り越す粒子数の端数。
+   double emissionAccumulator_ = 0.0;         ///< 時間ベースの放出で次フレームへ繰り越す粒子数の端数。
+   double emissionDistanceAccumulator_ = 0.0; ///< 移動距離ベースの放出で繰り越す粒子数の端数。
    Vector3 previousEmitterPosition_{0.0f, 0.0f, 0.0f}; ///< 移動距離を計算するための前回のエミッター位置。
    bool hasPreviousEmitterPosition_ = false;           ///< 移動距離の比較元となるエミッター位置を取得済みかどうか。
    float systemTime_ = 0.0f;                           ///< 現在の粒子再生を開始してからの経過時間（秒）。

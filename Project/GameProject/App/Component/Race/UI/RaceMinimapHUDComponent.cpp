@@ -65,18 +65,9 @@ Vector3 GetTranslation(const GameEngine::Matrix4x4& matrix) {
 
 GameEngine::Quaternion GetWorldRotation(const GameEngine::Object& subject) {
    auto rotation = GameEngine::Quaternion::Identity();
-   auto ancestorsRemaining = GameEngine::Object::GetRegisteredObjects().size();
 
-   // 地図の基準軸に拡縮を混ぜないため、親までの姿勢だけをモデルと同じ順序で合成する。
-   for (auto* object = &subject; object;
-        object = GameEngine::Object::FindByEntityId(object->GetParentEntityId())) {
-      if (ancestorsRemaining == 0) {
-         Logger::Fail("RaceMinimap: circular parent hierarchy for " + subject.GetEntityId(),
-            Logger::LogChannel::Game);
-      }
-
-      --ancestorsRemaining;
-
+   // 地図の基準軸に拡縮を混ぜず、所属ワールドの親の姿勢だけをモデルと同じ順序で合成する。
+   for (auto* object = &subject; object; object = object->GetParent()) {
       if (const auto* transform = object->GetComponent<GameEngine::TransformComponent>()) {
          rotation = transform->GetLocalPose().GetActiveQuaternion() * rotation;
       }

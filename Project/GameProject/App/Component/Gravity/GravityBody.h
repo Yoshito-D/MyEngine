@@ -96,7 +96,7 @@ public:
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 private:
-   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+   void ReadParameters(const nlohmann::json& data);
 
    /// @brief 重力加速度の大きさ（m/s²）
    float gravityStrength = 9.8f;

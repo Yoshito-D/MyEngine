@@ -51,7 +51,9 @@ public:
    /// @brief 設定全体を検証して置換し、再生カーソルを再構築する
    void ReplaceBurstSchedule(const std::vector<Burst>& bursts);
 
-   /// @brief 指定時刻まで放出スケジュールを進め、今回の放出数を返す
+   /// @brief 指定時刻までの新しい発火を消費し、放出要求数を返す。
+   /// @param time 再生開始からの時刻（秒）。
+   /// @return 今回の粒子放出要求数。戻り値の型で表現できる最大値を上限とする。
    uint32_t AdvanceBursts(float time);
 
    /// @brief Burst の発火状態をリセット（Play/Stop 時に呼ぶ）
@@ -71,8 +73,8 @@ private:
    float rateOverDistance_ = 0.0f; ///< エミッターの移動距離1単位あたりに放出する粒子数。
 
    struct BurstCursor {
-      uint32_t firedCount = 0;    ///< 現在の再生で発火済みのバースト回数。
-      float nextFireTime = -1.0f; ///< 次のバーストを発火するシステム時刻（秒）。負値は未初期化。
+      // 極小間隔の無限バーストでも、整数型を超える発火回数でオーバーフローしないようにする。
+      double firedCount = 0.0; ///< 現在の再生で消費した発火回数。
    };
 
    static Burst ValidateBurst(Burst burst);

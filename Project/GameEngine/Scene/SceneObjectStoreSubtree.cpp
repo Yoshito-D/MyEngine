@@ -99,8 +99,8 @@ std::string SceneObjectStore::RestoreSubtree(const nlohmann::json& snapshot, boo
             throw std::runtime_error("Duplicate or empty subtree ID");
          }
 
-         if (!freshIds && Object::FindByEntityId(id)) {
-            throw std::runtime_error("Subtree ID is already in use");
+         if (!freshIds && ContainsId(id)) {
+            throw std::runtime_error("Subtree ID is already in use in this scene: " + id);
          }
       }
 
@@ -131,12 +131,6 @@ std::string SceneObjectStore::RestoreSubtree(const nlohmann::json& snapshot, boo
       for (auto object : objects) {
          const auto oldId = object.at("id").get<std::string>();
          object.erase("parentId");
-
-         for (auto& component : object["components"]) {
-            if (component.value("typeName", "") == "TransformComponent") {
-               component["data"]["parentEntityId"] = "";
-            }
-         }
 
          if (freshIds) {
             object.erase("id");

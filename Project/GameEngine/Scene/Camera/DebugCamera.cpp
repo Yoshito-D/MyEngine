@@ -19,7 +19,7 @@ void DebugCamera::Update(float deltaTime) {
    if (EngineContext::GetIsSceneHovered()) {
       Vector2 mouseDelta = EngineContext::GetMouseDelta();
       int32_t wheel = EngineContext::GetMouseWheelDelta();
-      bool isDragging = EngineContext::IsMousePressed(2);
+      bool isDragging = EngineContext::IsMousePressed(MouseButton::Middle);
       bool isShiftPressed = EngineContext::IsKeyPressed(DIK_LSHIFT);
 
       if (orbitalBody_) {

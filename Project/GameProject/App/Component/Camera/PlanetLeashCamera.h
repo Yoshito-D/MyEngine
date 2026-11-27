@@ -32,9 +32,6 @@ public:
    /// @brief 惑星中心を設定する
    void SetSphereCenter(const GameEngine::Vector3& center) { sphereCenter_ = center; }
 
-   /// @brief 初期カメラ位置を設定し、初期化済みにする
-   void SetInitialEyePosition(const GameEngine::Vector3& eye);
-
    /// @brief 重力Upを設定する
    void SetGravityUp(const GameEngine::Vector3& up) { gravityUp_ = up; }
 
@@ -65,11 +62,11 @@ public:
    void Deserialize(const nlohmann::json& data) override;
 
    /// @brief 惑星追従カメラの共有可能な調整値をJSONで取得する。
-   /// @return 追従距離・惑星との最小距離・追従速度とUpの選択条件を含む共有設定JSON。
+   /// @return 追従距離・惑星との最小距離・追従速度を含む共有設定JSON。
    nlohmann::json GetSharedParameters() const override;
 
    /// @brief 惑星追従カメラの共有設定を既存コンポーネントへ反映する。
-   /// @param data 追従距離・惑星との最小距離・追従速度とUpの選択条件を含む共有設定JSON。
+   /// @param data 追従距離・惑星との最小距離・追従速度を含む共有設定JSON。
    void ApplySharedParameters(const nlohmann::json& data) override;
 
 #ifdef USE_IMGUI
@@ -84,14 +81,12 @@ public:
       /// @brief 追従開始距離（この距離を超えた分を追う）
       float maxFollowDistance = 8.0f;
 
-      /// @brief 追従速度
+      /// @brief 追従開始距離を超えたときの移動速度（m/s）。
       float followSpeed = 6.0f;
 
       /// @brief 惑星中心からの最小許容距離
       float minPlanetDistance = 7.0f;
 
-      /// @brief 重力Up使用フラグ（将来拡張向け）
-      bool useGravityUp = true;
    };
 
    /// @brief 表示・編集用の設定値をコピーする。
@@ -104,9 +99,8 @@ private:
    void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
 
    float maxFollowDistance = 8.0f; ///< 追従開始距離（この距離を超えた分を追う）。
-   float followSpeed = 6.0f;       ///< 追従速度。
+   float followSpeed = 6.0f;       ///< 追従開始距離を超えたときの移動速度（m/s）。
    float minPlanetDistance = 7.0f; ///< 惑星中心からの最小許容距離。
-   bool useGravityUp = true;       ///< 重力Up使用フラグ（将来拡張向け）。
 
 private:
    /// @brief 注視対象座標

@@ -194,36 +194,20 @@ bool EngineContext::IsKeyReleased(KeyCode key) {
    return sInput_->IsKeyReleased(key);
 }
 
-bool EngineContext::IsMousePressed(uint8_t button) {
+bool EngineContext::IsMousePressed(MouseButton button) {
    return CanReadMouseInput() && sInput_->IsMousePressed(button);
 }
 
-bool EngineContext::IsMousePressed(MouseButton button) {
-   return IsMousePressed(static_cast<uint8_t>(button));
-}
-
-bool EngineContext::IsMouseNotPressed(uint8_t button) {
+bool EngineContext::IsMouseNotPressed(MouseButton button) {
    return sInput_ && (!CanReadMouseInput() || sInput_->IsMouseNotPressed(button));
 }
 
-bool EngineContext::IsMouseNotPressed(MouseButton button) {
-   return IsMouseNotPressed(static_cast<uint8_t>(button));
-}
-
-bool EngineContext::IsMouseReleased(uint8_t button) {
+bool EngineContext::IsMouseReleased(MouseButton button) {
    return CanReadMouseInput() && sInput_->IsMouseReleased(button);
 }
 
-bool EngineContext::IsMouseReleased(MouseButton button) {
-   return IsMouseReleased(static_cast<uint8_t>(button));
-}
-
-bool EngineContext::IsMouseTriggered(uint8_t button) {
-   return CanReadMouseInput() && sInput_->IsMouseTriggered(button);
-}
-
 bool EngineContext::IsMouseTriggered(MouseButton button) {
-   return IsMouseTriggered(static_cast<uint8_t>(button));
+   return CanReadMouseInput() && sInput_->IsMouseTriggered(button);
 }
 
 Vector2 EngineContext::GetMouseScreenPosition() {

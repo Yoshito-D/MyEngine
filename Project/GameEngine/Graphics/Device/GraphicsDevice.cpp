@@ -1,5 +1,6 @@
 #include "GameEngine/pch.h"
 #include <cstdint>
+#include <limits>
 #include <stdexcept>
 #include "GameEngine/Graphics/Device/GraphicsDevice.h"
 #include "GameEngine/Editor/ImGui/ImGuiManager.h"
@@ -17,6 +18,22 @@ constexpr int64_t kSleepCheckFramesPerSecond = 65;
 constexpr std::chrono::microseconds kTargetFrameTime(kMicrosecondsPerSecond / kTargetFramesPerSecond);
 constexpr std::chrono::microseconds kSleepCheckTime(kMicrosecondsPerSecond / kSleepCheckFramesPerSecond);
 constexpr std::chrono::microseconds kSpinSleepInterval(1);
+
+void CheckGraphicsResult(HRESULT result, const char* operation, ID3D12Device* device = nullptr) {
+   if (SUCCEEDED(result)) return;
+
+   std::string message = std::format("{} failed: HRESULT=0x{:08X}", operation, static_cast<UINT>(result));
+
+   if (device) {
+      const HRESULT removedReason = device->GetDeviceRemovedReason();
+
+      if (FAILED(removedReason)) {
+         message += std::format(", device removal reason=0x{:08X}", static_cast<UINT>(removedReason));
+      }
+   }
+
+   Logger::Fail(message);
+}
 }
 
 void GraphicsDevice::Initialize(
@@ -110,51 +127,47 @@ void GraphicsDevice::PostDraw() {
       backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
    commandList_->ResourceBarrier(1, &toPresent);
 
-   // コマンドリストの内容を確定させる。全てのコマンドをつんでからCloseすること
-   HRESULT result = commandList_->Close();
-   assert(SUCCEEDED(result));
-
-   // GPUにコマンドリストの実行を行わせる
-   ID3D12CommandList* commandLists[] = {commandList_.Get()};
-   commandQueue_->ExecuteCommandLists(1, commandLists);
-
-   // GPUとOSに画面の交換を行うように通知する
-   swapChain_->Present(1, 0);
-
-#ifdef _DEBUG
-   if (FAILED(result)) {
-      ComPtr<ID3D12DeviceRemovedExtendedData> dred;
-
-      result = device_->QueryInterface(IID_PPV_ARGS(&dred));
-      assert(SUCCEEDED(result));
-
-      D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT autoBreadcrumbsOutput{};
-      result = dred->GetAutoBreadcrumbsOutput(&autoBreadcrumbsOutput);
-      assert(SUCCEEDED(result));
-   }
-#endif
+   SubmitCommandList();
+   CheckGraphicsResult(swapChain_->Present(1, 0), "IDXGISwapChain::Present", device_.Get());
 
    // 単一のアロケータを安全に再利用するため、フレームごとにGPU完了を待つ。
-   fenceValue_++;
+   WaitForIdle();
+   UpdateFixFPS();
+   ResetCommandList();
+}
 
-   // GPUがここまでたどり着いたときに、Fenceの値を指定した値に代入するようにSignalを送る
-   commandQueue_->Signal(fence_.Get(), fenceValue_);
+void GraphicsDevice::WaitForIdle() {
+   if (!commandsInFlight_) return;
 
-   // GetCompletedValueの初期値はFence作成時に渡した初期値
-   if (fence_->GetCompletedValue() != fenceValue_) {
-      HANDLE event = CreateEvent(nullptr, false, false, nullptr);
-      fence_->SetEventOnCompletion(fenceValue_, event);
-      WaitForSingleObject(event, INFINITE);
-      CloseHandle(event);
+   ++fenceValue_;
+   CheckGraphicsResult(commandQueue_->Signal(fence_.Get(), fenceValue_), "ID3D12CommandQueue::Signal", device_.Get());
+
+   const auto checkCompletion = [this]() {
+      const UINT64 completed = fence_->GetCompletedValue();
+
+      // デバイス消失時の戻り値をフェンス到達として誤認しない。
+      if (completed == std::numeric_limits<UINT64>::max()) {
+         CheckGraphicsResult(DXGI_ERROR_DEVICE_REMOVED, "ID3D12Fence::GetCompletedValue", device_.Get());
+      }
+
+      return completed >= fenceValue_;
+   };
+
+   if (!checkCompletion()) {
+      CheckGraphicsResult(fence_->SetEventOnCompletion(fenceValue_, fenceEvent_.Get()),
+         "ID3D12Fence::SetEventOnCompletion", device_.Get());
+      const DWORD waitResult = WaitForSingleObject(fenceEvent_.Get(), INFINITE);
+
+      if (waitResult == WAIT_FAILED) {
+         Logger::Fail(std::format("WaitForSingleObject failed for GPU fence: Win32={}", GetLastError()));
+      }
+
+      if (waitResult != WAIT_OBJECT_0 || !checkCompletion()) {
+         Logger::Fail(std::format("GPU fence {} did not complete: wait result={}", fenceValue_, waitResult));
+      }
    }
 
-   UpdateFixFPS();
-
-   // 次のフレーム用のコマンドリストを準備
-   result = commandAllocator_->Reset();
-   assert(SUCCEEDED(result));
-   result = commandList_->Reset(commandAllocator_.Get(), nullptr);
-   assert(SUCCEEDED(result));
+   commandsInFlight_ = false;
 }
 
 void GraphicsDevice::Finalize() {
@@ -162,21 +175,10 @@ void GraphicsDevice::Finalize() {
       window_->SetFullscreen(false);
    }
 
-   if (commandQueue_ && fence_) {
-      // COMリソースを解放する前に、キューへ投入済みの全参照が切れるまで待つ。
-      // ここを省くと終了時だけGPUが解放済みバックバッファを参照し得る。
-      fenceValue_++;
-      commandQueue_->Signal(fence_.Get(), fenceValue_);
-
-      if (fence_->GetCompletedValue() < fenceValue_) {
-         HANDLE eventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-
-         if (eventHandle) {
-            fence_->SetEventOnCompletion(fenceValue_, eventHandle);
-            WaitForSingleObject(eventHandle, INFINITE);
-            CloseHandle(eventHandle);
-         }
-      }
+   try {
+      WaitForIdle();
+   } catch (const std::exception&) {
+      // 同期の失敗は発生箇所で記録済み。終了時はデバイスが失われていても所有資源を解放する。
    }
 
    for (auto& backBuffer : backBuffers_) {
@@ -194,6 +196,8 @@ void GraphicsDevice::Finalize() {
    commandAllocator_.Reset();
    commandQueue_.Reset();
    fence_.Reset();
+   fenceEvent_.Close();
+   commandsInFlight_ = false;
    device_.Reset();
    dxgiFactory_.Reset();
    window_ = nullptr;
@@ -305,27 +309,20 @@ void GraphicsDevice::InitializeDXGIDevice([[maybe_unused]] bool enableDebugLayer
 }
 
 void GraphicsDevice::InitializeCommand() {
-   HRESULT result = S_FALSE;
+   CheckGraphicsResult(
+      device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(commandAllocator_.GetAddressOf())),
+      "ID3D12Device::CreateCommandAllocator", device_.Get());
+   CheckGraphicsResult(device_->CreateCommandList(
+                          0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator_.Get(), nullptr,
+                          IID_PPV_ARGS(commandList_.GetAddressOf())),
+      "ID3D12Device::CreateCommandList", device_.Get());
 
-   // コマンドアロケータを生成
-   result =
-      device_->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(commandAllocator_.GetAddressOf()));
-   assert(SUCCEEDED(result));
-
-   // コマンドリストを生成
-   result = device_->CreateCommandList(
-      0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator_.Get(), nullptr, IID_PPV_ARGS(commandList_.GetAddressOf()));
-   assert(SUCCEEDED(result));
-
-   // コマンドキューを生成
-   D3D12_COMMAND_QUEUE_DESC commandQueueDesc{};
-   result = device_->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(commandQueue_.GetAddressOf()));
-   assert(SUCCEEDED(result));
+   const D3D12_COMMAND_QUEUE_DESC commandQueueDesc{};
+   CheckGraphicsResult(device_->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(commandQueue_.GetAddressOf())),
+      "ID3D12Device::CreateCommandQueue", device_.Get());
 }
 
 void GraphicsDevice::CreateSwapChain() {
-   HRESULT result = S_FALSE;
-
    // スワップチェーンを生成する
    DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
    swapChainDesc.Width = backBufferWidth_;
@@ -337,20 +334,18 @@ void GraphicsDevice::CreateSwapChain() {
    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;    // モニタにうつしたら、中身を破棄
 
    // コマンドキュー、ウィンドウハンドル、設定を渡して生成する
-   result = dxgiFactory_->CreateSwapChainForHwnd(commandQueue_.Get(), window_->GetHwnd(), &swapChainDesc, nullptr,
-      nullptr, reinterpret_cast<IDXGISwapChain1**>(swapChain_.GetAddressOf()));
-   assert(SUCCEEDED(result));
-
-   result = dxgiFactory_->MakeWindowAssociation(window_->GetHwnd(), DXGI_MWA_NO_ALT_ENTER);
-   assert(SUCCEEDED(result));
+   ComPtr<IDXGISwapChain1> swapChain;
+   CheckGraphicsResult(dxgiFactory_->CreateSwapChainForHwnd(commandQueue_.Get(), window_->GetHwnd(), &swapChainDesc,
+                          nullptr, nullptr, swapChain.GetAddressOf()),
+      "IDXGIFactory::CreateSwapChainForHwnd", device_.Get());
+   CheckGraphicsResult(swapChain.As(&swapChain_), "IDXGISwapChain4::QueryInterface", device_.Get());
+   CheckGraphicsResult(dxgiFactory_->MakeWindowAssociation(window_->GetHwnd(), DXGI_MWA_NO_ALT_ENTER),
+      "IDXGIFactory::MakeWindowAssociation", device_.Get());
 }
 
 void GraphicsDevice::CreateRenderTargetViews() {
-   HRESULT result = S_FALSE;
-
-   DXGI_SWAP_CHAIN_DESC swcDesc = {};
-   result = swapChain_->GetDesc(&swcDesc);
-   assert(SUCCEEDED(result));
+   DXGI_SWAP_CHAIN_DESC swcDesc{};
+   CheckGraphicsResult(swapChain_->GetDesc(&swcDesc), "IDXGISwapChain::GetDesc", device_.Get());
 
    // RTVヒープはオフスクリーンRTが2番以降のCPUハンドルを保持している。
    // リサイズ時もヒープ自体を再生成せず、既存ハンドルの有効性を保つ。
@@ -358,16 +353,16 @@ void GraphicsDevice::CreateRenderTargetViews() {
       D3D12_DESCRIPTOR_HEAP_DESC heapDesc{};
       heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV; // レンダーターゲットビュー
       heapDesc.NumDescriptors = rtvCount_;
-      result = device_->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(rtvHeap_.ReleaseAndGetAddressOf()));
-      assert(SUCCEEDED(result));
+      CheckGraphicsResult(device_->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(rtvHeap_.GetAddressOf())),
+         "ID3D12Device::CreateDescriptorHeap (RTV)", device_.Get());
    }
 
    backBuffers_.resize(swcDesc.BufferCount);
 
    for (std::int32_t i = 0; i < backBuffers_.size(); i++) {
       // スワップチェーンからバッファを取得
-      result = swapChain_->GetBuffer(i, IID_PPV_ARGS(backBuffers_[i].ReleaseAndGetAddressOf()));
-      assert(SUCCEEDED(result));
+      CheckGraphicsResult(swapChain_->GetBuffer(i, IID_PPV_ARGS(backBuffers_[i].ReleaseAndGetAddressOf())),
+         "IDXGISwapChain::GetBuffer", device_.Get());
 
       // ディスクリプタヒープのハンドルを取得
       CD3DX12_CPU_DESCRIPTOR_HANDLE handle =
@@ -387,8 +382,6 @@ void GraphicsDevice::CreateRenderTargetViews() {
 }
 
 void GraphicsDevice::CreateDepthStencilViews() {
-   HRESULT result = S_FALSE;
-
    // ヒーププロパティ
    CD3DX12_HEAP_PROPERTIES heapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 
@@ -400,18 +393,18 @@ void GraphicsDevice::CreateDepthStencilViews() {
    CD3DX12_CLEAR_VALUE clearValue = CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D24_UNORM_S8_UINT, 1.0f, 0);
 
    // リソースの生成
-   result = device_->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc,
-      D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValue, IID_PPV_ARGS(depthBuffer_.ReleaseAndGetAddressOf()));
-
-   assert(SUCCEEDED(result));
+   CheckGraphicsResult(
+      device_->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc,
+         D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValue, IID_PPV_ARGS(depthBuffer_.ReleaseAndGetAddressOf())),
+      "ID3D12Device::CreateCommittedResource (depth buffer)", device_.Get());
    depthBufferState_ = D3D12_RESOURCE_STATE_DEPTH_WRITE;
 
    // DSV用のヒープでディスクリプタの数は1つ
    D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc{};
    dsvHeapDesc.NumDescriptors = 1;
    dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-   result = device_->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(dsvHeap_.ReleaseAndGetAddressOf()));
-   assert(SUCCEEDED(result));
+   CheckGraphicsResult(device_->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(dsvHeap_.ReleaseAndGetAddressOf())),
+      "ID3D12Device::CreateDescriptorHeap (DSV)", device_.Get());
 
    // DSVの設定
    D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
@@ -448,9 +441,15 @@ void GraphicsDevice::CreateSRVHeap() {
 }
 
 void GraphicsDevice::CreateFence() {
-   HRESULT result = S_FALSE;
-   result = device_->CreateFence(fenceValue_, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(fence_.GetAddressOf()));
-   assert(SUCCEEDED(result));
+   CheckGraphicsResult(device_->CreateFence(fenceValue_, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(fence_.GetAddressOf())),
+      "ID3D12Device::CreateFence", device_.Get());
+   const HANDLE event = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+
+   if (!event) {
+      Logger::Fail(std::format("CreateEventW failed for GPU fence: Win32={}", GetLastError()));
+   }
+
+   fenceEvent_.Attach(event);
 }
 
 void GraphicsDevice::TransitionDepthStencilToShaderResource() {
@@ -506,30 +505,22 @@ void GraphicsDevice::UpdateFixFPS() {
 void GraphicsDevice::ExecuteCommandListAndWait() {
    // リサイズ等で参照中のGPUリソースを作り直す前に、現在までのコマンドを明示的に
    // フラッシュして完了を待つ。通常のPresentを伴わない同期経路として使用する。
-   HRESULT hr = commandList_->Close();
-   assert(SUCCEEDED(hr));
+   SubmitCommandList();
+   WaitForIdle();
+   ResetCommandList();
+}
 
-   // 実行
+void GraphicsDevice::SubmitCommandList() {
+   CheckGraphicsResult(commandList_->Close(), "ID3D12GraphicsCommandList::Close", device_.Get());
    ID3D12CommandList* commandLists[] = {commandList_.Get()};
-   commandQueue_->ExecuteCommandLists(_countof(commandLists), commandLists);
+   commandQueue_->ExecuteCommandLists(static_cast<UINT>(std::size(commandLists)), commandLists);
+   commandsInFlight_ = true;
+}
 
-   // フェンス値をインクリメント
-   fenceValue_++;
-   commandQueue_->Signal(fence_.Get(), fenceValue_);
-
-   // 完了を待つ
-   if (fence_->GetCompletedValue() < fenceValue_) {
-      HANDLE eventHandle = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-      assert(eventHandle != nullptr);
-
-      fence_->SetEventOnCompletion(fenceValue_, eventHandle);
-      WaitForSingleObject(eventHandle, INFINITE);
-      CloseHandle(eventHandle);
-   }
-
-   // コマンドアロケータとリストをリセット（次のコマンドのため）
-   commandAllocator_->Reset();
-   commandList_->Reset(commandAllocator_.Get(), nullptr);
+void GraphicsDevice::ResetCommandList() {
+   CheckGraphicsResult(commandAllocator_->Reset(), "ID3D12CommandAllocator::Reset", device_.Get());
+   CheckGraphicsResult(commandList_->Reset(commandAllocator_.Get(), nullptr), "ID3D12GraphicsCommandList::Reset",
+      device_.Get());
 }
 
 Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> GraphicsDevice::CreateDescriptorHeap(
@@ -540,8 +531,8 @@ Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> GraphicsDevice::CreateDescriptorHea
    descriptorHeapDesc.NumDescriptors = numDescriptors;
    descriptorHeapDesc.Flags =
       shaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-   HRESULT hr = device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(descriptorHeap.GetAddressOf()));
-   assert(SUCCEEDED(hr));
+   CheckGraphicsResult(device->CreateDescriptorHeap(&descriptorHeapDesc, IID_PPV_ARGS(descriptorHeap.GetAddressOf())),
+      "ID3D12Device::CreateDescriptorHeap", device);
    return descriptorHeap;
 }
 
@@ -582,8 +573,8 @@ void GraphicsDevice::ResizeSwapChainResources(uint32_t width, uint32_t height) {
 
    depthBuffer_.Reset();
 
-   HRESULT hr = swapChain_->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0);
-   assert(SUCCEEDED(hr));
+   CheckGraphicsResult(swapChain_->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0),
+      "IDXGISwapChain::ResizeBuffers", device_.Get());
 
    backBufferWidth_ = static_cast<int32_t>(width);
    backBufferHeight_ = static_cast<int32_t>(height);

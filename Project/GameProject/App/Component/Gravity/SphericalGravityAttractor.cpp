@@ -81,14 +81,14 @@ nlohmann::json SphericalGravityAttractor::GetSharedParameters() const {
 }
 
 void SphericalGravityAttractor::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
+   ReadParameters(data);
 }
 
 void SphericalGravityAttractor::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
+   ReadParameters(data);
 }
 
-void SphericalGravityAttractor::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
+void SphericalGravityAttractor::ReadParameters(const nlohmann::json& data) {
    if (data.contains("influenceRadius")) {
       influenceRadius = data["influenceRadius"];
    }

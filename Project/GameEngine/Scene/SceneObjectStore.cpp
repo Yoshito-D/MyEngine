@@ -5,6 +5,7 @@
 
 #include "GameEngine/Object/Component/Rendering/MaterialComponent.h"
 #include "GameEngine/Object/Component/Effects/ParticleEmitterComponent.h"
+#include "GameEngine/Object/Component/Rendering/LightComponent.h"
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Effects/Particles/ParticleSystem.h"
 #include "GameEngine/Framework/EngineContext.h"
@@ -13,11 +14,15 @@
 #include "GameEngine/Object/Sprite/Sprite.h"
 #include "GameEngine/Object/Text/UIText.h"
 #include <algorithm>
+#include <charconv>
 #include <filesystem>
+#include <limits>
 
 namespace GameEngine {
 
 namespace {
+constexpr std::string_view kGeneratedObjectIdPrefix = "editor_object_";
+
 std::string BuildNameFromAssetId(const std::string& assetId) {
    if (assetId.empty()) {
       return "EditorModel";
@@ -75,10 +80,31 @@ Object* SceneObjectStore::AdoptObject(std::unique_ptr<Object> object, const std:
       return nullptr;
    }
 
+   std::string id = AllocateId(requestedId);
+
+   if (id.empty()) {
+      return nullptr;
+   }
+
    Object* rawObject = object.get();
-   const std::string id = AllocateId(requestedId);
-   RegisterObject(id, rawObject);
-   objects_.push_back(std::move(object));
+   const auto [entry, inserted] = idToObject_.try_emplace(id, rawObject);
+
+   if (!inserted) {
+      Logger::Fail("Duplicate entity ID in scene: " + id);
+   }
+
+   try {
+      registeredObjects_.insert(rawObject);
+      objects_.push_back(std::move(object));
+   } catch (...) {
+      // 所有一覧への追加が完了しなければ、非所有索引から参照を取り除く。
+      registeredObjects_.erase(rawObject);
+      idToObject_.erase(entry);
+      throw;
+   }
+
+   rawObject->entityId_ = std::move(id);
+   rawObject->world_ = &world_;
    return rawObject;
 }
 
@@ -199,6 +225,12 @@ Object* SceneObjectStore::CreateSkybox(const std::string& requestedId) {
 
 ParticleSystem* SceneObjectStore::CreateParticleSystem(
    const std::string& assetId, const std::string& requestedId, const Transform* initialTransform) {
+   const std::string id = AllocateId(requestedId);
+
+   if (id.empty()) {
+      return nullptr;
+   }
+
    auto particleSystem = std::make_unique<ParticleSystem>();
    ParticleSystem* rawParticleSystem = particleSystem.get();
    rawParticleSystem->Create();
@@ -218,10 +250,19 @@ ParticleSystem* SceneObjectStore::CreateParticleSystem(
 
    rawParticleSystem->Play();
 
-   const std::string id = AllocateId(requestedId);
-   rawParticleSystem->SetWorld(&world_);
-   RegisterParticleSystem(id, rawParticleSystem, assetId);
    particleSystems_.push_back(std::move(particleSystem));
+
+   try {
+      RegisterParticleSystem(id, rawParticleSystem, assetId);
+      rawParticleSystem->SetWorld(&world_);
+   } catch (...) {
+      // 描画一覧に追加できなかった場合も、途中まで作成されたIDと実体を取り除く。
+      UnregisterParticleSystem(rawParticleSystem);
+      idToParticleSystem_.erase(id);
+      particleSystems_.pop_back();
+      throw;
+   }
+
    return rawParticleSystem;
 }
 
@@ -301,13 +342,31 @@ bool SceneObjectStore::DeleteObject(const std::string& objectId) {
       return false;
    }
 
-   UnregisterObject(target);
-   UnregisterOwnedRuntimeSystems(target);
-
-   // 型固有の描画登録は実体が存続している間に解除し、GPU参照の完了後まで破棄を遅らせる。
-   target->OnRemovedFromScene();
+   // 実体は描画完了まで保持するが、検索の終了と親子の解除は削除要求の時点で行う。
    deferredDeleteObjects_.push_back(std::move(*it));
    objects_.erase(it);
+   idToObject_.erase(target->GetEntityId());
+   registeredObjects_.erase(target);
+
+   for (const auto& child : objects_) {
+      if (child->GetParentEntityId() == target->GetEntityId()) {
+         child->SetParentEntityId({});
+      }
+   }
+
+   target->parentEntityId_.clear();
+   target->world_ = nullptr;
+
+   // 削除待ちの実体に付いた描画登録を解除し、同じIDを持つ復元先へ影響させない。
+   if (auto* emitter = target->GetComponent<ParticleEmitterComponent>()) {
+      emitter->UnregisterParticleSystemsForRender();
+   }
+
+   if (auto* light = target->GetComponent<LightComponent>()) {
+      light->SetEnabled(false);
+   }
+
+   target->OnRemovedFromScene();
    return true;
 }
 
@@ -326,18 +385,17 @@ bool SceneObjectStore::DeleteParticleSystem(const std::string& objectId) {
       return false;
    }
 
-   // Store内の検索表とWorldの更新・描画一覧を先に外し、実体はフレーム境界まで保持する。
-   UnregisterParticleSystem(target);
-   target->SetWorld(nullptr);
+   // 遅延削除の領域を確保してから、検索表とWorldの更新・描画一覧を外す。
    deferredDeleteParticleSystems_.push_back(std::move(*vecIt));
    particleSystems_.erase(vecIt);
+   UnregisterParticleSystem(target);
+   target->SetWorld(nullptr);
    return true;
 }
 
 void SceneObjectStore::FlushDeferredDeletes() {
    deferredDeleteObjects_.clear();
    deferredDeleteParticleSystems_.clear();
-   pendingDeletionObjects_.clear();
 }
 
 void SceneObjectStore::Clear() {
@@ -351,7 +409,7 @@ void SceneObjectStore::Clear() {
 }
 
 bool SceneObjectStore::Contains(const Object* object) const {
-   return object && objectToId_.contains(object);
+   return registeredObjects_.contains(object);
 }
 
 bool SceneObjectStore::Contains(const ParticleSystem* particleSystem) const {
@@ -359,19 +417,11 @@ bool SceneObjectStore::Contains(const ParticleSystem* particleSystem) const {
 }
 
 bool SceneObjectStore::ContainsId(const std::string& objectId) const {
-   // 描画用の補助オブジェクトも同じID索引を使用するため、Store外の実体との衝突も拒否する。
-   return idToObject_.contains(objectId) || idToParticleSystem_.contains(objectId) ||
-          Object::FindByEntityId(objectId) != nullptr;
+   return idToObject_.contains(objectId) || idToParticleSystem_.contains(objectId);
 }
 
 std::string SceneObjectStore::GetId(const Object* object) const {
-   auto it = objectToId_.find(object);
-
-   if (it == objectToId_.end()) {
-      return {};
-   }
-
-   return it->second;
+   return Contains(object) ? object->GetEntityId() : std::string{};
 }
 
 std::string SceneObjectStore::GetId(const ParticleSystem* particleSystem) const {
@@ -466,7 +516,7 @@ nlohmann::json SceneObjectStore::SerializeObjectState(const Object* object, cons
 }
 
 bool SceneObjectStore::ApplyObjectState(Object* object, const nlohmann::json& objectData) const {
-   if (!object || !objectData.is_object()) {
+   if (!Contains(object) || !objectData.is_object()) {
       return false;
    }
 
@@ -569,19 +619,27 @@ std::vector<const Object*> SceneObjectStore::GetObjects() const {
 }
 
 std::string SceneObjectStore::AllocateId(const std::string& requestedId) {
-   if (!requestedId.empty() && !ContainsId(requestedId) && !Object::FindByEntityId(requestedId)) {
-      // 復元IDの番号を採用した後に自動採番が衝突しないようカウンターも追従させる。
+   if (!requestedId.empty()) {
+      if (ContainsId(requestedId)) {
+         Logger::Error("Entity ID already in use in this scene: " + requestedId);
+         return {};
+      }
+
+      // 復元した番号までカウンターを進め、以後の生成で削除済みの自動IDを使い回さない。
       BumpCounterFromId(requestedId);
       return requestedId;
    }
 
-   while (true) {
-      const std::string id = "editor_object_" + std::to_string(nextObjectIndex_++);
+   while (nextObjectIndex_ != 0) {
+      const auto index = nextObjectIndex_++;
+      const std::string id = std::string(kGeneratedObjectIdPrefix) + std::to_string(index);
 
-      if (!ContainsId(id) && !Object::FindByEntityId(id)) {
+      if (!ContainsId(id)) {
          return id;
       }
    }
+
+   Logger::Fail("Could not allocate a new entity ID in this scene");
 }
 
 std::string SceneObjectStore::BuildUniqueObjectName(const std::string& baseName) const {
@@ -619,18 +677,6 @@ std::string SceneObjectStore::BuildUniqueObjectName(const std::string& baseName)
    }
 }
 
-void SceneObjectStore::RegisterObject(const std::string& id, Object* object) {
-   if (!object || id.empty()) return;
-
-   // ID検索とポインター検索の双方向表を同時に更新し、Undoコマンドのどちらの参照経路も一致させる。
-   if (!object->SetEntityId(id)) {
-      throw std::runtime_error("Duplicate entity ID: " + id);
-   }
-   object->SetWorld(&world_);
-   idToObject_[id] = object;
-   objectToId_[object] = id;
-}
-
 void SceneObjectStore::RegisterParticleSystem(
    const std::string& id, ParticleSystem* particleSystem, const std::string& assetId) {
    if (!particleSystem || id.empty()) return;
@@ -639,34 +685,6 @@ void SceneObjectStore::RegisterParticleSystem(
    idToParticleSystem_[id] = particleSystem;
    particleSystemToId_[particleSystem] = id;
    particleSystemAssetIds_[particleSystem] = assetId;
-}
-
-void SceneObjectStore::UnregisterObject(Object* object) {
-   if (!object) return;
-
-   auto objectIt = objectToId_.find(object);
-
-   if (objectIt != objectToId_.end()) {
-      const std::string oldId = objectIt->second;
-      idToObject_.erase(oldId);
-      objectToId_.erase(objectIt);
-
-      // 実体は描画フレーム末まで残すが、Undoは同じ安定IDを即座に復元できる必要がある。
-      // 子は先にルートへ戻し、一時IDの伝播や旧実体の破棄による再解除を防ぐ。
-      for (auto* child : Object::GetRegisteredObjects()) {
-         if (child && child != object && child->GetParentEntityId() == oldId) {
-            child->SetParentEntityId({});
-         }
-      }
-
-      std::string retiredId;
-
-      do {
-         retiredId = "pending_delete_" + oldId + "_" + std::to_string(nextObjectIndex_++);
-      } while (Object::FindByEntityId(retiredId));
-
-      object->SetEntityId(retiredId);
-   }
 }
 
 void SceneObjectStore::UnregisterParticleSystem(ParticleSystem* particleSystem) {
@@ -682,32 +700,19 @@ void SceneObjectStore::UnregisterParticleSystem(ParticleSystem* particleSystem) 
    particleSystemAssetIds_.erase(particleSystem);
 }
 
-void SceneObjectStore::UnregisterOwnedRuntimeSystems(Object* object) {
-   if (!object) return;
-
-   pendingDeletionObjects_.insert(object);
-
-   // 親Objectより長くWorldの描画一覧へ残らないよう、Emitterが所有する実行時システムも先に解除する。
-   if (auto* emitter = object->GetComponent<ParticleEmitterComponent>()) {
-      emitter->UnregisterParticleSystemsForRender();
-   }
-}
-
 void SceneObjectStore::BumpCounterFromId(const std::string& id) {
-   constexpr const char* kPrefix = "editor_object_";
-   const std::string prefix = kPrefix;
+   const std::string_view view(id);
 
-   if (id.rfind(prefix, 0) != 0) return;
+   if (!view.starts_with(kGeneratedObjectIdPrefix)) return;
 
-   const std::string numberText = id.substr(prefix.size());
+   const auto suffix = view.substr(kGeneratedObjectIdPrefix.size());
+   uint64_t number = 0;
+   const auto [end, error] = std::from_chars(suffix.data(), suffix.data() + suffix.size(), number);
 
-   if (numberText.empty()) return;
-
-   try {
-      const uint64_t number = std::stoull(numberText);
+   // 接頭辞が同じでも通し番号と解釈できないIDは、次の自動採番には影響させない。
+   if (nextObjectIndex_ != 0 && error == std::errc{} && end == suffix.data() + suffix.size() &&
+       number < std::numeric_limits<uint64_t>::max()) {
       nextObjectIndex_ = std::max(nextObjectIndex_, number + 1);
-   } catch (...) {
-      // 接頭辞が同じでも数値でない外部IDは有効な識別子として残し、自動採番だけを変更しない。
    }
 }
 

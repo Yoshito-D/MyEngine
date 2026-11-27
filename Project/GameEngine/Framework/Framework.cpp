@@ -206,10 +206,7 @@ void Framework::Finalize() {
       audio_.reset();
    }
 
-   if (window_) {
-      window_->DestroyGameWindow();
-      window_.reset();
-   }
+   window_.reset();
 }
 
 void Framework::Run() {
@@ -218,37 +215,44 @@ void Framework::Run() {
 
    const auto startupStart = std::chrono::steady_clock::now();
    bool firstPresent = true;
-   // 初期化
+
    try {
       Initialize();
-   } catch (const std::exception&) {
-      Finalize();
+
+      while (!window_->ProcessMessage()) {
+         BeginFrame();
+         Update();
+         Draw();
+         EndFrame();
+
+         if (firstPresent) {
+            const double milliseconds =
+               std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - startupStart).count();
+            Logger::Info(std::format("Startup first Present: {:.3f} ms; {} textures loaded", milliseconds,
+               assetManager_->GetTextureManager()->GetLoadedTextureCount()));
+            firstPresent = false;
+         }
+      }
+   } catch (...) {
+      // Presentなどで中断した場合も、送信済みコマンドが参照するシーンと描画資源を先に解放しない。
+      if (device_) {
+         try {
+            device_->WaitForIdle();
+         } catch (const std::exception& error) {
+            Logger::Error(std::string("Graphics synchronization during shutdown failed: ") + error.what());
+         }
+      }
+
+      try {
+         Finalize();
+      } catch (const std::exception& error) {
+         // 起動やフレームを中断した元の例外を、終了処理の失敗で上書きしない。
+         Logger::Error(std::string("Application shutdown failed: ") + error.what());
+      }
+
       throw;
    }
 
-   // メインループ
-   while (window_->ProcessMessage() == 0) {
-      // フレーム開始処理
-      BeginFrame();
-
-      // 更新処理
-      Update();
-
-      // 描画処理
-      Draw();
-
-      // フレーム終了処理
-      EndFrame();
-      if (firstPresent) {
-         const double milliseconds =
-            std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - startupStart).count();
-         Logger::Info(std::format("Startup first Present: {:.3f} ms; {} textures loaded", milliseconds,
-            assetManager_->GetTextureManager()->GetLoadedTextureCount()));
-         firstPresent = false;
-      }
-   }
-
-   // 終了処理
    Finalize();
 }
 }

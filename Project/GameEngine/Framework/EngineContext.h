@@ -133,41 +133,21 @@ public:
    static bool IsKeyReleased(KeyCode key);
 
    /// @brief マウスのボタンが押されているか
-   /// @param button マウスボタン（0:左, 1:右, 2:中ボタン）
-   /// @return マウスボタンが押されている場合はtrue
-   static bool IsMousePressed(uint8_t button);
-
-   /// @brief マウスのボタンが押されているか（enum版）
    /// @param button マウスボタン
    /// @return マウスボタンが押されている場合はtrue
    static bool IsMousePressed(MouseButton button);
 
    /// @brief マウスのボタンが押されていないか
-   /// @param button マウスボタン（0:左, 1:右, 2:中ボタン）
-   /// @return マウスボタンが押されていない場合はtrue
-   static bool IsMouseNotPressed(uint8_t button);
-
-   /// @brief マウスのボタンが押されていないか（enum版）
    /// @param button マウスボタン
    /// @return マウスボタンが押されていない場合はtrue
    static bool IsMouseNotPressed(MouseButton button);
 
    /// @brief マウスのボタンがリリース(離された瞬間)されたか
-   /// @param button マウスボタン（0:左, 1:右, 2:中ボタン）
-   /// @return マウスボタンがリリースされた場合はtrue
-   static bool IsMouseReleased(uint8_t button);
-
-   /// @brief マウスのボタンがリリース(離された瞬間)されたか（enum版）
    /// @param button マウスボタン
    /// @return マウスボタンがリリースされた場合はtrue
    static bool IsMouseReleased(MouseButton button);
 
    /// @brief マウスのボタンがトリガー(押された瞬間)されたか
-   /// @param button マウスボタン（0:左, 1:右, 2:中ボタン）
-   /// @return マウスボタンがトリガーされた場合はtrue
-   static bool IsMouseTriggered(uint8_t button);
-
-   /// @brief マウスのボタンがトリガー(押された瞬間)されたか（enum版）
    /// @param button マウスボタン
    /// @return マウスボタンがトリガーされた場合はtrue
    static bool IsMouseTriggered(MouseButton button);

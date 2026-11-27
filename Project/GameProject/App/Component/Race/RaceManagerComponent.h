@@ -100,6 +100,9 @@ public:
    /// @return 最大3件の秒単位タイム
    const std::vector<float>& GetBestTimes() const { return records_.GetBestTimes(); }
 
+   /// @brief 今回の走行タイムを記録に反映できなかった場合はtrueを返す。
+   bool HasRecordUpdateFailed() const { return recordUpdateFailed_; }
+
    /// @brief カウントダウン残り時間を取得する
    /// @return 秒単位の残り時間
    float GetCountdownRemaining() const { return countdownRemaining_; }
@@ -134,7 +137,7 @@ public:
 #endif
 
 private:
-   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+   void ReadParameters(const nlohmann::json& data);
 
    void ConfigureStates();
    void EnterCountdown();
@@ -154,6 +157,7 @@ private:
    StartMode startMode_ = StartMode::Countdown;    ///< 即時・カウントダウン・ゲート通過の開始方式。
    float elapsedTime_ = 0.0f;                      ///< 現在の計測時間（秒）。
    RaceRecordStore records_;                       ///< レース記録の所有者。
+   bool recordUpdateFailed_ = false;               ///< 今回のタイムの記録更新が失敗したか。
    float countdownSeconds_ = 3.0f;                 ///< 開始前カウントダウンの時間（秒）。
    float countdownRemaining_ = 3.0f;               ///< カウントダウン残り時間（秒）。
    bool useCountdownCameraPose_ = false;           ///< カウントダウン専用の保存姿勢を使用するか。
@@ -179,7 +183,7 @@ private:
    std::string nextScene_;                              ///< 進行完了後に読み込む登録シーン名。
    float finishDelay_ = 0.0f;                           ///< ゴールから次シーンへ遷移するまでの待機時間（秒）。
    float finishElapsed_ = 0.0f;                         ///< ゴール後の遷移待機で経過した時間（秒）。
-   bool autoSceneChangeAttempted_ = false;              ///< 自動遷移先への予約を試みたかどうか。
+   bool autoSceneChangeRequested_ = false;              ///< 自動遷移の予約が受理されたか。
    bool restartRequested_ = false;                      ///< リトライのシーン切り替えを要求済みかどうか。
    bool runtimeInitialized_ = false;                    ///< 最初の実行時更新に必要な初期化が完了したかどうか。
    bool restartAfterUpdate_ = false;                    ///< 状態更新中に要求された再開始をコールバック終了後に行うか。

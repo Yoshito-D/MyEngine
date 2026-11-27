@@ -3,6 +3,7 @@
 #include "GameEngine/UI/UIComponents.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Scene/SceneWorld.h"
+#include "GameEngine/Utility/JsonFile.h"
 #include <filesystem>
 #include <fstream>
 #include <unordered_set>
@@ -187,31 +188,9 @@ bool UIScreenAssetSerializer::Save(const SceneWorld& world, const std::string& r
       }
 
       const auto path = ScreenPath(assetId);
-      std::filesystem::create_directories(path.parent_path());
-      auto temporary = path;
-      temporary += ".tmp";
-      {
-         std::ofstream output(temporary, std::ios::binary);
-
-         for (const char value : asset.dump(3)) {
-            if (value == '\n') {
-               output.put('\r');
-            }
-
-            output.put(value);
-         }
-
-         output << "\r\n";
-         output.flush();
-
-         if (!output) {
-            throw std::runtime_error("Failed to write UI screen");
-         }
-      }
-
-      if (!MoveFileExW(temporary.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
-         std::filesystem::remove(temporary);
-         throw std::runtime_error("Failed to replace UI screen file");
+      if (!SaveJsonFileAtomically(path, asset)) {
+         error = "Could not save UI screen: " + path.generic_string();
+         return false;
       }
 
       error.clear();

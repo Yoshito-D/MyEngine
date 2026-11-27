@@ -47,13 +47,18 @@ GameEngine::Quaternion AlignUpToNormal(const GameEngine::Vector3& normal) {
 }
 
 void VehicleEffectController::OnSceneLoaded(GameEngine::SceneWorld&) {
+   OnEnable();
+
+   if (HasOwner()) {
+      UpdateFlightSmoke(GetOwner().GetComponent<GameEngine::ParticleEmitterComponent>(), false);
+   }
+}
+
+void VehicleEffectController::OnEnable() {
    const auto* events = HasOwner() ? GetOwner().GetComponent<VehicleEvents>() : nullptr;
    eventCursor_.Reset(events ? events->GetSnapshot() : VehicleEventSnapshot{});
    wasDriftDustActive_ = false;
    wasDriveEffectsActive_ = false;
-   if (HasOwner()) {
-      UpdateFlightSmoke(GetOwner().GetComponent<GameEngine::ParticleEmitterComponent>(), false);
-   }
 }
 
 void VehicleEffectController::OnDisable() {
@@ -66,8 +71,20 @@ void VehicleEffectController::OnDisable() {
    if (!emitter) return;
 
    for (const auto& binding : bindings_) {
-      if (binding.role == VehicleEffectRole::LandingFailure) {
-         emitter->Stop(binding.slot);
+      switch (binding.role) {
+         case VehicleEffectRole::DriveDust:
+         case VehicleEffectRole::DriveDebris:
+         case VehicleEffectRole::DriftDust:
+         case VehicleEffectRole::TurboReady:
+            emitter->EnableEmission(binding.slot, false);
+            break;
+         case VehicleEffectRole::TurboFlame:
+         case VehicleEffectRole::LandingFailure:
+            emitter->EnableEmission(binding.slot, false);
+            emitter->Stop(binding.slot);
+            break;
+         default:
+            break;
       }
    }
 }
@@ -321,50 +338,51 @@ nlohmann::json VehicleEffectController::Serialize() const {
 }
 
 void VehicleEffectController::Deserialize(const nlohmann::json& data) {
-   useFlightTrail_ = GameEngine::JsonValue::ReadBool(data, "useFlightTrail", false);
    ApplySharedParameters(data);
 }
 
 void VehicleEffectController::ApplySharedParameters(const nlohmann::json& data) {
-   if (!data.is_object() || !data.contains("bindings")) return;
-
-   const auto& bindings = data.at("bindings");
-   std::vector<VehicleEffectBinding> parsed;
-   const auto fail = []() {
-      Logger::Warning(
-         "Vehicle effect bindings require known roles and non-negative slot indices.", Logger::LogChannel::Game);
-   };
-
-   if (!bindings.is_array()) {
-      fail();
-      return;
+   if (!data.is_object()) {
+      Logger::Fail("VehicleEffectController settings must be a JSON object", Logger::LogChannel::Game);
    }
 
-   for (const auto& entry : bindings) {
-      if (!entry.is_object() || !entry.contains("role") || !entry.at("role").is_string() || !entry.contains("slot") ||
-          !entry.at("slot").is_number_integer()) {
-         fail();
-         return;
+   const bool useFlightTrail = GameEngine::JsonValue::ReadBool(data, "useFlightTrail", useFlightTrail_);
+
+   if (const auto entries = data.find("bindings"); entries != data.end()) {
+      if (!entries->is_array()) {
+         Logger::Fail("VehicleEffectController.bindings must be an array", Logger::LogChannel::Game);
       }
 
-      const auto roleName = entry.at("role").get<std::string>();
-      const auto role = std::find(kRoleNames.begin(), kRoleNames.end(), roleName);
-      const auto slot = entry.at("slot").get<std::int64_t>();
+      std::vector<VehicleEffectBinding> parsed;
+      parsed.reserve(entries->size());
 
-      if (role == kRoleNames.end() || slot < 0 || slot > std::numeric_limits<std::int32_t>::max()) {
-         fail();
-         return;
+      for (const auto& entry : *entries) {
+         if (!entry.is_object() || !entry.contains("role") || !entry.at("role").is_string() ||
+             !entry.contains("slot") || !entry.at("slot").is_number_integer()) {
+            Logger::Fail("VehicleEffectController.bindings: expected a role and integer slot", Logger::LogChannel::Game);
+         }
+
+         const auto roleName = entry.at("role").get<std::string>();
+         const auto role = std::find(kRoleNames.begin(), kRoleNames.end(), roleName);
+         const auto& slot = entry.at("slot");
+
+         if (role == kRoleNames.end() || (!slot.is_number_unsigned() && slot.get<std::int64_t>() < 0) ||
+             slot.get<std::uint64_t>() > std::numeric_limits<std::int32_t>::max()) {
+            Logger::Fail("Invalid VehicleEffectController.bindings entry: " + entry.dump(), Logger::LogChannel::Game);
+         }
+
+         const VehicleEffectBinding binding{
+            static_cast<VehicleEffectRole>(std::distance(kRoleNames.begin(), role)), slot.get<std::int32_t>()};
+
+         if (std::find(parsed.begin(), parsed.end(), binding) == parsed.end()) {
+            parsed.push_back(binding);
+         }
       }
 
-      const VehicleEffectBinding binding{
-         static_cast<VehicleEffectRole>(std::distance(kRoleNames.begin(), role)), static_cast<std::int32_t>(slot)};
-
-      if (std::find(parsed.begin(), parsed.end(), binding) == parsed.end()) {
-         parsed.push_back(binding);
-      }
+      bindings_ = std::move(parsed);
    }
 
-   bindings_ = std::move(parsed);
+   useFlightTrail_ = useFlightTrail;
 }
 
 #ifdef USE_IMGUI

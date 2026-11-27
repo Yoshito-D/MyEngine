@@ -15,6 +15,7 @@
 #include "GameEngine/Math/Functions/QuaternionOperations.h"
 #include "GameEngine/Math/Functions/VectorOperations.h"
 #include <algorithm>
+#include <format>
 
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
@@ -110,17 +111,15 @@ void LightComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]]
 }
 
 void LightComponent::SynchronizeRuntimeLight() {
-   if (!HasOwner() || !IsEnabled()) return;
+   if (!HasOwner() || !GetOwner().GetWorld() || !IsEnabled()) return;
 
-   // Entity IDをManager上の一意キーとして使い、Componentと描画用ライトを一対一に対応させる。
-   const std::string runtimeKey = ResolveRuntimeKey();
-
-   if (runtimeKey.empty()) return;
-
-   // Entity IDの変更またはライト型変更があれば、旧キー/旧型の登録を先に削除する。
-   if (!runtimeLightKey_.empty() && (runtimeLightKey_ != runtimeKey || registeredType_ != type_)) {
-      ReleaseRuntimeLight();
+   // 描画用ライトは共有Managerが保持するため、同じEntity IDを持つ部品同士も別の実体として扱う。
+   if (runtimeLightKey_.empty()) {
+      runtimeLightKey_ = std::format("component_light:{:p}", static_cast<const void*>(this));
+      registeredType_ = type_;
    }
+
+   const auto& runtimeKey = runtimeLightKey_;
 
    // 親子Transformを含むWorld行列から位置とローカル基底を取り出す。
    // 方向ベクトルには平行移動を適用せず、スケールの影響をNormalizeで除去する。
@@ -130,10 +129,6 @@ void LightComponent::SynchronizeRuntimeLight() {
    const Vector3 right = TransformNormal(Vector3(1.0f, 0.0f, 0.0f), worldMatrix).Normalize();
 
    // 以降は種類別Managerに「なければ作成、あれば更新」する。
-   // キーと登録型を先に記録し、Disable/Detach時に正しいコンテナから削除できるようにする。
-   runtimeLightKey_ = runtimeKey;
-   registeredType_ = type_;
-
    switch (type_) {
       case Type::Directional: {
          auto* light = EngineContext::GetDirectionalLight(runtimeKey);
@@ -242,10 +237,6 @@ void LightComponent::ReleaseRuntimeLight() {
    }
 
    runtimeLightKey_.clear();
-}
-
-std::string LightComponent::ResolveRuntimeKey() const {
-   return HasOwner() ? GetOwner().GetEntityId() : std::string();
 }
 
 const char* LightComponent::TypeToString(Type type) {

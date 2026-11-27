@@ -22,9 +22,6 @@ public:
    /// @brief 入力取得と各サブコンポーネントへの委譲を行う
    void Update(float deltaTime) override;
 
-   /// @brief 直近の移動方向を取得する
-   GameEngine::Vector3 GetLastMoveDirection() const;
-
 #ifdef USE_IMGUI
 
    /// @brief デバッグ表示（Inspector）

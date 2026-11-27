@@ -150,14 +150,14 @@ nlohmann::json CharacterWalker::GetSharedParameters() const {
 }
 
 void CharacterWalker::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
+   ReadParameters(data);
 }
 
 void CharacterWalker::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
+   ReadParameters(data);
 }
 
-void CharacterWalker::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
+void CharacterWalker::ReadParameters(const nlohmann::json& data) {
    if (data.contains("moveSpeed")) {
       moveSpeed = data["moveSpeed"];
    }

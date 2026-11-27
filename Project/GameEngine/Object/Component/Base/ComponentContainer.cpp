@@ -72,6 +72,19 @@ void ComponentContainer::SynchronizeParameters() {
 }
 
 void ComponentContainer::Update(float deltaTime, ObjectUpdateDomain domain) {
+   if (updating_) return;
+
+   updating_ = true;
+   struct UpdateScope {
+      bool& updating;
+      std::vector<std::unique_ptr<IObjectComponent>>& detached;
+
+      ~UpdateScope() {
+         detached.clear();
+         updating = false;
+      }
+   } scope{updating_, detachedDuringUpdate_};
+
    // 保存・Inspectorの並びは変更せず、依存関係に沿った非所有ビューだけを整列する。
    std::vector<IObjectComponent*> updates;
    updates.reserve(components_.size());
@@ -84,13 +97,25 @@ void ComponentContainer::Update(float deltaTime, ObjectUpdateDomain domain) {
       [](const auto* left, const auto* right) { return left->GetUpdatePhase() < right->GetUpdatePhase(); });
    // 無効Componentは状態を保持したまま更新だけ停止し、再有効化時に同じインスタンスを再利用する。
    for (auto* component : updates) {
-      if (component->IsEnabled() && component->GetUpdateDomain() == domain) {
+      // 同じ型が再追加されても、更新開始時の実体が取り外されていれば実行しない。
+      const auto entry = typeIndex_.find(std::type_index(typeid(*component)));
+
+      if (entry != typeIndex_.end() && entry->second == component && component->IsEnabled() &&
+          component->GetUpdateDomain() == domain) {
          component->Update(deltaTime);
       }
    }
 }
 
 void ComponentContainer::Clear() {
+   if (updating_) {
+      while (!components_.empty()) {
+         RemoveByTypeIndex(std::type_index(typeid(*components_.front())));
+      }
+
+      return;
+   }
+
    // unique_ptrの破棄前にDetachを呼び、RendererやLightManagerが保持する非所有ポインターを解除させる。
    for (auto& component : components_) {
       if (component) {
@@ -388,21 +413,28 @@ bool ComponentContainer::RemoveByTypeIndex(const std::type_index& type) {
       return false;
    }
 
-   // O(1)索引から対象アドレスを確定し、索引を先に消してDetach中の再問い合わせへ削除状態を見せる。
    IObjectComponent* target = mapIt->second;
-   typeIndex_.erase(mapIt);
-
    auto vecIt = std::find_if(components_.begin(), components_.end(),
       [target](const std::unique_ptr<IObjectComponent>& component) { return component.get() == target; });
 
-   if (vecIt != components_.end()) {
-      // 所有権を解放する前にDetachし、Component固有の外部登録解除を完了させる。
-      (*vecIt)->Detach();
-      components_.erase(vecIt);
-      return true;
+   if (vecIt == components_.end()) {
+      return false;
    }
 
-   return false;
+   std::unique_ptr<IObjectComponent> detached;
+
+   if (updating_) {
+      // 自分自身を取り外す場合も、更新コールバックと更新一覧より長く実体を保持する。
+      detachedDuringUpdate_.push_back(std::move(*vecIt));
+   } else {
+      detached = std::move(*vecIt);
+   }
+
+   // Detachの通知から同じコンテナを参照・変更できるよう、一覧と索引を先に更新する。
+   typeIndex_.erase(mapIt);
+   components_.erase(vecIt);
+   target->Detach();
+   return true;
 }
 
 } // namespace GameEngine

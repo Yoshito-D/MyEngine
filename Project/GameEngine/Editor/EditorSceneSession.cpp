@@ -262,21 +262,14 @@ void EditorSceneSession::SaveDebugCameraState() const {
    if (!debugCamera_) return;
 
    const std::filesystem::path filePath = GetDebugCameraStateFilePath();
-   std::error_code error;
-   std::filesystem::create_directories(filePath.parent_path(), error);
-
-   if (error) return;
-
-   std::ofstream file(filePath);
-
-   if (!file.is_open()) return;
-
    // シーンごとに別ファイルへ保存し、作業中の視点を他シーンへ持ち込まない。
    nlohmann::json root = nlohmann::json::object();
    root["version"] = kDebugCameraStateFormatVersion;
    root["sceneName"] = definition_.name;
    root["debugCamera"] = debugCamera_->Serialize();
-   file << root.dump(kDebugCameraJsonIndentSize);
+   if (!SaveJsonFileAtomically(filePath, root, kDebugCameraJsonIndentSize)) {
+      Logger::Error("Could not save editor camera state: " + filePath.generic_string(), Logger::LogChannel::Editor);
+   }
 }
 
 void EditorSceneSession::DrawGizmoInspectorControls() {

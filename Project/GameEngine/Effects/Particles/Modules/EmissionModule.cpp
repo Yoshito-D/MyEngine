@@ -37,27 +37,35 @@ uint32_t EmissionModule::AdvanceBursts(float time) {
       return 0;
    }
 
-   uint64_t count = 0;
+   constexpr auto kMaxRequestedParticles = std::numeric_limits<uint32_t>::max();
+   uint32_t count = 0;
 
    for (size_t i = 0; i < bursts_.size(); ++i) {
       const auto& burst = bursts_[i];
       auto& cursor = burstStates_[i];
 
-      if (cursor.nextFireTime < 0.0f) {
-         cursor.nextFireTime = burst.time;
+      if (time < burst.time) {
+         continue;
       }
 
-      const bool isInfinite = burst.cycles == 0;
+      // 開始時刻から発火回数を直接求め、時刻が大きく飛んでも過去の周期を一つずつ走査しない。
+      const double elapsed = static_cast<double>(time) - burst.time;
+      double due = burst.interval > 0.0f ? std::floor(elapsed / burst.interval) + 1.0 : 1.0;
 
-      // 既存のfloat加算と発火順を維持し、カーソル更新だけを所有側へ移す。
-      while (time >= cursor.nextFireTime && (isInfinite || cursor.firedCount < burst.cycles)) {
-         count = std::min<uint64_t>(UINT32_MAX, count + burst.count);
-         ++cursor.firedCount;
-         cursor.nextFireTime += burst.interval > 0.0f ? burst.interval : std::numeric_limits<float>::max();
+      if (burst.cycles != 0) {
+         due = std::min(due, static_cast<double>(burst.cycles));
       }
+
+      if (due <= cursor.firedCount) {
+         continue;
+      }
+
+      const double requested = (due - cursor.firedCount) * burst.count;
+      cursor.firedCount = due;
+      count += static_cast<uint32_t>(std::min(requested, static_cast<double>(kMaxRequestedParticles - count)));
    }
 
-   return static_cast<uint32_t>(count);
+   return count;
 }
 
 nlohmann::json EmissionModule::ToJson() const {

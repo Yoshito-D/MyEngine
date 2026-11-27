@@ -10,6 +10,7 @@
 #include "GameEngine/Math/MathUtils.h"
 #include <algorithm>
 #include <cmath>
+#include <format>
 
 #ifdef USE_IMGUI
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
@@ -51,9 +52,8 @@ void RaceCountdownTextComponent::Update(float deltaTime) {
 
    if (raceManager_->GetState() == RaceManagerComponent::State::Countdown) {
       // 切り上げにより残り時間が正の間は0を表示せず、GO表示との境界を明確にする。
-      const std::int32_t count =
-         std::max(1, static_cast<std::int32_t>(std::ceil(raceManager_->GetCountdownRemaining())));
-      nextText = std::to_string(count);
+      const float count = std::max(1.0f, std::ceil(raceManager_->GetCountdownRemaining()));
+      nextText = std::format("{:.0f}", count);
    } else if (raceManager_->IsStartBannerVisible()) {
       nextText = startText_;
    }
@@ -91,14 +91,14 @@ nlohmann::json RaceCountdownTextComponent::GetSharedParameters() const {
 }
 
 void RaceCountdownTextComponent::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
+   ReadParameters(data);
 }
 
 void RaceCountdownTextComponent::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
+   ReadParameters(data);
 }
 
-void RaceCountdownTextComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
+void RaceCountdownTextComponent::ReadParameters(const nlohmann::json& data) {
    if (!data.is_object()) return;
 
    // 各項目を独立して検証し、欠落・型不一致の項目は既定値または現在値を維持する。

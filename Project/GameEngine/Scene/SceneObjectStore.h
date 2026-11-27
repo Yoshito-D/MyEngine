@@ -36,8 +36,8 @@ public:
 
    /// @brief 未登録Objectの所有権を受け取り、所属Worldと安定IDを登録する。
    /// @param object このストアが所有する新しいObject。nullptrなら何も登録しない。
-   /// @param requestedId 希望する安定ID。空または使用中なら新しいIDを割り当てる。
-   /// @return 登録したObjectへの非所有ポインター。objectがnullptrならnullptr。
+   /// @param requestedId このワールドで使う安定ID。空の場合は自動採番する。
+   /// @return 登録したObjectへの非所有ポインター。対象が空、または指定IDが使用中の場合はnullptr。
    Object* AdoptObject(std::unique_ptr<Object> object, const std::string& requestedId = {});
 
    /// @brief 描画機能を持たないGenericオブジェクトを作成する
@@ -144,17 +144,12 @@ public:
    /// @brief 描画が完了した削除待ちの実体を破棄する
    void FlushDeferredDeletes();
 
-   /// @brief Objectが削除待ちで編集対象から外れているかを調べる
-   /// @param object 確認するObject。参照先のメモリは読み取らない
-   /// @return このストアで削除待ちの場合はtrue
-   bool IsPendingDeletion(const Object* object) const { return pendingDeletionObjects_.contains(object); }
-
    /// @brief 全所有物を登録解除して遅延削除へ移し、ID表を空にする
    void Clear();
 
-   /// @brief Objectがこのストアの所有物か調べる
-   /// @param object 確認対象
-   /// @return 所有している場合はtrue
+   /// @brief Objectのポインターを逆参照せず、現在の所属を確認する。
+   /// @param object 確認対象。
+   /// @return 登録中の場合はtrue。削除待ちや別ワールドの実体は対象外。
    bool Contains(const Object* object) const;
 
    /// @brief ParticleSystemがこのストアの所有物か調べる
@@ -253,11 +248,8 @@ public:
 private:
    std::string AllocateId(const std::string& requestedId);
    std::string BuildUniqueObjectName(const std::string& baseName) const;
-   void RegisterObject(const std::string& id, Object* object);
    void RegisterParticleSystem(const std::string& id, ParticleSystem* particleSystem, const std::string& assetId);
-   void UnregisterObject(Object* object);
    void UnregisterParticleSystem(ParticleSystem* particleSystem);
-   void UnregisterOwnedRuntimeSystems(Object* object);
    void BumpCounterFromId(const std::string& id);
 
    /// @brief シーン保存用の型名から、このストアへObjectを登録する生成処理を引くマップ。
@@ -276,16 +268,15 @@ private:
    std::vector<std::unique_ptr<Object>> deferredDeleteObjects_;
    /// @brief フレーム境界まで寿命を保持する削除待ちParticleSystem。
    std::vector<std::unique_ptr<ParticleSystem>> deferredDeleteParticleSystems_;
-   std::unordered_set<const Object*> pendingDeletionObjects_; ///< 更新や検索の対象から外した削除待ちObjectの集合。
+   std::unordered_set<const Object*> registeredObjects_; ///< ポインターを逆参照せず、現在の所属を確認する索引。
    std::unordered_map<std::string, Object*> idToObject_;      ///< 安定Entity IDからObjectを引く非所有索引。
    /// @brief 安定IDからParticleSystemを引く非所有索引。
    std::unordered_map<std::string, ParticleSystem*> idToParticleSystem_;
-   std::unordered_map<const Object*, std::string> objectToId_; ///< Objectのアドレスから安定Entity IDを引く逆索引。
    /// @brief ParticleSystemのアドレスから安定IDを引く逆索引。
    std::unordered_map<const ParticleSystem*, std::string> particleSystemToId_;
    /// @brief 各ParticleSystemの生成元となったアセットID。
    std::unordered_map<const ParticleSystem*, std::string> particleSystemAssetIds_;
-   uint64_t nextObjectIndex_ = 1; ///< 一時IDや自動生成Entity IDに使う次の通し番号。
+   uint64_t nextObjectIndex_ = 1; ///< このワールドで自動生成するEntity IDの次の通し番号。
 };
 
 } // namespace GameEngine

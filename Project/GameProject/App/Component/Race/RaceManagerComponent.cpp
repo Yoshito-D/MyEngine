@@ -9,6 +9,7 @@
 #include "GameEngine/Object/Component/Audio/BgmComponent.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
+#include "GameEngine/Scene/SceneManager.h"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -23,7 +24,16 @@ namespace {
 constexpr std::array<const char*, 4> kCameraBlendEasingNames = {"Linear", "EaseIn", "EaseOut", "EaseInOut"};
 constexpr const char* kIntroInputMap = "UI";
 constexpr const char* kIntroSkipAction = "UI.Confirm";
-constexpr std::uint32_t kIntroInputSlot = 0;
+
+float ReadRaceDuration(const nlohmann::json& data, const char* key, float current) {
+   const float seconds = GameEngine::JsonValue::ReadFloat(data, key, current);
+
+   if (seconds < 0.0f) {
+      Logger::Fail(std::string("Race duration must be non-negative: ") + key, Logger::LogChannel::Game);
+   }
+
+   return seconds;
+}
 }
 
 namespace App {
@@ -114,9 +124,10 @@ void RaceManagerComponent::UpdateIntro(float deltaTime) {
 
    // 車両入力はロック中なので、通知は物理入力の押下とUIの決定アクションから受け取る。
    using GameEngine::EngineContext;
-   const auto& confirm = EngineContext::GetInputActionState(kIntroInputMap, kIntroSkipAction, kIntroInputSlot);
+   const auto playerSlot = presentation_.GetPlayerSlot();
+   const auto& confirm = EngineContext::GetInputActionState(kIntroInputMap, kIntroSkipAction, playerSlot);
    auto* brain = EngineContext::GetActiveBrain();
-   const auto frame = presentation_.UpdateIntro(brain, deltaTime, EngineContext::HasInputTrigger(kIntroInputSlot),
+   const auto frame = presentation_.UpdateIntro(brain, deltaTime, EngineContext::HasInputTrigger(playerSlot),
       confirm.triggered, EngineContext::IsSceneTransitioning());
 
    constexpr std::uint32_t kIntroSkipFontSize = 24; ///< スキップ案内の文字サイズ（基準UIのピクセル）。
@@ -126,7 +137,7 @@ void RaceManagerComponent::UpdateIntro(float deltaTime) {
    style.color.w = frame.skipHintOpacity;
    const auto bindings =
       frame.skipHintOpacity > 0.0f
-         ? EngineContext::DescribeInputActionBindings(kIntroInputMap, kIntroSkipAction, kIntroInputSlot)
+         ? EngineContext::DescribeInputActionBindings(kIntroInputMap, kIntroSkipAction, playerSlot)
          : std::string{};
    const auto caption = GameEngine::FormatInputPrompt(bindings, "スキップ");
    EngineContext::SetCameraTransition(frame.opacity, frame.letterboxProgress, caption, style);
@@ -144,14 +155,21 @@ void RaceManagerComponent::UpdateIntro(float deltaTime) {
 void RaceManagerComponent::UpdateFinished(float deltaTime) {
    // リスタートを選んだ場合は自動遷移より優先し、二重のシーン要求を防ぐ。
    restartRequested_ = restartRequested_ && GameEngine::EngineContext::IsSceneTransitioning();
-   if (!restartRequested_ && !nextScene_.empty() && !autoSceneChangeAttempted_) {
-      finishElapsed_ += deltaTime;
+   if (restartRequested_ || nextScene_.empty() || autoSceneChangeRequested_) return;
 
-      if (finishElapsed_ >= finishDelay_ && !GameEngine::EngineContext::IsSceneTransitioning()) {
-         GameEngine::EngineContext::RequestSceneChange(nextScene_);
-         // 遷移先の設定が不正な場合も、入力による再開は許可しつつ毎フレームの再試行は避ける。
-         autoSceneChangeAttempted_ = true;
-      }
+   finishElapsed_ += deltaTime;
+
+   if (finishElapsed_ < finishDelay_ || GameEngine::EngineContext::IsSceneTransitioning()) return;
+
+   using GameEngine::SceneRequestStatus;
+   const auto request = GameEngine::EngineContext::RequestSceneChange(nextScene_);
+
+   if (request == SceneRequestStatus::Accepted) {
+      autoSceneChangeRequested_ = true;
+   } else if (request != SceneRequestStatus::Busy) {
+      const auto* manager = GameEngine::EngineContext::GetSceneManager();
+      const auto reason = manager ? manager->GetLastRequestError() : "scene manager is unavailable";
+      Logger::Fail("Cannot start the race's nextScene " + nextScene_ + ": " + reason, Logger::LogChannel::Game);
    }
 }
 
@@ -209,8 +227,7 @@ void RaceManagerComponent::NotifyFinish() {
 void RaceManagerComponent::EnterFinished() {
    startBannerRemaining_ = 0.0f;
    finishElapsed_ = 0.0f;
-   records_.AddBestTime(elapsedTime_);
-   records_.SaveBestTimes(recordFile_, recordKey_);
+   recordUpdateFailed_ = elapsedTime_ != 0.0f && !records_.AddBestTime(elapsedTime_, recordFile_, recordKey_);
 
    if (lockPlayerOnFinish_) {
       presentation_.SetPlayerLocked(true);
@@ -247,7 +264,8 @@ void RaceManagerComponent::Restart() {
    nextCheckpointIndex_ = 0;
    startGateExited_ = false;
    finishElapsed_ = 0.0f;
-   autoSceneChangeAttempted_ = false;
+   autoSceneChangeRequested_ = false;
+   recordUpdateFailed_ = false;
    restartRequested_ = false;
    restartAfterUpdate_ = false;
    showStartBannerOnEntry_ = startMode_ != StartMode::Immediate;
@@ -307,15 +325,20 @@ nlohmann::json RaceManagerComponent::GetSharedParameters() const {
 }
 
 void RaceManagerComponent::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
+   ReadParameters(data);
 }
 
 void RaceManagerComponent::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
+   ReadParameters(data);
 }
 
-void RaceManagerComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
+void RaceManagerComponent::ReadParameters(const nlohmann::json& data) {
    if (!data.is_object()) return;
+
+   const float countdownSeconds = ReadRaceDuration(data, "countdownSeconds", countdownSeconds_);
+   const float startCameraBlendSeconds = ReadRaceDuration(data, "startCameraBlendSeconds", startCameraBlendSeconds_);
+   const float startTextDuration = ReadRaceDuration(data, "startTextDuration", startTextDuration_);
+   const float finishDelay = ReadRaceDuration(data, "finishDelay", finishDelay_);
 
    if (data.contains("intro")) {
       introSettings_.Deserialize(data.at("intro"));
@@ -333,8 +356,6 @@ void RaceManagerComponent::ReadParameters(const nlohmann::json& data, [[maybe_un
 
    countdownCameraFov_ = std::clamp(
       GameEngine::JsonValue::ReadFloat(data, "countdownCameraFov", countdownCameraFov_), 0.017453292f, 3.12413936f);
-   startCameraBlendSeconds_ =
-      std::max(GameEngine::JsonValue::ReadFloat(data, "startCameraBlendSeconds", startCameraBlendSeconds_), 0.0f);
 
    if (data.contains("startCameraBlendEasing")) {
       const auto name = GameEngine::JsonValue::ReadString(data, "startCameraBlendEasing", "");
@@ -359,14 +380,6 @@ void RaceManagerComponent::ReadParameters(const nlohmann::json& data, [[maybe_un
       } else {
          Logger::Fail("Invalid race start mode: " + startMode, Logger::LogChannel::Game);
       }
-   }
-
-   if (data.contains("countdownSeconds") && data.at("countdownSeconds").is_number()) {
-      countdownSeconds_ = std::max(data.at("countdownSeconds").get<float>(), 0.0f);
-   }
-
-   if (data.contains("startTextDuration") && data.at("startTextDuration").is_number()) {
-      startTextDuration_ = std::max(data.at("startTextDuration").get<float>(), 0.0f);
    }
 
    if (data.contains("checkpointCount") && data.at("checkpointCount").is_number_unsigned()) {
@@ -405,9 +418,10 @@ void RaceManagerComponent::ReadParameters(const nlohmann::json& data, [[maybe_un
       nextScene_ = data.at("nextScene").get<std::string>();
    }
 
-   if (data.contains("finishDelay") && data.at("finishDelay").is_number()) {
-      finishDelay_ = std::max(data.at("finishDelay").get<float>(), 0.0f);
-   }
+   countdownSeconds_ = countdownSeconds;
+   startCameraBlendSeconds_ = startCameraBlendSeconds;
+   startTextDuration_ = startTextDuration;
+   finishDelay_ = finishDelay;
 }
 
 void RaceManagerComponent::EnterCountdown() {

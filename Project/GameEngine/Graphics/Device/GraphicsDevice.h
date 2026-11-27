@@ -4,6 +4,7 @@
 #include <d3d12.h>
 #include <dxgi1_6.h>
 #include <wrl.h>
+#include <wrl/wrappers/corewrappers.h>
 #include <vector>
 #include <memory>
 #include <chrono>
@@ -72,7 +73,11 @@ public:
    /// @brief ループ終了時の処理
    void PostDraw();
 
-   /// @brief 終了処理
+   /// @brief 送信済みの描画コマンドが完了するまで待つ。送信前のコマンドリストは実行しない。
+   /// @details デバイスが失われた場合や、同期処理に失敗した場合は例外を送出する。
+   void WaitForIdle();
+
+   /// @brief デバイスと関連資源を解放する。
    void Finalize();
 
    /// @brief デバイスを取得
@@ -185,6 +190,8 @@ private:
    D3D12_GPU_DESCRIPTOR_HANDLE depthSrvHandleGPU_ = {}; ///< 深度バッファのSRVハンドル（GPU）。
    ComPtr<ID3D12Fence> fence_ = nullptr;                ///< GPU処理の完了をCPU側から確認する所有同期オブジェクト。
    UINT64 fenceValue_ = 0;                              ///< 最後にGPUへ完了通知を要求したフェンス値。
+   Microsoft::WRL::Wrappers::Event fenceEvent_;         ///< フェンスの完了をCPUへ通知する所有イベント。
+   bool commandsInFlight_ = false;                     ///< 送信後に完了をまだ確認していないコマンドがあるか。
    int32_t backBufferWidth_ = 0;                        ///< 表示用バックバッファの横幅（ピクセル）。
    int32_t backBufferHeight_ = 0;                       ///< 表示用バックバッファの高さ（ピクセル）。
    uint32_t descriptorSizeCBVSRVUAV = 0;                ///< CBV/SRV/UAVのデスクリプタサイズ。
@@ -224,8 +231,14 @@ private:
    /// @brief SRVヒープの作成
    void CreateSRVHeap();
 
-   /// @brief フェンスの作成
+   /// @brief フェンスと完了通知イベントを生成する。
    void CreateFence();
+
+   /// @brief 記録済みコマンドを閉じてGPUへ送信する。
+   void SubmitCommandList();
+
+   /// @brief 完了を確認したコマンド資源を次の記録へ再初期化する。
+   void ResetCommandList();
 
    /// @brief 固定FPSの初期化
    void InitializeFixFPS();

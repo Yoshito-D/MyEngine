@@ -12,6 +12,7 @@
 #include "GameEngine/Graphics/Resources/Material.h"
 #include "GameEngine/Framework/EngineContext.h"
 #include "GameEngine/Graphics/Pipeline/PSOManager.h"
+#include "GameEngine/Utility/JsonFile.h"
 #include <numbers>
 #include <random>
 #include <algorithm>
@@ -254,6 +255,10 @@ void ParticleSystem::Update(float deltaTime) {
    // システム単位の時間倍率を全ての寿命・放出・物理へ一貫して適用する。
    deltaTime *= mainModule_->GetTimeScale();
 
+   if (!std::isfinite(deltaTime)) {
+      Logger::Fail("Non-finite particle update time: " + name_);
+   }
+
    if (deltaTime <= 0.0f) return;
 
    gpu_->SetDeltaTime(deltaTime);
@@ -273,18 +278,24 @@ void ParticleSystem::Update(float deltaTime) {
 
    // Emission処理
    if (shouldEmit && emissionModule_->IsEnabled()) {
-      // EmissionModule の rateOverTime を使用（1秒間に放出するパーティクル数）
-      float emissionRate = emissionModule_->GetRateOverTime();
+      const auto emitAvailable = [this](double requested) {
+         // プールに入らない要求を捨て、時間・距離・バーストを合計しても空き枠の数だけ生成する。
+         const auto count = static_cast<size_t>(std::min(requested, static_cast<double>(freeParticleIndices_.size())));
 
-      if (emissionRate > 0.0f) {
-         emissionAccumulator_ += emissionRate * deltaTime;
-
-         // 端数を次フレームへ持ち越し、可変deltaTimeでも長期的な放出レートを一定に保つ。
-         while (emissionAccumulator_ >= 1.0f) {
+         for (size_t index = 0; index < count; ++index) {
             EmitParticle();
-            emissionAccumulator_ -= 1.0f;
          }
-      }
+      };
+      const auto emitByRate = [&emitAvailable](double amount, double& remainder) {
+         double wholeParticles = 0.0;
+         // 端数だけを持ち越し、可変deltaTimeでも長期的な放出レートを一定に保つ。
+         remainder = std::modf(remainder + amount, &wholeParticles);
+         emitAvailable(wholeParticles);
+      };
+
+      // 大きな放出率と経過時間を掛けてもfloatの上限で積算値があふれないようにする。
+      const float emissionRate = emissionModule_->GetRateOverTime();
+      emitByRate(static_cast<double>(emissionRate) * deltaTime, emissionAccumulator_);
 
       // 描画経路に依存せず、エミッターの移動距離に対して一定密度で放出する。
       const Vector3 emitterPosition = shapeModule_->GetTransform().translation;
@@ -293,12 +304,16 @@ void ParticleSystem::Update(float deltaTime) {
          const float rateOverDistance = emissionModule_->GetRateOverDistance();
 
          if (rateOverDistance > 0.0f) {
-            emissionDistanceAccumulator_ += (emitterPosition - previousEmitterPosition_).Length() * rateOverDistance;
+            const double distance = std::hypot(
+               static_cast<double>(emitterPosition.x) - previousEmitterPosition_.x,
+               static_cast<double>(emitterPosition.y) - previousEmitterPosition_.y,
+               static_cast<double>(emitterPosition.z) - previousEmitterPosition_.z);
 
-            while (emissionDistanceAccumulator_ >= 1.0f) {
-               EmitParticle();
-               emissionDistanceAccumulator_ -= 1.0f;
+            if (!std::isfinite(distance)) {
+               Logger::Fail("Non-finite particle emitter movement: " + name_);
             }
+
+            emitByRate(distance * rateOverDistance, emissionDistanceAccumulator_);
          }
       }
 
@@ -306,11 +321,7 @@ void ParticleSystem::Update(float deltaTime) {
       hasPreviousEmitterPosition_ = true;
 
       // 放出スケジュールの実行状態はEmissionModuleが進める。生成はプール容量内に制限する。
-      const uint32_t burstCount = std::min(emissionModule_->AdvanceBursts(systemTime_), kMaxParticles);
-
-      for (uint32_t i = 0; i < burstCount; ++i) {
-         EmitParticle();
-      }
+      emitAvailable(emissionModule_->AdvanceBursts(systemTime_));
    }
 
    // パーティクル更新
@@ -1128,18 +1139,18 @@ void ParticleSystem::EmitParticle() {
 
 bool ParticleSystem::SaveToJson(const std::string& filePath) const {
    try {
-      nlohmann::json j = ToJson();
-      std::ofstream ofs(std::filesystem::path(std::u8string(filePath.begin(), filePath.end())));
+      const std::filesystem::path path(std::u8string(filePath.begin(), filePath.end()));
 
-      if (!ofs.is_open()) {
-         return false;
+      if (SaveJsonFileAtomically(path, ToJson(), kJsonIndentSize)) {
+         return true;
       }
 
-      ofs << j.dump(kJsonIndentSize);
-      return static_cast<bool>(ofs);
-   } catch (...) {
-      return false;
+      Logger::Error("[ParticleSystem] Could not replace particle settings: " + filePath);
+   } catch (const std::exception& error) {
+      Logger::Error("[ParticleSystem] Could not save " + filePath + ": " + error.what());
    }
+
+   return false;
 }
 
 bool ParticleSystem::LoadFromJson(const std::string& filePath) {

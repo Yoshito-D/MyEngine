@@ -36,9 +36,7 @@ void CinemachineBrain::Update(float deltaTime) {
    if (cameraMotionPaused_) {
       // 停止中も優先度による選択は反映するが、追従計算や時間補間は進めない。
       // Cutで残っているブレンドも破棄し、シーンに保存された状態を固定出力する。
-      if (VirtualCamera* selectedCamera = FindHighestPriorityCamera()) {
-         Cut(selectedCamera);
-      }
+      Cut(FindHighestPriorityCamera());
 
       ApplyStateToOutputCamera();
       return;
@@ -57,7 +55,9 @@ void CinemachineBrain::Update(float deltaTime) {
    VirtualCamera* highestPriority = FindHighestPriorityCamera();
 
    // アクティブカメラが変更された場合、ブレンド開始
-   if (highestPriority != activeCamera_ && highestPriority != nullptr) {
+   if (!highestPriority) {
+      Cut(nullptr);
+   } else if (highestPriority != activeCamera_) {
       BlendToCamera(highestPriority);
    }
 
@@ -82,7 +82,7 @@ void CinemachineBrain::UpdateEditorPreview(float deltaTime, VirtualCamera* edito
    // 登録済みカメラのstateは更新せず、現在の優先度だけで出力先を選ぶ。
    VirtualCamera* highestPriority = FindHighestPriorityCamera();
 
-   if (highestPriority != activeCamera_ && highestPriority != nullptr) {
+   if (highestPriority != activeCamera_) {
       // 停止中のプレビューでは時間経過ブレンドを進めず、編集対象の姿勢を即座に確認できるようにする。
       Cut(highestPriority);
    } else if (activeCamera_) {
@@ -97,12 +97,10 @@ void CinemachineBrain::UpdateEditorPreview(float deltaTime, VirtualCamera* edito
 
 VirtualCamera* CinemachineBrain::FindHighestPriorityCamera() const {
    VirtualCamera* highest = nullptr;
-   std::int32_t highestPriority = INT_MIN;
 
    // 同一優先度では先に登録されたカメラを維持し、毎フレーム選択が揺れないよう厳密な > で比較する。
    for (VirtualCamera* vcam : virtualCameras_) {
-      if (vcam && vcam->IsActive() && vcam->GetPriority() > highestPriority) {
-         highestPriority = vcam->GetPriority();
+      if (vcam && vcam->IsActive() && (!highest || vcam->GetPriority() > highest->GetPriority())) {
          highest = vcam;
       }
    }
@@ -194,12 +192,13 @@ void CinemachineBrain::UnregisterVirtualCamera(VirtualCamera* vcam) {
 }
 
 void CinemachineBrain::Cut(VirtualCamera* vcam) {
-   if (vcam == nullptr) return;
-
-   // Cut後に古いBlendが再適用されないよう、出力状態と選択先を更新して補間も解除する。
+   // 選択解除時も古い補間を破棄する。候補がなければ最後に出力した姿勢を維持する。
    activeCamera_ = vcam;
-   currentState_ = vcam->GetState();
    activeBlend_.reset();
+
+   if (vcam) {
+      currentState_ = vcam->GetState();
+   }
 }
 
 } // namespace GameEngine

@@ -1094,6 +1094,9 @@
     <ClInclude Include="GameProject\App\Component\Race\RaceRecordStore.h">
       <Filter>GameProject\App\Component\Race</Filter>
     </ClInclude>
+    <ClInclude Include="GameProject\App\Component\Race\RaceTime.h">
+      <Filter>GameProject\App\Component\Race</Filter>
+    </ClInclude>
     <ClInclude Include="GameProject\App\Component\Race\RacePresentation.h">
       <Filter>GameProject\App\Component\Race</Filter>
     </ClInclude>

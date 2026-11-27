@@ -6,6 +6,8 @@
 #include "GameEngine/Object/Component/Collision/TriggerVolumeComponent.h"
 #include "GameEngine/Object/Object.h"
 #include "GameEngine/Scene/SceneWorld.h"
+#include "GameEngine/Utility/JsonValue.h"
+#include "GameEngine/Utility/Logger.h"
 #include <algorithm>
 
 #ifdef USE_IMGUI
@@ -14,18 +16,22 @@
 #include "GameEngine/Editor/ImGui/ImGuiHelper.h"
 #endif
 
-namespace {}
-
 namespace App {
 
-void RaceGateComponent::OnAttach() {
-   // 形状による重なり判定とEnter/Exitの生成は汎用TriggerVolumeへ委譲し、
-   // このコンポーネントはレース固有イベントへの変換だけを担当する。
-   auto* trigger = GetOwner().AddComponent<GameEngine::TriggerVolumeComponent>();
+void RaceGateComponent::OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) {
+   OnReferencesChanged(sceneWorld);
+   const auto& owner = GetOwner();
+   const auto* trigger = owner.GetComponent<GameEngine::TriggerVolumeComponent>();
 
-   if (trigger && trigger->GetTargetObjectId().empty()) {
-      // GameTestでは追加直後からゴールとして使え、他シーンではJSONから上書きできる既定値にする。
-      trigger->SetTargetObjectId("Model:Player");
+   if (!raceManager_) {
+      Logger::Fail("Race gate " + owner.GetEntityId() + " cannot resolve raceManagerId " + raceManagerId_,
+         Logger::LogChannel::Game);
+   }
+
+   // 形状と対象はシーンのTriggerVolumeで設定し、ゲートは進入・退出の通知だけを変換する。
+   if (!trigger || !sceneWorld.FindObjectById(trigger->GetTargetObjectId())) {
+      Logger::Fail("Race gate " + owner.GetEntityId() + " requires a TriggerVolume with a scene target",
+         Logger::LogChannel::Game);
    }
 }
 
@@ -41,11 +47,12 @@ void RaceGateComponent::OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) 
 void RaceGateComponent::Update(float deltaTime) {
    (void)deltaTime;
 
-   if (!raceManager_ || !HasOwner()) return;
+   if (!raceManager_ || !raceManager_->IsEnabled() || !HasOwner()) return;
 
    const auto* trigger = GetOwner().GetComponent<GameEngine::TriggerVolumeComponent>();
 
-   if (!trigger) return;
+   // 無効化中はTriggerVolumeが更新されず、最後の進入・退出フラグが残る。
+   if (!trigger || !trigger->IsEnabled()) return;
 
    // 接触中ではなく進入エッジだけを通知し、滞在中のチェックポイント連打を避ける。
    if (trigger->WasEnteredThisFrame()) {
@@ -98,40 +105,50 @@ nlohmann::json RaceGateComponent::GetSharedParameters() const {
 }
 
 void RaceGateComponent::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
+   ReadParameters(data);
 }
 
 void RaceGateComponent::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
+   ReadParameters(data);
 }
 
-void RaceGateComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
-   if (!data.is_object()) return;
-
-   // 各項目を独立して検証し、欠落・型不一致なら既定値または現在値を維持する。
-   if (data.contains("raceManagerId") && data.at("raceManagerId").is_string()) {
-      raceManagerId_ = data.at("raceManagerId").get<std::string>();
+void RaceGateComponent::ReadParameters(const nlohmann::json& data) {
+   if (!data.is_object()) {
+      Logger::Fail("RaceGateComponent settings must be a JSON object", Logger::LogChannel::Game);
    }
 
-   if (data.contains("gateType") && data.at("gateType").is_string()) {
-      const std::string gateType = data.at("gateType").get<std::string>();
+   const auto managerId = GameEngine::JsonValue::ReadString(data, "raceManagerId", raceManagerId_);
+   auto gateType = gateType_;
+   auto checkpointIndex = checkpointIndex_;
 
-      if (gateType == "Start") {
-         gateType_ = GateType::Start;
-      } else if (gateType == "Checkpoint") {
-         gateType_ = GateType::Checkpoint;
-      } else if (gateType == "StartFinish") {
-         gateType_ = GateType::StartFinish;
+   if (data.contains("gateType")) {
+      const auto name = GameEngine::JsonValue::ReadString(data, "gateType", "");
+
+      if (name == "Start") {
+         gateType = GateType::Start;
+      } else if (name == "Checkpoint") {
+         gateType = GateType::Checkpoint;
+      } else if (name == "Finish") {
+         gateType = GateType::Finish;
+      } else if (name == "StartFinish") {
+         gateType = GateType::StartFinish;
       } else {
-         // 旧データや未知の名前は従来の既定動作であるFinishとして扱う。
-         gateType_ = GateType::Finish;
+         Logger::Fail("Invalid RaceGateComponent.gateType: " + name, Logger::LogChannel::Game);
       }
    }
 
-   // 負値をsize_tへ変換して巨大なチェックポイント番号にしないよう、unsignedだけを受理する。
-   if (data.contains("checkpointIndex") && data.at("checkpointIndex").is_number_unsigned()) {
-      checkpointIndex_ = data.at("checkpointIndex").get<size_t>();
+   if (const auto index = data.find("checkpointIndex"); index != data.end()) {
+      // 負値をsize_tへ変換すると巨大なゲート番号になるため、変換前に検証する。
+      if (!index->is_number_integer() || (!index->is_number_unsigned() && index->get<std::int64_t>() < 0)) {
+         Logger::Fail("Invalid RaceGateComponent.checkpointIndex", Logger::LogChannel::Game);
+      }
+
+      checkpointIndex = index->get<size_t>();
    }
+
+   raceManagerId_ = managerId;
+   gateType_ = gateType;
+   checkpointIndex_ = checkpointIndex;
 }
 
 #ifdef USE_IMGUI

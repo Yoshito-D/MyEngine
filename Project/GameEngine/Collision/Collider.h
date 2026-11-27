@@ -1,11 +1,10 @@
 #pragma once
 
-#include <cstdint>
 #include "GameEngine/Math/VectorMath.h"
 
 namespace GameEngine {
 
-/// @brief 衝突判定と簡易物理計算で共有する形状・状態データ。
+/// @brief 衝突判定で使う幾何形状。
 namespace Collider {
 
 /// @brief 中心点と半径で表す3次元の球。
@@ -62,46 +61,6 @@ struct Triangle {
 struct AABB {
    Vector3 min; //!< 最小点
    Vector3 max; //!< 最大点
-};
-
-/// @brief フックの法則と速度減衰に用いるばねパラメータ。
-/// @note 距離はm、質量はkg、時間はsで扱う。剛性はN/m、減衰係数はkg/s。
-struct Spring {
-   Vector3 anchor;           //!< アンカー
-   float naturalLength;      //!< 自然長
-   float stiffness;          //!< 剛性
-   float dampingCoefficient; //!< 減衰係数
-};
-
-/// @brief 並進運動する球体の物理状態と描画情報。
-/// @note massとradiusには通常0より大きい値を設定する。
-struct Ball {
-   Vector3 position;     //!< 位置
-   Vector3 velocity;     //!< 速度（m/s）
-   Vector3 acceleration; //!< 加速度（m/s²）
-   float mass;           //!< 質量（kg）
-   float radius;         //!< 半径
-   std::uint32_t color;  //!< 描画時に解釈するパック済みの色
-};
-
-/// @brief 固定点を支点として平面内を運動する単振り子の状態。
-/// @note 角度はrad、角速度はrad/s、角加速度はrad/s²、長さはmで扱う。表示時だけdegreeへ換算する。
-struct Pendulum {
-   Vector3 anchor;            //!< アンカー
-   float length;              //!< 長さ
-   float angle;               //!< 角度
-   float angularVelocity;     //!< 角速度
-   float angularAcceleration; //!< 角加速度
-};
-
-/// @brief 固定点を支点として円錐面上を運動する円錐振り子の状態。
-/// @note 角度はrad、角速度はrad/s、長さはmで扱う。表示時だけdegreeへ換算する。
-struct ConicalPendulum {
-   Vector3 anchor;        //!< アンカー
-   float length;          //!< 長さ
-   float halfApexAngle;   //!< 半頂角
-   float angle;           //!< 角度
-   float angularVelocity; //!< 角速度
 };
 
 /// @brief 中心線分と一定半径で表すカプセル形状。

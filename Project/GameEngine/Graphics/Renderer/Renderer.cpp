@@ -886,9 +886,9 @@ void Renderer::DrawAutoRegisteredTexts(const UISystem* ui) {
       auto* textComponent = text->GetComponent<UITextComponent>();
       const auto* transformComponent = text->GetComponent<TransformComponent>();
 
-      if (!textComponent || !transformComponent ||
-          (renderComponent &&
-             (!renderComponent->DescribeSettings().visible || !renderComponent->DescribeSettings().autoRender))) {
+      if (!textComponent || !textComponent->IsEnabled() || !transformComponent ||
+          (renderComponent && (!renderComponent->IsEnabled() || !renderComponent->DescribeSettings().visible ||
+                                !renderComponent->DescribeSettings().autoRender))) {
          continue;
       }
 
@@ -904,7 +904,7 @@ void Renderer::DrawAutoRegisteredTexts(const UISystem* ui) {
 }
 
 void Renderer::Finalize() {
-   // 通常の終了経路ではPostDrawでGPU完了済み。GraphicsDeviceより先に影資源とSRVスロットを返す。
+   // GPU完了後、GraphicsDeviceより先に影資源とSRVスロットを返す。
    ClearPasses();
    sphereMapRenderer_.reset();
 
@@ -935,7 +935,9 @@ void Renderer::Finalize() {
       textRenderer_->Finalize();
    }
 #ifdef USE_IMGUI
-   imGuiManager_->Finalize();
+   if (imGuiManager_) {
+      imGuiManager_->Finalize();
+   }
 #endif
 }
 

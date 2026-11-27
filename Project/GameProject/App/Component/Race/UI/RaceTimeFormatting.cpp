@@ -1,5 +1,8 @@
 #include "GameProject/App/Component/Race/UI/RaceTimeFormatting.h"
 
+#include "GameEngine/Utility/Logger.h"
+#include "GameProject/App/Component/Race/RaceTime.h"
+
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
@@ -12,11 +15,19 @@ namespace App {
 std::string FormatRaceTime(float seconds) {
    // 浮動小数のまま各桁を求めると境界で桁の不整合が起こり得るため、
    // 非負の総ミリ秒へ一度正規化してから整数演算で分解する。
-   const auto totalMilliseconds = static_cast<long long>(std::max(seconds, 0.0f) * 1000.0f);
-   const long long minutes = totalMilliseconds / 60000;
-   const long long remainder = totalMilliseconds % 60000;
-   const long long wholeSeconds = remainder / 1000;
-   const long long milliseconds = remainder % 1000;
+   const double nonNegativeSeconds = std::max(seconds, 0.0f);
+
+   if (!IsRaceTimeRepresentable(nonNegativeSeconds)) {
+      Logger::Fail("Race time cannot be displayed in milliseconds", Logger::LogChannel::Game);
+   }
+
+   constexpr std::int64_t kSecondsPerMinute = 60;
+   constexpr std::int64_t kMillisecondsPerMinute = kSecondsPerMinute * kRaceMillisecondsPerSecond;
+   const auto totalMilliseconds = static_cast<std::int64_t>(nonNegativeSeconds * kRaceMillisecondsPerSecond);
+   const auto minutes = totalMilliseconds / kMillisecondsPerMinute;
+   const auto remainder = totalMilliseconds % kMillisecondsPerMinute;
+   const auto wholeSeconds = remainder / kRaceMillisecondsPerSecond;
+   const auto milliseconds = remainder % kRaceMillisecondsPerSecond;
 
    // setwは最小幅の指定なので、100分以上のタイムも上位桁を失わず表示できる。
    std::ostringstream stream;

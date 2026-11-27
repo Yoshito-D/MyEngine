@@ -76,7 +76,8 @@ public:
    /// @return 追従更新とブレンドを停止している場合はtrue
    bool IsCameraMotionPaused() const { return cameraMotionPaused_; }
 
-   /// @brief 即座にカメラを切り替え（ブレンドなし）
+   /// @brief 補間を解除し、指定のカメラの姿勢へ即座に切り替える。
+   /// @param vcam 切替先。nullptrの場合は選択を解除し、最後に出力した姿勢を保つ。
    void Cut(VirtualCamera* vcam);
 
    /// @brief 登録されているVirtualCameraの数を取得

@@ -19,10 +19,7 @@ void GravityBody::Update(float deltaTime) {
    // オーナー不在時は更新不可
    if (!HasOwner()) return;
 
-   // 重力有効時のみ物理更新
-   if (useGravity) {
-      UpdatePhysics(deltaTime);
-   }
+   UpdatePhysics(deltaTime);
 }
 
 void GravityBody::SetTargetUpVector(const Vector3& targetUp) {
@@ -85,13 +82,14 @@ void GravityBody::UpdatePhysics(float deltaTime) {
 
    if (!transform) return;
 
-   // 重力で速度積分し、速度で位置積分
-   velocity_ += gravityAcceleration_ * deltaTime;
-   {
-      auto pose = transform->GetLocalPose();
-      pose.translation = transform->GetLocalPose().translation + velocity_ * deltaTime;
-      transform->ApplyLocalPose(pose);
+   // 重力を無効にしても、既に持っている速度で移動する。
+   if (useGravity) {
+      velocity_ += gravityAcceleration_ * deltaTime;
    }
+
+   auto pose = transform->GetLocalPose();
+   pose.translation += velocity_ * deltaTime;
+   transform->ApplyLocalPose(pose);
 }
 
 #ifdef USE_IMGUI
@@ -123,14 +121,14 @@ nlohmann::json GravityBody::GetSharedParameters() const {
 }
 
 void GravityBody::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
+   ReadParameters(data);
 }
 
 void GravityBody::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
+   ReadParameters(data);
 }
 
-void GravityBody::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
+void GravityBody::ReadParameters(const nlohmann::json& data) {
    if (data.contains("gravityStrength")) {
       gravityStrength = data["gravityStrength"];
    }

@@ -6,6 +6,7 @@
 #include "GameEngine/Object/Component/Base/TransformComponent.h"
 #include "GameEngine/Object/Object.h"
 #include <algorithm>
+#include <utility>
 
 namespace App {
 void TutorialGuidePresenter::Reset(float baseOpacity, float feedbackBaseOpacity) {
@@ -19,37 +20,15 @@ void TutorialGuidePresenter::UpdateGuideText(const TutorialGuideState& state, Ga
    float guideFadeDuration_) {
    if (!guideText_) return;
 
-   const std::string guide = BuildGuideText(state);
-   const auto applyText = [guideText_, promptText](const std::string& text) {
-      const auto separator = text.find("\n\n");
-      guideText_->SetText(text.substr(0, separator));
-
-      if (promptText) {
-         promptText->SetText(separator == std::string::npos ? "" : text.substr(separator + 2));
-      }
-   };
-
-   if (displayedText_.empty()) {
-      // 初回表示は空文字からのフェードを挟まず、読み込み直後から案内を読める状態にする。
-      applyText(guide);
-      displayedText_ = guide;
-      pendingText_.clear();
-      guideVisibility_ = 1.0f;
-      guideFadeState_ = GuideFadeState::Visible;
-      ApplyGuideOpacity(guideText_, promptText, feedbackText);
-      return;
+   if (!displayedPhase_) {
+      // 初回はフェードを待たず、読み込み直後から案内を読める状態にする。
+      displayedPhase_ = state.phase;
    }
 
-   if (guide != displayedText_) {
-      // フェード中に案内内容が再更新された場合は、最新の文面だけを表示対象にする。
-      pendingText_ = guide;
-
-      if (guideFadeState_ != GuideFadeState::FadingOut) {
-         guideFadeState_ = GuideFadeState::FadingOut;
-      }
+   if (*displayedPhase_ != state.phase) {
+      guideFadeState_ = GuideFadeState::FadingOut;
    } else if (guideFadeState_ == GuideFadeState::FadingOut) {
-      // 文面が元へ戻った場合も現在の透明度から滑らかに復帰させる。
-      pendingText_.clear();
+      // フェード中に課題が戻ったときは、現在の透明度から復帰する。
       guideFadeState_ = GuideFadeState::FadingIn;
    }
 
@@ -60,9 +39,7 @@ void TutorialGuidePresenter::UpdateGuideText(const TutorialGuideState& state, Ga
 
       if (guideVisibility_ <= 0.0f) {
          // 文面の差し替えを完全透明時に限定し、異なる案内が途中で瞬間的に切り替わるのを隠す。
-         applyText(pendingText_);
-         displayedText_ = std::move(pendingText_);
-         pendingText_.clear();
+         displayedPhase_ = state.phase;
          guideFadeState_ = GuideFadeState::FadingIn;
       }
    } else if (guideFadeState_ == GuideFadeState::FadingIn) {
@@ -70,6 +47,16 @@ void TutorialGuidePresenter::UpdateGuideText(const TutorialGuideState& state, Ga
 
       if (guideVisibility_ >= 1.0f) {
          guideFadeState_ = GuideFadeState::Visible;
+      }
+   }
+
+   // 操作の再割当・接続状態・達成回数の変化は、課題を切り替えず表示へ反映する。
+   if (*displayedPhase_ == state.phase) {
+      auto guide = BuildGuideText(state);
+      guideText_->SetText(std::move(guide.body));
+
+      if (promptText) {
+         promptText->SetText(std::move(guide.prompt));
       }
    }
 
@@ -151,13 +138,16 @@ void TutorialGuidePresenter::UpdateFeedback(
 
    if (state.phase == Phase::DriftPractice) {
       if (state.canFireMiniTurbo) {
-         feedback = "ターボ準備OK！　旋回入力を戻すと発動！";
+         feedback = state.controls.usesDriftButton ? "ターボ準備OK！　ドリフト操作を離すと発動！"
+                                                  : "ターボ準備OK！　旋回入力を戻すと発動！";
       } else if (state.isDrifting) {
-         feedback = "ドリフト中…　同じ方向へ曲がり続けてターボをためましょう。";
+         feedback = state.controls.usesDriftButton ? "ドリフト中…　操作を押し続けてターボをためましょう。"
+                                                  : "ドリフト中…　同じ方向へ曲がり続けてターボをためましょう。";
       } else if (driftFeedbackRemaining_ > 0.0f) {
          feedback = driftFeedback_;
       } else {
-         feedback = "同じ方向へ曲がり続けると、ドリフトが始まります。";
+         feedback = state.controls.usesDriftButton ? "ドリフト操作を押しながら曲がりましょう。"
+                                                  : "同じ方向へ曲がり続けると、ドリフトが始まります。";
       }
    } else if (state.phase == Phase::JumpPractice) {
       feedback = state.isAirborne ? "ジャンプ中！　この惑星に着地してみましょう。" : "ジャンプ 0 / 1";
@@ -191,10 +181,9 @@ void TutorialGuidePresenter::UpdateFeedback(
    feedbackText_->SetText(feedback);
 }
 
-std::string TutorialGuidePresenter::BuildGuideText(const TutorialGuideState& state) {
+TutorialGuidePresenter::GuideText TutorialGuidePresenter::BuildGuideText(const TutorialGuideState& state) {
    const auto& controls = state.controls;
-   const auto nextPrompt = GameEngine::FormatInputPrompt(controls.confirm, "次へ");
-   const auto next = nextPrompt.empty() ? std::string{} : "\n\n" + nextPrompt;
+   const auto next = GameEngine::FormatInputPrompt(controls.confirm, "次へ");
    const auto asLine = [](std::string prompt) {
       if (!prompt.empty()) {
          prompt += '\n';
@@ -205,46 +194,47 @@ std::string TutorialGuidePresenter::BuildGuideText(const TutorialGuideState& sta
 
    switch (state.phase) {
       case Phase::DrivingIntro:
-         return "地上では自動で前進し、徐々に最高速度へ近づきます。\n"
-                "練習中は、左下の速度メーターを確認しましょう。" +
-                next;
+         return {"地上では自動で前進し、徐々に最高速度へ近づきます。\n"
+                 "練習中は、左下の速度メーターを確認しましょう。", next};
       case Phase::DriftIntro: {
          const std::string intro = controls.usesDriftButton
                                       ? "ドリフト操作を押しながら曲がると、ドリフトします。\n"
                                       : "同じ方向へ曲がり続けると、ドリフトします。\n";
          const std::string release = controls.usesDriftButton ? "ドリフト操作を離す" : "旋回入力を戻す";
-         return intro + asLine(controls.DriftPrompt()) +
-                "ターボがたまったら" + release + "と発動！　最高速度へ早く到達できます。" + next;
+         return {intro + asLine(controls.DriftPrompt()) +
+                    "ターボがたまったら" + release + "と発動！　最高速度へ早く到達できます。", next};
       }
       case Phase::DriftPractice: {
          const std::string release = controls.usesDriftButton ? "ドリフト操作を離し" : "旋回入力を戻し";
-         return "ドリフトを続けてから" + release + "、ミニターボを3回発動しましょう。\n" +
-                asLine(controls.DriftPrompt()) + "ミニターボ " + std::to_string(state.miniTurboCount) + " / 3";
+         const auto required = std::to_string(state.requiredMiniTurbos);
+         return {"ドリフトを続けてから" + release + "、ミニターボを" + required + "回発動しましょう。\n" +
+                    asLine(controls.DriftPrompt()) + "ミニターボ " + std::to_string(state.miniTurboCount) + " / " +
+                    required, {}};
       }
       case Phase::JumpIntro:
-         return "次はジャンプを練習します。\n" + asLine(controls.JumpPrompt()) +
-                "速度が速いほど遠くへ飛べます。" + next;
+         return {"次はジャンプを練習します。\n" + asLine(controls.JumpPrompt()) +
+                    "速度が速いほど遠くへ飛べます。", next};
       case Phase::JumpPractice:
-         return "ジャンプしましょう。\n" + asLine(controls.JumpPrompt()) +
-                "最初の惑星へ着地すると、次の説明へ進みます。";
+         return {"ジャンプしましょう。\n" + asLine(controls.JumpPrompt()) +
+                    "最初の惑星へ着地すると、次の説明へ進みます。", {}};
       case Phase::AirControlIntro:
-         return "空中では機体を前後・左右に回転できます。\n" + asLine(controls.AirPrompts()) +
-                "車体の底を地表と平行にして着地すると速度を維持でき、大きく傾くと減速します。" + next;
+         return {"空中では機体を前後・左右に回転できます。\n" + asLine(controls.AirPrompts()) +
+                    "車体の底を地表と平行にして着地すると速度を維持でき、大きく傾くと減速します。", next};
       case Phase::AirControlPractice:
-         return "ジャンプし、空中で機体を回転させてみましょう。\n" + asLine(controls.JumpPrompt()) +
-                asLine(controls.AirPrompts()) +
-                "機体を傾けてから最初の惑星へ着地すると、次へ進みます。";
+         return {"ジャンプし、空中で機体を回転させてみましょう。\n" + asLine(controls.JumpPrompt()) +
+                    asLine(controls.AirPrompts()) +
+                    "機体を傾けてから最初の惑星へ着地すると、次へ進みます。", {}};
       case Phase::GoalGuidanceIntro:
-         return "画面右下のミニマップで、二つ目の惑星にあるゴールと距離を確認しましょう。\n" +
-                GameEngine::FormatInputPrompt(controls.view, "ミニマップの回転") + next;
+         return {"画面右下のミニマップで、二つ目の惑星にあるゴールと距離を確認しましょう。\n" +
+                    GameEngine::FormatInputPrompt(controls.view, "ミニマップの回転"), next};
       case Phase::PlanetTransfer:
-         return "二つ目の惑星に向けてジャンプしましょう。\n" + asLine(controls.JumpPrompt()) +
-                "空中で姿勢を調整し、車体の底を地表に合わせて着地しましょう。";
+         return {"二つ目の惑星に向けてジャンプしましょう。\n" + asLine(controls.JumpPrompt()) +
+                    "空中で姿勢を調整し、車体の底を地表に合わせて着地しましょう。", {}};
       case Phase::Goal:
-         return "二つ目の惑星に到着！　ミニマップを見ながら、赤い旗を目指しましょう。";
+         return {"二つ目の惑星に到着！　ミニマップを見ながら、赤い旗を目指しましょう。", {}};
       case Phase::Complete:
-         return "ゴールに到着しました。ドリフト・ジャンプ・姿勢操作を使ってレースへ！\n"
-                "まもなくゲームを開始します。";
+         return {"ゴールに到着しました。ドリフト・ジャンプ・姿勢操作を使ってレースへ！\n"
+                 "まもなくゲームを開始します。", {}};
    }
 
    return {};

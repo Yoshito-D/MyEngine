@@ -40,7 +40,10 @@ public:
    /// @brief ポーズ入力を受け付け、共通UIへ画面の表示を要求する。
    void Update(float deltaTime) override;
 
-   /// @brief 生成した画面の削除を要求し、コールバックの参照先を解除する。
+   /// @brief 生成した画面を除去し、ポーズ中に適用した演出を解除する。
+   void OnDisable() override;
+
+   /// @brief 切り離されたワールドへの参照を解除する。
    void OnDetach() override;
 
    /// @brief ポーズ時の遷移先と、設定画面だけを使うかどうかを保存する。
@@ -59,6 +62,8 @@ private:
    /// @param audio 設定した0～1の音量を取得する音声サービス。
    /// @return 保存先の置換まで成功した場合はtrue。失敗時は既存のファイルを保持する。
    static bool SaveAudioSettings(const GameEngine::Audio& audio);
+
+   void SavePendingAudioSettings();
 
    bool IsPresentationActive() const;
    bool CreatePauseScreen();
@@ -79,6 +84,8 @@ private:
    std::string selectionScreenId_;
    std::string selectedElementId_;
    std::string titleScene_ = "Title";
+   bool audioSettingsDirty_ = false;   ///< 設定画面を閉じるときに保存すべき変更があるか。
+   bool presentationApplied_ = false; ///< このメニューがブラー・音量減衰を適用しているか。
    bool settingsOnly_ = false; ///< タイトルではポーズ入力を受け付けず、音量設定だけを表示する。
 };
 }

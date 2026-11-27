@@ -56,7 +56,7 @@ protected:
    virtual GameEngine::Vector3 FindSurfaceNormal(const GameEngine::Vector3& /*objectPosition*/) const;
 
 private:
-   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+   void ReadParameters(const nlohmann::json& data);
 
    /// @brief 法線取得不能時の代替Up
    GameEngine::Vector3 fallbackUpVector_ = {0.0f, 1.0f, 0.0f};

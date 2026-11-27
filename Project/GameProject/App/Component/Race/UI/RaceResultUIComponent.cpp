@@ -58,15 +58,16 @@ void RaceResultUIComponent::Update(float) {
    }
 
    if (!showingResult_) {
+      text->SetText(BuildResultText());
       showingResult_ = true;
       resultRequested_ = false;
       navigation_.Select(animation->IsOptionAvailable(1) ? 1 : 0);
       navigation_.ResetInput();
       animation->Select(navigation_.GetSelectedIndex(), false);
       RefreshSelectionText(*animation);
+      // ゴールしたフレームのジャンプ入力をリザルトの決定として使わない。
+      return;
    }
-
-   text->SetText(BuildResultText());
 
    // 決定演出は演出コンポーネントだけが更新する。
    if (resultRequested_) {
@@ -102,14 +103,14 @@ nlohmann::json RaceResultUIComponent::GetSharedParameters() const {
 }
 
 void RaceResultUIComponent::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
+   ReadParameters(data);
 }
 
 void RaceResultUIComponent::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
+   ReadParameters(data);
 }
 
-void RaceResultUIComponent::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
+void RaceResultUIComponent::ReadParameters(const nlohmann::json& data) {
    if (!data.is_object()) return;
 
    if (data.contains("raceManagerId") && data.at("raceManagerId").is_string()) {
@@ -152,7 +153,13 @@ bool RaceResultUIComponent::ConfirmSelection(MenuSelectionAnimationComponent& an
 
 std::string RaceResultUIComponent::BuildResultText() const {
    std::ostringstream stream;
-   stream << "フィニッシュ\nタイム " << FormatRaceTime(raceManager_->GetElapsedTime()) << "\n\nベストタイム\n";
+   stream << "フィニッシュ\nタイム " << FormatRaceTime(raceManager_->GetElapsedTime()) << '\n';
+
+   if (raceManager_->HasRecordUpdateFailed()) {
+      stream << "今回の記録を保存できませんでした\n";
+   }
+
+   stream << "\nベストタイム\n";
 
    // RaceManagerが保持する昇順の記録を、その並びを崩さず順位表示へ変換する。
    const auto& bestTimes = raceManager_->GetBestTimes();

@@ -72,7 +72,7 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+   void ReadParameters(const nlohmann::json& data);
 
    struct MaterialColorState {
       const GameEngine::Material* material = nullptr; ///< 比較だけに使う、スロットの変更検知用参照。

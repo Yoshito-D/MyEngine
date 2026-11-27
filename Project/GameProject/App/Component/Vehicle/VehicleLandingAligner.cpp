@@ -83,14 +83,14 @@ nlohmann::json VehicleLandingAligner::GetSharedParameters() const {
 }
 
 void VehicleLandingAligner::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
+   ReadParameters(data);
 }
 
 void VehicleLandingAligner::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
+   ReadParameters(data);
 }
 
-void VehicleLandingAligner::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
+void VehicleLandingAligner::ReadParameters(const nlohmann::json& data) {
    if (data.contains("alignTime")) {
       alignTime = data["alignTime"];
    }

@@ -27,12 +27,16 @@ public:
    /// @return RaceGateComponent
    const char* GetTypeName() const override { return kTypeName; }
 
-   /// @brief ゴール判定に必要なTriggerVolumeを自動追加する
-   void OnAttach() override;
+   /// @brief 実行時にレース管理とシーンに設定されたトリガーを検証する。
+   /// @param sceneWorld ゲートと参照先が所属するシーン。
+   void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
 
    /// @brief レース管理コンポーネントへの参照を解決する
    /// @param sceneWorld 所属するシーンワールド
    void OnReferencesChanged(GameEngine::SceneWorld& sceneWorld) override;
+
+   /// @brief 同じオブジェクトのTriggerVolumeが進入・退出を更新した後に通知する。
+   GameEngine::ObjectUpdatePhase GetUpdatePhase() const override { return GameEngine::ObjectUpdatePhase::Presentation; }
 
    /// @brief トリガーの侵入・退出をレース管理へ通知する
    /// @param deltaTime 未使用
@@ -61,7 +65,7 @@ public:
 #endif
 
 private:
-   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+   void ReadParameters(const nlohmann::json& data);
 
    std::string raceManagerId_ = "race_manager";  ///< レース進行を参照する管理Objectの安定Entity ID。
    GateType gateType_ = GateType::Finish;        ///< スタート・チェックポイント・ゴールなどのゲートの役割。

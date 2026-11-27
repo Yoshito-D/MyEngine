@@ -41,7 +41,6 @@ void RacePresentation::RefreshPlayerReferences() {
 }
 
 void RacePresentation::CaptureInitialState() {
-   playerLocked_ = false;
 
    // エディタで指定した有効状態を保存し、レース中の一時ロック解除で上書きしない。
    vehicleControllerEnabledWhenUnlocked_ = vehicleController_ && vehicleController_->IsEnabled();
@@ -69,6 +68,12 @@ void RacePresentation::ShowFinish(const std::string& finishCameraId) {
    }
 }
 
+std::uint32_t RacePresentation::GetPlayerSlot() const {
+   const auto* player = world_ ? world_->FindObjectById(playerObjectId_) : nullptr;
+   const auto* input = player ? player->GetComponent<VehicleInputComponent>() : nullptr;
+   return input ? input->DescribeSettings().playerSlot : VehicleInputComponent::Settings{}.playerSlot;
+}
+
 void RacePresentation::RestoreEffects() {
    RefreshPlayerReferences();
 
@@ -84,7 +89,6 @@ void RacePresentation::RestoreEffects() {
 
 void RacePresentation::SetPlayerLocked(bool locked) {
    RefreshPlayerReferences();
-   playerLocked_ = locked;
 
    // 走行とカメラ演出の入力を一緒に止め、リザルトの左右操作でドリフト接近を発火させない。
    // リザルトUIは別のUIアクションを直接読むため、選択と決定はそのまま受け付ける。

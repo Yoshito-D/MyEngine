@@ -5,7 +5,27 @@
 #include <functional>
 #include <string>
 
+namespace GameEngine {
+class Object;
+class SceneObjectStore;
+}
+
 namespace GameEngine::EditorUI {
+
+/// @brief ヒエラルキーとシーン参照欄が共有するドラッグ種別。
+constexpr char kObjectDragPayloadType[] = "EDITOR_SCENE_OBJECT";
+
+/// @brief 現在のドラッグ元にシーン内Objectを登録する。
+/// @param object ドラッグ中のObject。受け取り側で所属と生存状態を確認する。
+void SetObjectDragPayload(Object& object);
+
+/// @brief 現在のドラッグ元を、指定ストアに属する場合だけ取得する。
+/// @param store ドロップ先の所属を確認するストア。
+/// @return ドラッグ中の生存Object。未配達のプレビュー中も取得でき、対象外ならnullptr。
+Object* ResolveObjectDragPayload(const SceneObjectStore& store);
+
+/// @brief 編集対象が切り替わる前に、保留中のObjectドラッグを終了する。
+void CancelObjectDrag();
 
 /// @brief リソース種別に加えて用途別の制約を検証する任意の判定関数。
 using AssetPredicate = std::function<bool(const EditorAssetEntry&)>;

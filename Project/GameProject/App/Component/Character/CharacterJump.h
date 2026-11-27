@@ -61,7 +61,7 @@ public:
    void Configure(const Settings& requested);
 
 private:
-   void ReadParameters(const nlohmann::json& data, bool initializeRuntime);
+   void ReadParameters(const nlohmann::json& data);
 
    float jumpStrength = 5.0f; ///< ジャンプ初速の強さ（m/s）。
 

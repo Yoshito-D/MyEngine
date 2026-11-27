@@ -78,14 +78,14 @@ nlohmann::json VehicleLandingBoost::GetSharedParameters() const {
 }
 
 void VehicleLandingBoost::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
+   ReadParameters(data);
 }
 
 void VehicleLandingBoost::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
+   ReadParameters(data);
 }
 
-void VehicleLandingBoost::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
+void VehicleLandingBoost::ReadParameters(const nlohmann::json& data) {
    if (data.contains("boostAmount")) {
       boostAmount = data["boostAmount"];
    }

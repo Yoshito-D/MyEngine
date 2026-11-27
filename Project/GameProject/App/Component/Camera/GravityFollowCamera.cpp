@@ -170,11 +170,8 @@ static Vector3 RotateTowardsUnit(const Vector3& current, const Vector3& target, 
 // プライベートメソッド実装
 // =============================================================================
 
-/// @brief 目標重力Up に向けて currentGravityUp_ を nlerp 補間する
-/// @details 惑星を切り替えると gravityUp_（目標値）が急変するが、
-///          currentGravityUp_ をフレームごとに少しずつ近づけることで
-///          カメラのロールが急激に跳ぶ問題を防ぐ。
-///          nlerp = 線形補間後に正規化。slerp より軽量で品質的にも十分。
+/// @brief 角速度を制限しながら、カメラの基準Upを目標の重力Upへ回転させる。
+/// @details 惑星の切り替えで重力Upが急変したときも、カメラのロール変化を抑える。
 Vector3 GravityFollowCamera::SmoothGravityUp(float deltaTime) {
    // 目標 up を正規化
    Vector3 targetUp = gravityUp_;
@@ -676,11 +673,11 @@ void GravityFollowCamera::DrawInspector() {
    ImGui::DragFloat(Tr("距離ブースト (m)", "Distance Boost (m)"), &distanceBoostMax, 0.05f, 0.0f, 10.0f);
    ImGui::DragFloat(Tr("ばね剛性 (1/s²)", "Spring Stiffness (1/s²)"), &springStiffness, 1.0f, 1.0f, 300.0f);
    ImGui::DragFloat(Tr("ばね減衰 (1/s)", "Spring Damping (1/s)"), &springDamping, 0.5f, 0.0f, 100.0f);
-   GameEngine::ImGuiHelper::DragRadiansAsDegrees(Tr("加速→FOVキック (deg·s²/m)", "Accel->FOV Kick (deg·s²/m)"),
+   GameEngine::ImGuiHelper::DragRadiansAsDegrees(Tr("速度差→FOVキック (deg·s/m)", "Speed Delta to FOV Kick (deg·s/m)"),
       accelToFovKick, 0.0001f * GameEngine::MathConstants::kRadiansToDegrees, 0.0f,
       0.02f * GameEngine::MathConstants::kRadiansToDegrees);
    ImGui::DragFloat(
-      Tr("加速→距離キック (s²)", "Accel->Dist Kick (s²)"), &accelToDistanceKick, 0.001f, 0.0f, 0.5f, "%.3f");
+      Tr("速度差→距離キック (s)", "Speed Delta to Distance Kick (s)"), &accelToDistanceKick, 0.001f, 0.0f, 0.5f, "%.3f");
    GameEngine::ImGuiHelper::DragRadiansAsDegrees(Tr("ターボFOVキック (deg)", "Turbo FOV Kick (deg)"), turboFovKickMax,
       0.001f * GameEngine::MathConstants::kRadiansToDegrees, 0.0f, 0.3f * GameEngine::MathConstants::kRadiansToDegrees);
    ImGui::DragFloat(Tr("ターボ距離キック (m)", "Turbo Dist Kick (m)"), &turboDistanceKickMax, 0.05f, 0.0f, 8.0f);

@@ -13,16 +13,26 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 namespace GameEngine {
 namespace {
 constexpr const wchar_t* kWindowClassName = L"GameEngineWindowClass";
+constexpr UINT kTimerResolutionMilliseconds = 1;
+}
+
+Window::~Window() {
+   DestroyGameWindow();
 }
 
 void Window::CreateGameWindow(const wchar_t* title, UINT windowStyle, int32_t clientWidth, int32_t clientHeight) {
+   if (comInitialized_ || !title || clientWidth <= 0 || clientHeight <= 0) {
+      Logger::Fail("Cannot create game window: invalid dimensions, title, or initialization state");
+   }
+
    // ウィンドウと同じスレッドで利用するCOM系サブシステムに備え、破棄時のCoUninitializeと対にする。
-   HRESULT result = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+   const HRESULT result = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 
    if (FAILED(result)) {
-      MessageBox(nullptr, L"CoInitializeEx に失敗しました", L"エラー", MB_OK | MB_ICONERROR);
-      return;
+      Logger::Fail(std::format("CoInitializeEx failed for game window: HRESULT=0x{:08X}", static_cast<UINT>(result)));
    }
+
+   comInitialized_ = true;
 
    wndClass_.cbSize = sizeof(WNDCLASSEX);
    wndClass_.lpfnWndProc = WindowProc;
@@ -31,10 +41,19 @@ void Window::CreateGameWindow(const wchar_t* title, UINT windowStyle, int32_t cl
    wndClass_.hCursor = LoadCursor(nullptr, IDC_ARROW);
 
    // フレーム待機の粒度を確保するため、プロセス利用中の設定として要求する。
-   // システムタイマーの分解能を上げる
-   timeBeginPeriod(1);
+   const MMRESULT timerResult = timeBeginPeriod(kTimerResolutionMilliseconds);
 
-   RegisterClassEx(&wndClass_);
+   if (timerResult != TIMERR_NOERROR) {
+      Logger::Fail(std::format("timeBeginPeriod failed for game window: MMRESULT={}", timerResult));
+   }
+
+   timerPeriodRequested_ = true;
+
+   if (!RegisterClassEx(&wndClass_)) {
+      Logger::Fail(std::format("RegisterClassEx failed for game window: Win32={}", GetLastError()));
+   }
+
+   windowClassRegistered_ = true;
 
    windowStyle_ = windowStyle;
    aspectRatio_ = static_cast<float>(clientWidth) / static_cast<float>(clientHeight);
@@ -42,30 +61,47 @@ void Window::CreateGameWindow(const wchar_t* title, UINT windowStyle, int32_t cl
    RECT wrc = {0, 0, clientWidth, clientHeight};
 
    // 指定値をクライアント領域として確保できるよう、枠・タイトルバー分を外寸へ加える。
-   AdjustWindowRect(&wrc, windowStyle_, false);
+   if (!AdjustWindowRect(&wrc, windowStyle_, false)) {
+      Logger::Fail(std::format("AdjustWindowRect failed for game window: Win32={}", GetLastError()));
+   }
+
 
    hwnd_ = CreateWindow(wndClass_.lpszClassName, title, windowStyle_, CW_USEDEFAULT, CW_USEDEFAULT,
       wrc.right - wrc.left, wrc.bottom - wrc.top, nullptr, nullptr, wndClass_.hInstance, nullptr);
+
+   if (!hwnd_) {
+      Logger::Fail(std::format("CreateWindow failed for game window: Win32={}", GetLastError()));
+   }
 
    ShowWindow(hwnd_, SW_SHOW);
 }
 
 void Window::DestroyGameWindow() {
-   // HWNDとCOMが有効な間に、UI Automationが保持するプロバイダー参照を解放する。
-   if (FAILED(UiaDisconnectAllProviders())) {
-      Logger::Warning("Failed to disconnect UI Automation providers before window destruction");
-   }
-
    if (hwnd_) {
+      // HWNDとCOMが有効な間に、UI Automationが保持するプロバイダー参照を解放する。
+      if (FAILED(UiaDisconnectAllProviders())) {
+         OutputDebugStringW(L"Failed to disconnect UI Automation providers before window destruction");
+      }
+
       DestroyWindow(hwnd_);
       hwnd_ = nullptr;
+      isFullscreen_ = false;
    }
 
-   if (wndClass_.hInstance && wndClass_.lpszClassName) {
+   if (windowClassRegistered_) {
       UnregisterClass(wndClass_.lpszClassName, wndClass_.hInstance);
+      windowClassRegistered_ = false;
    }
 
-   CoUninitialize();
+   if (timerPeriodRequested_) {
+      timeEndPeriod(kTimerResolutionMilliseconds);
+      timerPeriodRequested_ = false;
+   }
+
+   if (comInitialized_) {
+      CoUninitialize();
+      comInitialized_ = false;
+   }
 }
 
 bool Window::ProcessMessage() {

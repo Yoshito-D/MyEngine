@@ -69,7 +69,9 @@ void EditorSceneContext::Initialize(const SceneDefinition& definition) {
 }
 
 void EditorSceneContext::Suspend() {
-   suspendedObjectId_ = selectedObject_ ? selectedObject_->GetEntityId() : std::string{};
+   // 次のワールドで実体のアドレスが再利用されても、切替前のドラッグを誤って適用しない。
+   EditorUI::CancelObjectDrag();
+   suspendedObjectId_ = Store().GetId(selectedObject_);
    suspendedParticleId_ = Store().GetId(selectedParticleSystem_);
    selectedObject_ = nullptr;
    selectedParticleSystem_ = nullptr;
@@ -335,7 +337,7 @@ bool EditorSceneContext::ReorderObject(Object* movedObject, Object* targetObject
          // 登録順が深さ優先とは限らないため、配列全体から最後の直下の子を探す。
          // その後ろへ置けば、ヒエラルキー描画時には常に末尾の子として表示される。
          for (auto candidateIt = targetIt + 1; candidateIt != orderedIds.end(); ++candidateIt) {
-            const Object* candidate = Object::FindByEntityId(*candidateIt);
+            const Object* candidate = Store().FindById(*candidateIt);
 
             if (candidate && candidate->GetParentEntityId() == targetObject->GetEntityId()) {
                insertionPoint = candidateIt + 1;
@@ -380,17 +382,13 @@ void EditorSceneContext::CreateUIText() {
 }
 
 void EditorSceneContext::CreateSkybox() {
-   // Skyboxは不透明な全画面背景で登録順の最後だけが見えるため、既存物があれば新規競合を作らず編集対象にする。
-   const auto& registeredSkyboxes = Skybox::GetRegisteredSkyboxes();
+   // Skyboxは不透明な全画面背景なので、現在のシーンにあればそれを編集対象にする。
+   const auto skyboxes = Store().GetSkyboxes();
 
-   for (auto it = registeredSkyboxes.rbegin(); it != registeredSkyboxes.rend(); ++it) {
-      Skybox* skybox = *it;
-
-      if (skybox && IsObjectAlive(skybox)) {
-         SelectObject(skybox);
-         SetStatus("Selected existing skybox");
-         return;
-      }
+   if (!skyboxes.empty()) {
+      SelectObject(skyboxes.back());
+      SetStatus("Selected existing skybox");
+      return;
    }
 
    CommitEdit(std::make_unique<CreateObjectCommand>(CreateObjectCommand::Kind::Skybox));
@@ -668,12 +666,7 @@ void EditorSceneContext::Redo() {
 }
 
 bool EditorSceneContext::IsObjectAlive(const Object* object) const {
-   if (!object) {
-      return false;
-   }
-
-   const auto objects = CollectEditableObjects();
-   return std::find(objects.begin(), objects.end(), object) != objects.end();
+   return Store().Contains(object);
 }
 
 bool EditorSceneContext::IsParticleSystemAlive(const ParticleSystem* particleSystem) const {
@@ -850,15 +843,8 @@ bool EditorSceneContext::RenameSelectedObject(const std::string& name) {
 }
 
 Object* EditorSceneContext::CommandOperations::ResolveObject(const std::string& id) const {
-   // 遅延削除されたEntityはグローバル索引に残るため、現シーンの編集対象だけを調べる。
-   // 履歴はIDだけを保持し、削除済みEntityや同じ名前の別Entityを誤操作しない。
-   for (auto* object : owner_.CollectEditableObjects()) {
-      if (object && !id.empty() && object->GetEntityId() == id) {
-         return object;
-      }
-   }
-
-   return nullptr;
+   // 履歴のIDは、この編集コンテキストが所属するワールド内だけで解決する。
+   return owner_.Store().FindById(id);
 }
 
 bool EditorSceneContext::CommandOperations::Contains(const std::string& id, bool particle) const {

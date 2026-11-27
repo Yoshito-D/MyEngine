@@ -96,7 +96,6 @@ private:
 
    void SynchronizeRuntimeLight();
    void ReleaseRuntimeLight();
-   std::string ResolveRuntimeKey() const;
    static const char* TypeToString(Type type);
    static bool TryParseType(const std::string& value, Type& type);
 

@@ -54,6 +54,9 @@ public:
    /// @brief 接続前の通知を既読にして、実行開始前の演出を再生しない。
    void OnSceneLoaded(GameEngine::SceneWorld& sceneWorld) override;
 
+   /// @brief 再有効化した時点までの通知を既読にし、新しい走行演出の開始を待つ。
+   void OnEnable() override;
+
    /// @brief 制御停止時は飛行演出の新規放出を止め、着地失敗の煙の再生を停止する。
    void OnDisable() override;
 

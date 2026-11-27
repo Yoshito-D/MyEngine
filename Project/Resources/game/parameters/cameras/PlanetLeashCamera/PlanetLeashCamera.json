@@ -5,7 +5,6 @@
    "data": {
       "followSpeed": 50.0,
       "maxFollowDistance": 30.0,
-      "minPlanetDistance": 75.0,
-      "useGravityUp": true
+      "minPlanetDistance": 75.0
    }
 }

@@ -149,14 +149,14 @@ nlohmann::json VehicleAirController::GetSharedParameters() const {
 }
 
 void VehicleAirController::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
+   ReadParameters(data);
 }
 
 void VehicleAirController::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
+   ReadParameters(data);
 }
 
-void VehicleAirController::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
+void VehicleAirController::ReadParameters(const nlohmann::json& data) {
    if (data.contains("rollSpeed")) {
       rollSpeed = data["rollSpeed"];
    }

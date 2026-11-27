@@ -60,7 +60,6 @@ public:
 
 private:
    EditorSceneContext* GetActiveEditorContext() const;
-   std::vector<Object*> CollectSceneObjects() const;
    void DrawAssetEntry(EditorSceneContext& editorContext, const EditorAssetEntry& entry);
    void DrawAssetTree(EditorSceneContext& editorContext);
    void NavigateToFolder(const std::string& folderId);

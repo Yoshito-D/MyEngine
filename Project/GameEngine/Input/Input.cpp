@@ -57,8 +57,10 @@ GameEngine::Vector2 NormalizeStick(SHORT x, SHORT y, float deadZone) {
 namespace GameEngine {
 Input::~Input() {
    // アプリ終了後にコントローラーが振動し続けないよう、保持している出力を明示的に停止する。
-   for (size_t i = 0; i < GetConnectedGamePadCount(); ++i) {
-      SetVibration(static_cast<int32_t>(i), 0.0f, 0.0f);
+   for (uint32_t index = 0; index < std::size(gamePadConnected_); ++index) {
+      if (gamePadConnected_[index]) {
+         SetVibration(index, 0.0f, 0.0f);
+      }
    }
 }
 
@@ -180,8 +182,9 @@ void Input::GamePadUpdate() {
    for (uint32_t i = 0; i < XUSER_MAX_COUNT; ++i) {
       prevGamePadState_[i] = gamePadState_[i];
 
-      ZeroMemory(&gamePadState_[i], sizeof(XINPUT_STATE));
-      XInputGetState(i, &gamePadState_[i]);
+      XINPUT_STATE state{};
+      gamePadConnected_[i] = XInputGetState(i, &state) == ERROR_SUCCESS;
+      gamePadState_[i] = gamePadConnected_[i] ? state : XINPUT_STATE{};
    }
 }
 
@@ -217,38 +220,24 @@ bool Input::IsKeyReleased(KeyCode key) {
    return IsKeyReleased(static_cast<uint8_t>(key));
 }
 
-bool Input::IsMousePressed(uint8_t button) {
-   return (mouseState_.rgbButtons[button] & kPressedStateMask) != 0;
-}
-
 bool Input::IsMousePressed(MouseButton button) {
-   return IsMousePressed(static_cast<uint8_t>(button));
-}
-
-bool Input::IsMouseNotPressed(uint8_t button) {
-   return (mouseState_.rgbButtons[button] & kPressedStateMask) == 0;
+   const auto index = static_cast<uint8_t>(button);
+   return index < std::size(mouseState_.rgbButtons) && (mouseState_.rgbButtons[index] & kPressedStateMask) != 0;
 }
 
 bool Input::IsMouseNotPressed(MouseButton button) {
-   return IsMouseNotPressed(static_cast<uint8_t>(button));
-}
-
-bool Input::IsMouseTriggered(uint8_t button) {
-   return (mouseState_.rgbButtons[button] & kPressedStateMask) != 0 &&
-          (prevMouseState_.rgbButtons[button] & kPressedStateMask) == 0;
+   const auto index = static_cast<uint8_t>(button);
+   return index < std::size(mouseState_.rgbButtons) && !IsMousePressed(button);
 }
 
 bool Input::IsMouseTriggered(MouseButton button) {
-   return IsMouseTriggered(static_cast<uint8_t>(button));
-}
-
-bool Input::IsMouseReleased(uint8_t button) {
-   return (mouseState_.rgbButtons[button] & kPressedStateMask) == 0 &&
-          (prevMouseState_.rgbButtons[button] & kPressedStateMask) != 0;
+   const auto index = static_cast<uint8_t>(button);
+   return IsMousePressed(button) && (prevMouseState_.rgbButtons[index] & kPressedStateMask) == 0;
 }
 
 bool Input::IsMouseReleased(MouseButton button) {
-   return IsMouseReleased(static_cast<uint8_t>(button));
+   const auto index = static_cast<uint8_t>(button);
+   return IsMouseNotPressed(button) && (prevMouseState_.rgbButtons[index] & kPressedStateMask) != 0;
 }
 
 Vector2 Input::GetMouseScreenPosition() const {
@@ -268,24 +257,11 @@ int32_t Input::GetMouseWheelDelta() const {
 }
 
 bool Input::IsGamePadConnected(uint32_t index) const {
-   // キャッシュだけでは切断と全入力0を区別できないため、接続確認時はXInputへ直接問い合わせる。
-   XINPUT_STATE tempState{};
-   return (index < XUSER_MAX_COUNT) && (XInputGetState(index, &tempState) == ERROR_SUCCESS);
+   return index < std::size(gamePadConnected_) && gamePadConnected_[index];
 }
 
 uint32_t Input::GetConnectedGamePadCount() const {
-   uint32_t count = 0;
-
-   for (DWORD i = 0; i < XUSER_MAX_COUNT; ++i) {
-      XINPUT_STATE state = {};
-      DWORD result = XInputGetState(i, &state);
-
-      if (result == ERROR_SUCCESS) {
-         ++count;
-      }
-   }
-
-   return count;
+   return static_cast<uint32_t>(std::ranges::count(gamePadConnected_, true));
 }
 
 bool Input::IsGamePadButtonPressed(WORD button, uint32_t index) const {

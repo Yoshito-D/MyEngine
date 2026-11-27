@@ -48,7 +48,13 @@ std::string LoadLastEditorSceneName(const GameEngine::SceneCatalog& sceneCatalog
          Logger::LogChannel::Editor);
    }
 
-   if (!sessionState.is_object() || !sessionState.contains("lastSceneName") ||
+   if (!sessionState.is_object() || !sessionState.contains("version") ||
+       !sessionState.at("version").is_number_integer() ||
+       sessionState.at("version") != kEditorSessionStateFormatVersion) {
+      Logger::Fail("Invalid editor session state version: " + filePath.generic_string(), Logger::LogChannel::Editor);
+   }
+
+   if (!sessionState.contains("lastSceneName") ||
        !sessionState.at("lastSceneName").is_string()) {
       Logger::Fail("Missing or invalid lastSceneName: " + filePath.generic_string(), Logger::LogChannel::Editor);
    }

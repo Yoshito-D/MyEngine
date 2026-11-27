@@ -2,6 +2,7 @@
 
 #include "GameProject/App/Component/Race/StageIntroSequence.h"
 #include "GameEngine/Scene/Camera/Core/CinemachineBrain.h"
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -28,8 +29,9 @@ public:
    /// @brief 入力・走行・物理を一時停止するか、保存した有効状態へ戻す。
    void SetPlayerLocked(bool locked);
 
-   /// @brief 現在レース演出による操作停止中かを返す。
-   bool IsPlayerLocked() const { return playerLocked_; }
+   /// @brief 導入の決定入力と操作案内に使うプレイヤースロットを返す。
+   /// @return 車両入力が設定された場合はそのスロット。車両入力を持たない構成ではプライマリースロット。
+   std::uint32_t GetPlayerSlot() const;
 
    /// @brief 速度演出とカメラ切り替えをシーン本来の状態へ戻す。
    void RestoreEffects();
@@ -72,7 +74,6 @@ private:
    GameEngine::CameraState countdownCameraState_;        ///< 通常カメラへ戻すときの開始前の構図。
    bool introActive_ = false;                            ///< 導入による一時停止を所有しているか。
    std::vector<std::string> pausedPlanetColorObjectIds_; ///< 導入中に停止した惑星色コンポーネントの所有者ID。
-   bool playerLocked_ = false;                           ///< レース進行によるプレイヤーの一時停止が適用中かどうか。
    bool vehicleControllerEnabledWhenUnlocked_ = false;   ///< 操作ロック解除時に戻す車両制御の元の有効状態。
    bool vehicleInputEnabledWhenUnlocked_ = false;        ///< 操作ロック解除時に戻す走行入力の元の有効状態。
    bool gravityBodyEnabledWhenUnlocked_ = false;         ///< 操作ロック解除時に戻す重力処理の元の有効状態。

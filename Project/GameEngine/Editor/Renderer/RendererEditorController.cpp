@@ -48,7 +48,6 @@ constexpr std::int32_t kJsonIndentSize = 3;
 constexpr unsigned char kUtf8ContinuationByteMask = 0xC0;
 constexpr unsigned char kUtf8ContinuationByteTag = 0x80;
 constexpr float kHierarchyDropGuideThickness = 2.0f;
-constexpr std::int32_t kEmptyCStringPayloadSize = 1;
 constexpr size_t kInspectorNameBufferSize = 256;
 constexpr const char* kFolderIconAssetId = "ic_system_folder_01_128";
 constexpr float kTimeScaleSliderWidthInEm = 8.0f;
@@ -150,8 +149,10 @@ void DrawHierarchyInsertionDropTarget(
       constexpr ImGuiDragDropFlags acceptFlags =
          ImGuiDragDropFlags_AcceptBeforeDelivery | ImGuiDragDropFlags_AcceptNoDrawDefaultRect;
 
-      if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_SCENE_OBJECT", acceptFlags)) {
-         if (payload->IsPreview()) {
+      if (auto* draggedObject = EditorUI::ResolveObjectDragPayload(editorContext.GetObjectStore())) {
+         const auto* payload = ImGui::AcceptDragDropPayload(EditorUI::kObjectDragPayloadType, acceptFlags);
+
+         if (payload && payload->IsPreview()) {
             const ImVec2 targetMin = ImGui::GetItemRectMin();
             const ImVec2 targetMax = ImGui::GetItemRectMax();
             const float guideY = (targetMin.y + targetMax.y) * 0.5f;
@@ -159,12 +160,8 @@ void DrawHierarchyInsertionDropTarget(
                ImGui::GetColorU32(ImGuiCol_DragDropTarget), kHierarchyDropGuideThickness);
          }
 
-         if (payload->IsDelivery() && payload->Data && payload->DataSize > kEmptyCStringPayloadSize) {
-            const char* draggedId = static_cast<const char*>(payload->Data);
-
-            if (Object* draggedObject = Object::FindByEntityId(draggedId)) {
-               editorContext.ReorderObject(draggedObject, targetObject, dropPosition);
-            }
+         if (payload && payload->IsDelivery()) {
+            editorContext.ReorderObject(draggedObject, targetObject, dropPosition);
          }
       }
 
@@ -906,8 +903,8 @@ void RendererEditorController::ShowHierarchyWindow() {
       ImGui::EndPopup();
    }
 
-   // コンテキストがある場合は削除墓標で隠されたシーン所有物を除いた編集用一覧を正本にする。
-   const auto sceneObjects = editorContext ? editorContext->CollectEditableObjects() : CollectSceneObjects();
+   // 現在のシーンに所属する編集対象だけを列挙する。
+   const auto sceneObjects = editorContext ? editorContext->CollectEditableObjects() : std::vector<Object*>{};
    const auto particleSystems =
       editorContext ? editorContext->CollectEditableParticleSystems() : std::vector<ParticleSystem*>{};
 
@@ -951,12 +948,9 @@ void RendererEditorController::ShowHierarchyWindow() {
                                      "Drop a model, particle system, or UI screen here to place it at the root"));
 
       if (ImGui::BeginDragDropTarget()) {
-         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_SCENE_OBJECT")) {
-            const char* draggedId = static_cast<const char*>(payload->Data);
-
-            if (Object* draggedObject = draggedId ? Object::FindByEntityId(draggedId) : nullptr) {
-               editorContext->ReorderObject(draggedObject, nullptr, EditorSceneContext::HierarchyDropPosition::After);
-            }
+         if (auto* draggedObject = EditorUI::ResolveObjectDragPayload(editorContext->GetObjectStore());
+             draggedObject && ImGui::AcceptDragDropPayload(EditorUI::kObjectDragPayloadType)) {
+            editorContext->ReorderObject(draggedObject, nullptr, EditorSceneContext::HierarchyDropPosition::After);
          }
 
          if (const auto* entry = EditorUI::AcceptAssetDrop(EditorAssetType::Unknown, [](const EditorAssetEntry& entry) {
@@ -1017,11 +1011,9 @@ void RendererEditorController::ShowHierarchyWindow() {
             ImGui::SetItemTooltip("%s", objectName.c_str());
          }
 
-         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
-            const std::string& entityId = object->GetEntityId();
-
-            // フレームをまたぐDrag中も有効なEntity IDを渡し、生ポインターをPayloadへ保存しない。
-            ImGui::SetDragDropPayload("EDITOR_SCENE_OBJECT", entityId.c_str(), entityId.size() + 1);
+         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID | ImGuiDragDropFlags_PayloadAutoExpire)) {
+            // シーン切替などで元の行が描画されなくなれば、ドロップを受け付けない。
+            EditorUI::SetObjectDragPayload(*object);
             ImGui::Text("%s", objectName.c_str());
             ImGui::TextDisabled(
                "%s", Tr("行間: 並び替え  オブジェクト上: 子にする", "Between rows: reorder  On object: make child"));
@@ -1039,11 +1031,10 @@ void RendererEditorController::ShowHierarchyWindow() {
                }
             }
 
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("EDITOR_SCENE_OBJECT")) {
-               const char* draggedId = static_cast<const char*>(payload->Data);
-               Object* draggedObject = draggedId ? Object::FindByEntityId(draggedId) : nullptr;
+            if (editorContext) {
+               auto* draggedObject = EditorUI::ResolveObjectDragPayload(editorContext->GetObjectStore());
 
-               if (draggedObject && editorContext) {
+               if (draggedObject && ImGui::AcceptDragDropPayload(EditorUI::kObjectDragPayloadType)) {
                   editorContext->ReorderObject(draggedObject, object, EditorSceneContext::HierarchyDropPosition::Into);
                }
             }
@@ -1712,10 +1703,6 @@ void RendererEditorController::EmitAssetDragPayload(const EditorAssetEntry& entr
 
       ImGui::EndDragDropSource();
    }
-}
-
-std::vector<Object*> RendererEditorController::CollectSceneObjects() const {
-   return Object::GetRegisteredObjects();
 }
 
 void RendererEditorController::SelectAsset(EditorSceneContext& context, const std::string& id) {

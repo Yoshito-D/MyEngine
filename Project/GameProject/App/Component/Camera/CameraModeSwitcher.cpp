@@ -93,14 +93,14 @@ nlohmann::json CameraModeSwitcher::GetSharedParameters() const {
 }
 
 void CameraModeSwitcher::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
+   ReadParameters(data);
 }
 
 void CameraModeSwitcher::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
+   ReadParameters(data);
 }
 
-void CameraModeSwitcher::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
+void CameraModeSwitcher::ReadParameters(const nlohmann::json& data) {
    if (!data.is_object()) return;
 
    if (data.contains("cameraIds") && data.at("cameraIds").is_array()) {

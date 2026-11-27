@@ -168,7 +168,6 @@ nlohmann::json PlanetLeashCamera::Serialize() const {
       {"maxFollowDistance", maxFollowDistance},
       {"followSpeed", followSpeed},
       {"minPlanetDistance", minPlanetDistance},
-      {"useGravityUp", useGravityUp},
    };
 }
 
@@ -190,14 +189,9 @@ void PlanetLeashCamera::ReadParameters(const nlohmann::json& data, [[maybe_unuse
    maxFollowDistance = GameEngine::JsonValue::ReadFloat(data, "maxFollowDistance", maxFollowDistance);
    followSpeed = GameEngine::JsonValue::ReadFloat(data, "followSpeed", followSpeed);
    minPlanetDistance = GameEngine::JsonValue::ReadFloat(data, "minPlanetDistance", minPlanetDistance);
-   useGravityUp = GameEngine::JsonValue::ReadBool(data, "useGravityUp", useGravityUp);
    if (initializeRuntime) {
       driftDistanceScale_ = 1.0f;
-   }
-   if (initializeRuntime) {
       driftCameraHeightOffset_ = 0.0f;
-   }
-   if (initializeRuntime) {
       driftLookTargetHeightOffset_ = 0.0f;
    }
    Configure(DescribeSettings());
@@ -213,9 +207,8 @@ void PlanetLeashCamera::DrawInspector() {
    }
 
    ImGui::DragFloat(Tr("最大追従距離 (m)", "Max Follow Distance (m)"), &maxFollowDistance, 0.1f, 0.1f, 100.0f);
-   ImGui::DragFloat(Tr("追従速度 (1/s)", "Follow Speed (1/s)"), &followSpeed, 0.1f, 0.0f, 50.0f);
+   ImGui::DragFloat(Tr("追従速度 (m/s)", "Follow Speed (m/s)"), &followSpeed, 0.1f, 0.0f, 50.0f);
    ImGui::DragFloat(Tr("惑星最小距離 (m)", "Min Planet Distance (m)"), &minPlanetDistance, 0.1f, 0.0f, 100.0f);
-   ImGui::Checkbox(Tr("Gravity Upを使用", "Use Gravity Up"), &useGravityUp);
 
    ImGui::Separator();
    ImGui::Text("%s: (%.2f, %.2f, %.2f)", Tr("視点位置", "Eye Pos"), eyePos_.x, eyePos_.y, eyePos_.z);
@@ -236,11 +229,6 @@ void PlanetLeashCamera::DrawInspector() {
 
 namespace App {
 
-void PlanetLeashCamera::SetInitialEyePosition(const GameEngine::Vector3& eye) {
-   eyePos_ = eye;
-   isInitialized_ = true;
-}
-
 void PlanetLeashCamera::ApplyVehicleFollowInput(const VehicleCameraFollowInput& input) {
    gravityUp_ = input.gravityUp;
    pivotTarget_ = input.target;
@@ -258,7 +246,6 @@ PlanetLeashCamera::Settings PlanetLeashCamera::DescribeSettings() const {
    settings.maxFollowDistance = maxFollowDistance;
    settings.followSpeed = followSpeed;
    settings.minPlanetDistance = minPlanetDistance;
-   settings.useGravityUp = useGravityUp;
    return settings;
 }
 
@@ -281,7 +268,6 @@ void PlanetLeashCamera::Configure(const Settings& requested) {
    maxFollowDistance = settings.maxFollowDistance;
    followSpeed = settings.followSpeed;
    minPlanetDistance = settings.minPlanetDistance;
-   useGravityUp = settings.useGravityUp;
 }
 
 } // namespace App

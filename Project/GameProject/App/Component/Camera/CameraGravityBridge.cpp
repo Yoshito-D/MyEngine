@@ -279,14 +279,14 @@ nlohmann::json CameraGravityBridge::GetSharedParameters() const {
 }
 
 void CameraGravityBridge::Deserialize(const nlohmann::json& data) {
-   ReadParameters(data, true);
+   ReadParameters(data);
 }
 
 void CameraGravityBridge::ApplySharedParameters(const nlohmann::json& data) {
-   ReadParameters(data, false);
+   ReadParameters(data);
 }
 
-void CameraGravityBridge::ReadParameters(const nlohmann::json& data, [[maybe_unused]] bool initializeRuntime) {
+void CameraGravityBridge::ReadParameters(const nlohmann::json& data) {
    if (data.contains("cameraIds") && data.at("cameraIds").is_array()) {
       std::vector<std::string> ids;
       bool valid = true;

@@ -1,5 +1,6 @@
 #pragma once
 #include "GameProject/App/Component/Vehicle/VehicleInputComponent.h"
+#include <optional>
 #include <string>
 #include <cstdint>
 
@@ -28,7 +29,8 @@ enum class TutorialPhase {
 struct TutorialGuideState {
    TutorialPhase phase = TutorialPhase::DrivingIntro; ///< 現在の課題。
    VehicleControlLabels controls;                     ///< 接続状態と現在の割り当てを反映した入力名。
-   int32_t miniTurboCount = 0;                        ///< 達成回数。
+   std::int32_t miniTurboCount = 0;                   ///< 達成回数。
+   std::int32_t requiredMiniTurbos = 0;               ///< 課題の達成に必要な回数。
    bool canFireMiniTurbo = false;                     ///< ターボ発動可能か。
    bool isDrifting = false;                           ///< ドリフト中か。
    bool isAirborne = false;                           ///< 空中か。
@@ -43,7 +45,7 @@ public:
    void Reset(float baseOpacity, float feedbackBaseOpacity);
 
    /// @brief 説明が完全表示され、次へ進む入力を受け付けられるかを返す。
-   bool IsReady() const { return guideFadeState_ == GuideFadeState::Visible && pendingText_.empty(); }
+   bool IsReady() const { return guideFadeState_ == GuideFadeState::Visible; }
 
    /// @brief 最新の課題文面に向け、本文・操作案内・補足文のフェードを同期する。本文の表示先がない場合は何もしない。
    void UpdateGuideText(const TutorialGuideState& state, GameEngine::UITextComponent* guideText,
@@ -73,12 +75,16 @@ private:
       FadingIn,
    };
 
-   static std::string BuildGuideText(const TutorialGuideState& state);
+   struct GuideText {
+      std::string body;
+      std::string prompt;
+   };
+
+   static GuideText BuildGuideText(const TutorialGuideState& state);
    void ApplyGuideOpacity(GameEngine::UITextComponent* guideText, GameEngine::UITextComponent* promptText,
       GameEngine::UITextComponent* feedbackText);
    GuideFadeState guideFadeState_ = GuideFadeState::Visible; ///< 案内文のフェード状態。
-   std::string displayedText_;                               ///< 最後に反映した案内。
-   std::string pendingText_;                                 ///< フェード後に反映する案内。
+   std::optional<Phase> displayedPhase_;                     ///< 現在画面に適用されている課題。
    std::string landingFeedback_;                             ///< 着地の結果に対応する説明。
    std::string driftFeedback_;                               ///< 直近のドリフト結果。
    float driftFeedbackRemaining_ = 0.0f;                     ///< 操作結果を表示する残り時間。進行判定には使わない。
